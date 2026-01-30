@@ -48,4 +48,15 @@ public final class LogConstants {
     public static final String AUTH_LOGIN_ATTEMPT = "Login attempt";
     public static final String AUTH_LOGIN_SUCCESS = "Login success";
     public static final String AUTH_LOGIN_FAILED = "Login failed";
+
+    // Security
+    public static final String SECURITY_ALERT_NO_ACCESS = "Security Alert: Access Denied";
+    public static final String SECURITY_GROUP_ID_MISSING = "Security Alert: Group ID missing in context";
+
+    // Note
+    public static final String NOTE_CREATED = "Note created for section: {}";
+    public static final String NOTE_UPDATED = "Note updated for section: {}";
+
+    // Reminder
+    public static final String REMINDER_CREATED = "Reminder created: {}";
 }

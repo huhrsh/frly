@@ -1,0 +1,28 @@
+CREATE TABLE IF NOT EXISTS payment_expenses (
+    id BIGSERIAL PRIMARY KEY,
+    group_id VARCHAR(255) NOT NULL,
+    section_id BIGINT NOT NULL REFERENCES sections(id) ON DELETE CASCADE,
+    paid_by_user_id BIGINT NOT NULL REFERENCES users(id),
+    description VARCHAR(255),
+    total_amount NUMERIC(19,2) NOT NULL,
+    currency VARCHAR(16),
+    expense_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by BIGINT,
+    updated_by BIGINT
+);
+
+CREATE TABLE IF NOT EXISTS payment_shares (
+    id BIGSERIAL PRIMARY KEY,
+    group_id VARCHAR(255) NOT NULL,
+    expense_id BIGINT NOT NULL REFERENCES payment_expenses(id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES users(id),
+    share_amount NUMERIC(19,2) NOT NULL,
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by BIGINT,
+    updated_by BIGINT
+);

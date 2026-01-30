@@ -1,0 +1,2 @@
+ALTER TABLE config.group_members
+ADD COLUMN IF NOT EXISTS view_preference VARCHAR(32) NOT NULL DEFAULT 'WORKSPACE';
