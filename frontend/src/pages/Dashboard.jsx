@@ -76,23 +76,46 @@ const Dashboard = () => {
                 </div>
 
                 {totalGroups > 0 && (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center justify-between">
-                            <div>
-                                <p className="text-xs text-gray-500 uppercase tracking-wide">Total groups</p>
-                                <p className="text-2xl font-semibold text-gray-900">{totalGroups}</p>
+                    <>
+                        {/* Desktop / tablet cards */}
+                        <div className="hidden sm:grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs text-gray-500 uppercase tracking-wide">Total groups</p>
+                                    <p className="text-2xl font-semibold text-gray-900">{totalGroups}</p>
+                                </div>
+                                <Users className="text-blue-500" size={22} />
                             </div>
-                            <Users className="text-blue-500" size={22} />
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                                <p className="text-xs text-gray-500 uppercase tracking-wide">Admin of</p>
+                                <p className="text-2xl font-semibold text-gray-900">{adminGroups}</p>
+                            </div>
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                                <p className="text-xs text-gray-500 uppercase tracking-wide">Pending joins</p>
+                                <p className="text-2xl font-semibold text-amber-600">{pendingGroups}</p>
+                            </div>
                         </div>
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-                            <p className="text-xs text-gray-500 uppercase tracking-wide">Admin of</p>
-                            <p className="text-2xl font-semibold text-gray-900">{adminGroups}</p>
+
+                        {/* Mobile compact summary at top */}
+                        <div className="sm:hidden flex justify-center mt-2">
+                            <div className="flex w-4/5 max-w-md items-center rounded-2xl bg-white border border-gray-100 shadow-sm px-4 py-2">
+                                <div className="flex-1 flex flex-col items-center">
+                                    <span className="text-sm text-gray-600">Total</span>
+                                    <span className="font-semibold text-gray-900">{totalGroups}</span>
+                                </div>
+                                <div className="h-8 w-px bg-gray-100" />
+                                <div className="flex-1 flex flex-col items-center">
+                                    <span className="text-sm text-gray-600">Admin</span>
+                                    <span className="font-semibold text-gray-900">{adminGroups}</span>
+                                </div>
+                                <div className="h-8 w-px bg-gray-100" />
+                                <div className="flex-1 flex flex-col items-center">
+                                    <span className="text-sm text-gray-600">Pending</span>
+                                    <span className="font-semibold text-amber-600">{pendingGroups}</span>
+                                </div>
+                            </div>
                         </div>
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-                            <p className="text-xs text-gray-500 uppercase tracking-wide">Pending joins</p>
-                            <p className="text-2xl font-semibold text-amber-600">{pendingGroups}</p>
-                        </div>
-                    </div>
+                    </>
                 )}
 
                 {groups.length === 0 ? (

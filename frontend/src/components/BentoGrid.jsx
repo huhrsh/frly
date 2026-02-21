@@ -60,12 +60,12 @@ const BentoGrid = ({ sections, previews, allSections, groupId, onOpenCreateModal
                             </div>
                         </div>
 
-                        <div className="mt-1 text-[11px] text-gray-500 flex-1 min-h-[40px] w-full">
+                        <div className="mt-1 text-xs text-gray-500 flex-1 min-h-[40px] w-full">
                             {!preview && section.type !== 'FOLDER' ? (
                                 <span className="text-gray-400">Loading...</span>
                             ) : preview?.kind === 'NOTE' ? (
                                 <div className="space-y-1">
-                                    <p className="text-[11px] text-gray-600 leading-snug max-h-16 overflow-hidden line-clamp-3 break-words">
+                                    <p className="text-xs text-gray-600 leading-snug max-h-16 overflow-hidden line-clamp-3 break-words">
                                         {preview.snippet || 'Empty note'}
                                     </p>
                                     {(preview.lastEditedAt || preview.lastEditedByName) && (
@@ -93,13 +93,13 @@ const BentoGrid = ({ sections, previews, allSections, groupId, onOpenCreateModal
                             ) : preview?.kind === 'REMINDER' ? (
                                 <ul className="space-y-1 max-h-16 overflow-hidden">
                                     {preview.reminders?.length ? preview.reminders.map((r, idx) => (
-                                        <li key={idx} className={`flex items-center justify-between text-[10px] ${r.isSent ? 'opacity-50' : ''}`}>
+                                        <li key={idx} className={`flex items-center justify-between text-xs ${r.isSent ? 'opacity-50' : ''}`}>
                                             <div className="flex items-center gap-1 truncate">
                                                 <span className={`w-1.5 h-1.5 rounded-full ${r.isSent ? 'bg-gray-400' : 'bg-amber-500'}`}></span>
                                                 <span className={`truncate font-medium ${r.isSent ? 'text-gray-500 line-through' : 'text-gray-700'}`}>{r.title}</span>
                                             </div>
                                             {r.triggerTime && !r.isSent && (
-                                                <span className="text-gray-400 text-[9px] whitespace-nowrap ml-1">
+                                                <span className="text-gray-400 text-[10px] whitespace-nowrap ml-1">
                                                     {new Date(r.triggerTime).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                                                 </span>
                                             )}
@@ -122,7 +122,7 @@ const BentoGrid = ({ sections, previews, allSections, groupId, onOpenCreateModal
                                         )}
                                     </div>
                                     {preview.totalCount > 0 && (
-                                        <p className="text-[10px] text-gray-500">{preview.totalCount} file{preview.totalCount !== 1 ? 's' : ''}</p>
+                                        <p className="text-xs text-gray-500">{preview.totalCount} file{preview.totalCount !== 1 ? 's' : ''}</p>
                                     )}
                                 </div>
                             ) : preview?.kind === 'PAYMENT' ? (
@@ -146,11 +146,11 @@ const BentoGrid = ({ sections, previews, allSections, groupId, onOpenCreateModal
                                                     .filter(s => s.parentId === section.id)
                                                     .slice(0, 3)
                                                     .map(child => (
-                                                        <span key={child.id} className="text-[9px] bg-gray-50 border border-gray-100 px-1.5 py-0.5 rounded text-gray-500 truncate max-w-[80px]">
+                                                        <span key={child.id} className="text-[10px] bg-gray-50 border border-gray-100 px-1.5 py-0.5 rounded text-gray-500 truncate max-w-[80px]">
                                                             {child.title}
                                                         </span>
                                                     ))}
-                                                {childrenCount > 3 && <span className="text-[9px] text-gray-400 self-center">+ more</span>}
+                                                {childrenCount > 3 && <span className="text-[10px] text-gray-400 self-center">+ more</span>}
                                             </div>
                                         </div>
                                     ) : (

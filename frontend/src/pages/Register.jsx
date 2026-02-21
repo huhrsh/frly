@@ -22,8 +22,8 @@ const Register = () => {
         }
     };
 
-    return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-8">
+        return (
+		<div className="min-h-[calc(100vh-4rem)] bg-gray-50 flex items-center justify-center px-4 py-4 sm:py-8">
             <div className="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
                 <div className="hidden lg:block">
                     <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 px-8 py-10 space-y-4">

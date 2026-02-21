@@ -1,8 +1,9 @@
 import axios from 'axios';
 
 const axiosClient = axios.create({
-  // baseURL: 'http://192.168.1.7:8080/api', // Update if backend port differs
-  baseURL: 'http://localhost:8080/api', // Update if backend port differs
+  baseURL: 'http://192.168.1.17:8080/api', // Update if backend port differs
+  baseURL: 'http://172.20.10.3:8080/api', // Update if backend port differs
+  // baseURL: 'http://localhost:8080/api', // Update if backend port differs
   headers: {
     'Content-Type': 'application/json',
   },

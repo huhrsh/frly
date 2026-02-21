@@ -116,11 +116,9 @@ const GroupView = () => {
         }
     }, [currentGroup, groupId]);
 
-    // Keep selected section in sync with the URL (?section=ID)
-    // and provide a sensible default when none is specified.
+    // Keep selected section in sync with the URL (?section=ID).
+    // When no section is specified, leave the workspace empty by default.
     useEffect(() => {
-        if (!sections.length) return;
-
         const params = new URLSearchParams(location.search || '');
         const sectionIdParam = params.get('section');
 
@@ -133,18 +131,22 @@ const GroupView = () => {
                 }
                 return;
             }
+
+            // If the ID in the URL no longer exists, clear it and reset selection.
+            params.delete('section');
+            navigate({ search: params.toString() ? `?${params.toString()}` : '' }, { replace: true });
+            if (selectedSection) {
+                setSelectedSection(null);
+            }
+            return;
         }
 
-        if (!selectedSection && sections.length > 0) {
-            const rootSection = sections.find(s => !s.parentId);
-            const fallback = rootSection || sections[0];
-            if (fallback) {
-                // Also reflect the default selection in the URL
-                // so refresh/back behave consistently.
-                handleSelectSection(fallback);
-            }
+        // No ?section in URL: keep whatever is already selected, but if the
+        // selected section was removed from the list, clear it.
+        if (selectedSection && !sections.find(s => s.id === selectedSection.id)) {
+            setSelectedSection(null);
         }
-    }, [sections, location.search, selectedSection]);
+    }, [sections, location.search, selectedSection, navigate]);
 
     // Open manage modal when navigated from dashboard with ?manage=1
     useEffect(() => {
@@ -364,11 +366,22 @@ const GroupView = () => {
 
     const renderSectionContent = () => {
         if (!selectedSection) {
+            const hasSections = sections && sections.length > 0;
+            const isAdmin = currentGroup?.currentUserRole === 'ADMIN';
+
             return (
-                <div className="h-full flex items-center justify-center">
-                    <div className="text-center text-sm text-gray-500">
-                        <p className="font-medium text-gray-700">No section selected</p>
-                        <p className="mt-1 text-xs text-gray-400">Choose a section from the sidebar to start working in this group.</p>
+                <div className="h-full flex items-center justify-center px-4 py-8">
+                    <div className="text-center text-sm text-gray-500 max-w-sm">
+                        <p className="font-medium text-gray-800">
+                            {hasSections ? 'No section selected' : 'No sections in this group yet'}
+                        </p>
+                        <p className="mt-1 text-xs text-gray-400">
+                            {hasSections
+                                ? 'Choose a section from the sidebar to start working in this group.'
+                                : isAdmin
+                                    ? 'Create your first section from the sidebar to start using this workspace.'
+                                    : 'Ask an admin to create sections for this group.'}
+                        </p>
                     </div>
                 </div>
             );
