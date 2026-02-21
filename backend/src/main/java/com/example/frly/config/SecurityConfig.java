@@ -1,6 +1,6 @@
 package com.example.frly.config;
 
-import com.example.frly.security.JwtAuthenticationFilter;
+import com.example.frly.auth.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +17,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final com.example.frly.group.GroupContextFilter groupContextFilter;
 
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
@@ -29,10 +30,11 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/health", "/api/auth/login", "/api/users").permitAll()
+                        .requestMatchers("/api/health", "/api/auth/*", "/api/users").permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(groupContextFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

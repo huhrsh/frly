@@ -1,0 +1,2 @@
+ALTER TABLE config.users
+ADD COLUMN IF NOT EXISTS reminder_email_enabled BOOLEAN NOT NULL DEFAULT TRUE;
