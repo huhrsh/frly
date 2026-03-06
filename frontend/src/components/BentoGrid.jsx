@@ -111,21 +111,13 @@ const BentoGrid = ({ sections, previews, allSections, groupId, onOpenCreateModal
                                     )}
                                 </ul>
                             ) : preview?.kind === 'GALLERY' ? (
-                                <div className="space-y-2">
-                                    <div className="flex gap-1 overflow-hidden h-10">
-                                        {preview.images?.length > 0 ? preview.images.map((img, idx) => (
-                                            img.type?.startsWith('image/') ? (
-                                                <img key={idx} src={img.url} alt="" className="h-10 w-10 object-cover rounded-md border border-gray-100" />
-                                            ) : (
-                                                <div key={idx} className="h-10 w-10 bg-gray-100 rounded-md border border-gray-200 flex items-center justify-center text-gray-400 text-[9px]">FILE</div>
-                                            )
-                                        )) : (
-                                            <span className="text-gray-400 flex items-center h-full">No files</span>
-                                        )}
-                                    </div>
-                                    {preview.totalCount > 0 && (
-                                        <p className="text-xs text-gray-500">{preview.totalCount} file{preview.totalCount !== 1 ? 's' : ''}</p>
-                                    )}
+                                <div className="flex flex-col gap-1">
+                                    <p className="text-xs text-gray-500">
+                                        {typeof preview.totalCount === 'number' && preview.totalCount > 0
+                                            ? `${preview.totalCount} file${preview.totalCount !== 1 ? 's' : ''} stored`
+                                            : 'No files yet'}
+                                    </p>
+                                    <p className="text-[10px] text-gray-400">Open to browse and upload files.</p>
                                 </div>
                             ) : preview?.kind === 'PAYMENT' ? (
                                 <div className="flex flex-col gap-1">

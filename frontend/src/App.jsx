@@ -30,7 +30,7 @@ import Contact from './pages/Contact';
 
 function App() {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+  <div className="min-h-screen-dvh flex flex-col bg-gray-50">
       <ToastContainer position="top-right" autoClose={3000} />
       <Header />
       <main className="flex-1 px-4 py-4 sm:px-6 sm:py-6">

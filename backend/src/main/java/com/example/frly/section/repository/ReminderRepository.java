@@ -10,7 +10,7 @@ import java.util.List;
 public interface ReminderRepository extends JpaRepository<Reminder, Long> {
     List<Reminder> findBySectionIdAndStatusNotOrderByTriggerTimeAsc(Long sectionId, RecordStatus status);
 
-    List<Reminder> findByIsSentFalseAndNotifyTrueAndTriggerTimeLessThanEqual(LocalDateTime triggerTime);
+    List<Reminder> findByIsSentFalseAndNotifyTrueAndStatusAndTriggerTimeLessThanEqual(RecordStatus status, LocalDateTime triggerTime);
 
     List<Reminder> findBySectionIdAndStatusNot(Long sectionId, RecordStatus status);
 }

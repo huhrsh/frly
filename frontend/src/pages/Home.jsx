@@ -14,10 +14,10 @@ const Home = () => {
                         </div>
                         <div>
                             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-gray-900 leading-tight">
-                                Organise everything your group shares in one calm space.
+                                One shared workspace for everything your group needs.
                             </h1>
                             <p className="mt-4 text-sm sm:text-base text-gray-600 max-w-xl">
-                                Notes, to‑dos, photos, reminders and expenses — all inside a single workspace for your family, friends or flatmates. No more scattered chats and lost docs.
+                                FRYLY is where your group keeps plans, chores, photos, payments and reminders – not buried in chat. Each group gets a private space made of sections like notes, lists, galleries and expenses.
                             </p>
                         </div>
                         <div className="flex flex-wrap items-center gap-3">
@@ -41,17 +41,37 @@ const Home = () => {
                         </div>
                     </div>
 
-                    {/* Illustration placeholder */}
-                    <div className="relative">
-                        <div className="rounded-3xl border border-dashed border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50/70 p-4 sm:p-6 min-h-[220px] sm:min-h-[280px] flex items-center justify-center">
-                            <div className="text-center max-w-xs">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-blue-500 mb-1">Illustration area</p>
-                                <p className="text-[11px] text-blue-800/80">
-                                    Drop in your own hero illustration or characters here — this card is sized for a wide scene.
-                                </p>
+                {/* Product preview instead of illustration */}
+                <div className="relative">
+                    <div className="rounded-3xl border border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50/70 p-4 sm:p-5 shadow-sm">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-700 mb-3 text-center sm:text-left">
+                            What a FRYLY group actually looks like
+                        </p>
+                        <div className="space-y-2">
+                            <div className="rounded-2xl bg-white/90 border border-blue-50 px-3 py-2 flex items-center justify-between gap-3">
+                                <div>
+                                    <p className="text-[11px] font-semibold text-gray-900">🏠 Flatmates · "Bills & Chores"</p>
+                                    <p className="text-[11px] text-gray-500">Sections: Groceries list · Cleaning rota · Rent & utilities</p>
+                                </div>
+                                <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">Everyone sees the same list</span>
+                            </div>
+                            <div className="rounded-2xl bg-white/90 border border-indigo-50 px-3 py-2 flex items-center justify-between gap-3">
+                                <div>
+                                    <p className="text-[11px] font-semibold text-gray-900">✈️ Friends · "Trip to Goa"</p>
+                                    <p className="text-[11px] text-gray-500">Sections: Itinerary notes · Packing list · Gallery · Payments</p>
+                                </div>
+                                <span className="inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-700">Plans, photos & costs together</span>
+                            </div>
+                            <div className="rounded-2xl bg-white/90 border border-slate-100 px-3 py-2 flex items-center justify-between gap-3">
+                                <div>
+                                    <p className="text-[11px] font-semibold text-gray-900">👨‍👩‍👧 Family · "Home base"</p>
+                                    <p className="text-[11px] text-gray-500">Sections: House rules · Important dates · Shared tasks · Docs</p>
+                                </div>
+                                <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-700">Things that shouldn&apos;t live in chat</span>
                             </div>
                         </div>
                     </div>
+                </div>
                 </div>
             </section>
 
@@ -74,23 +94,35 @@ const Home = () => {
                     <div className="grid gap-4 md:grid-cols-3">
                         <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 flex flex-col gap-2">
                             <h3 className="text-sm font-semibold text-gray-900">Notes</h3>
-                            <p className="text-xs text-gray-600">Capture plans, recipes, decisions and long‑form thoughts for everyone to reference.</p>
-                            <div className="mt-2 rounded-lg border border-dashed border-gray-200 bg-white/80 h-20 flex items-center justify-center text-[11px] text-gray-400">
-                                Note preview illustration
+                            <p className="text-xs text-gray-600">Capture plans, recipes, house rules or trip details in one place everyone can find.</p>
+                            <div className="mt-2 rounded-lg border border-gray-200 bg-white/90 px-3 py-2 space-y-1">
+                                <p className="text-[11px] font-medium text-gray-800">Example:</p>
+                                <ul className="text-[11px] text-gray-600 list-disc list-inside space-y-0.5">
+                                    <li>"Weekend plan" with check‑in times and locations</li>
+                                    <li>"House rules" everyone agreed on</li>
+                                </ul>
                             </div>
                         </div>
                         <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 flex flex-col gap-2">
                             <h3 className="text-sm font-semibold text-gray-900">Lists &amp; reminders</h3>
                             <p className="text-xs text-gray-600">Shared checklists with due dates — perfect for chores, packing and recurring tasks.</p>
-                            <div className="mt-2 rounded-lg border border-dashed border-gray-200 bg-white/80 h-20 flex items-center justify-center text-[11px] text-gray-400">
-                                Tasks / reminder illustration
+                            <div className="mt-2 rounded-lg border border-gray-200 bg-white/90 px-3 py-2 space-y-1">
+                                <p className="text-[11px] font-medium text-gray-800">Example:</p>
+                                <ul className="text-[11px] text-gray-600 list-disc list-inside space-y-0.5">
+                                    <li>"Groceries" list shared with flatmates</li>
+                                    <li>Cleaning rota with reminders before guests arrive</li>
+                                </ul>
                             </div>
                         </div>
                         <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 flex flex-col gap-2">
-                            <h3 className="text-sm font-semibold text-gray-900">Files &amp; expenses</h3>
+                            <h3 className="text-sm font-semibold text-gray-900">Gallery &amp; expenses</h3>
                             <p className="text-xs text-gray-600">Keep photos, documents and shared expenses attached to the group instead of chats.</p>
-                            <div className="mt-2 rounded-lg border border-dashed border-gray-200 bg-white/80 h-20 flex items-center justify-center text-[11px] text-gray-400">
-                                Gallery / payments illustration
+                            <div className="mt-2 rounded-lg border border-gray-200 bg-white/90 px-3 py-2 space-y-1">
+                                <p className="text-[11px] font-medium text-gray-800">Example:</p>
+                                <ul className="text-[11px] text-gray-600 list-disc list-inside space-y-0.5">
+                                    <li>Trip photos saved to the group gallery</li>
+                                    <li>"Who paid what" after dinner or a weekend away</li>
+                                </ul>
                             </div>
                         </div>
                     </div>
@@ -130,7 +162,7 @@ const Home = () => {
                     <div className="flex-1 space-y-3">
                         <h2 className="text-lg font-semibold text-gray-900">Leave the chaos to your chats.</h2>
                         <p className="text-sm text-gray-600 max-w-md">
-                            FRYLY is for everything that shouldn&apos;t disappear in a feed: packing lists, house rules, vacation plans, loaned items, important dates and more.
+                            FRYLY sits next to WhatsApp or iMessage. Chats are for talking; FRYLY is for the things you don&apos;t want to lose – packing lists, house rules, vacation plans, loaned items, important dates and more.
                         </p>
                         <div className="flex flex-wrap gap-2 mt-2 text-[11px]">
                             <span className="px-2.5 py-1 rounded-full bg-gray-100 text-gray-700">Families</span>
@@ -140,13 +172,17 @@ const Home = () => {
                         </div>
                     </div>
                     <div className="flex-1 w-full">
-                        <div className="rounded-3xl border border-dashed border-gray-200 bg-gray-50/80 h-52 sm:h-64 flex items-center justify-center px-4">
-                            <div className="text-center max-w-xs">
-                                <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">Secondary illustration</p>
-                                <p className="text-[11px] text-gray-500">
-                                    Use this canvas for a smaller scene — e.g. people around a shared board, or multiple devices in sync.
-                                </p>
-                            </div>
+                        <div className="rounded-3xl border border-gray-200 bg-gray-50/80 px-4 py-4 sm:py-5 space-y-3">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-600 mb-1">In practice, people use FRYLY for…</p>
+                            <ul className="text-[11px] text-gray-700 space-y-1 list-disc list-inside">
+                                <li>Keeping a single "Home" space for family info, rules and chores</li>
+                                <li>Running a shared "Travel" space with itinerary, bookings and receipts</li>
+                                <li>Organising side‑projects or hobby groups without heavy project tools</li>
+                                <li>Tracking recurring expenses between flatmates or friends</li>
+                            </ul>
+                            <p className="text-[11px] text-gray-500">
+                                If your group keeps saying "pin this" or "remember this later" in chat, it probably belongs in FRYLY.
+                            </p>
                         </div>
                     </div>
                 </div>

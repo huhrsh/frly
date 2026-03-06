@@ -111,7 +111,7 @@ const GroupManageModal = ({
                   </button>
                 )}
               </div>
-              <div className="border rounded-lg max-h-40 sm:max-h-56 overflow-y-auto divide-y divide-gray-100 bg-gray-50">
+                    <div className="border rounded-lg max-h-56 sm:max-h-72 overflow-y-auto divide-y divide-gray-100 bg-gray-50">
                 {sections && sections.length > 0 ? (
                   sections.map((s) => (
                     <div key={s.id} className="flex items-center justify-between px-3 py-2 text-xs text-gray-700">
