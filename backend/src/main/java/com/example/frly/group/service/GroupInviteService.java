@@ -73,7 +73,7 @@ public class GroupInviteService {
         }
 
         User invitee = userRepository.findByEmail(email)
-            .orElseThrow(() -> new BadRequestException("No FRYLY account found for this email. Ask them to sign up first."));
+            .orElseThrow(() -> new BadRequestException("No fryly account found for this email. Ask them to sign up first."));
 
         // Prevent inviting someone who is already in or pending in the group
         groupMemberRepository.findByUserIdAndGroupId(invitee.getId(), groupId).ifPresent(member -> {
@@ -106,7 +106,7 @@ public class GroupInviteService {
         String acceptLink = base + "/group-invite?token=" + rawToken + "&action=accept";
         String declineLink = base + "/group-invite?token=" + rawToken + "&action=decline";
 
-        String subject = "You've been invited to join a FRYLY group";
+        String subject = "You've been invited to join a fryly group";
         String template = emailService.loadTemplate("email/group-invite.html");
 
         String inviterName = (senderMember.getUser().getFirstName() + " " + senderMember.getUser().getLastName()).trim();

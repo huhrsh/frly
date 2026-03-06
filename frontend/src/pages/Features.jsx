@@ -4,9 +4,9 @@ const Features = () => {
   return (
     <div className="max-w-5xl mx-auto py-10 px-4 sm:px-6">
       <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-2">What you get with FRYLY</h1>
+        <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-2">What you get with fryly</h1>
         <p className="text-sm text-gray-600 max-w-2xl">
-          FRYLY gives your group a calm, shared workspace made of sections – so everyone knows where to put things and where to find them.
+          fryly gives your group a calm, shared workspace made of sections – so everyone knows where to put things and where to find them.
         </p>
       </div>
 
@@ -36,7 +36,7 @@ const Features = () => {
           <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Tasks</p>
           <h2 className="font-semibold">Checklists &amp; reminders</h2>
           <p>
-            Use shared lists to track chores, packing, or errands, and attach due dates so FRYLY can remind you when something is close or overdue.
+            Use shared lists to track chores, packing, or errands, and attach due dates so fryly can remind you when something is close or overdue.
           </p>
         </div>
         <div className="rounded-xl border border-gray-100 bg-white p-4 flex flex-col gap-2">

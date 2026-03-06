@@ -23,6 +23,7 @@ import com.example.frly.group.GroupContext;
 import com.example.frly.group.service.GroupService;
 import com.example.frly.section.SectionMapper;
 import com.example.frly.user.UserRepository;
+import com.example.frly.common.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -45,6 +46,15 @@ public class SectionService {
     private final GroupService groupService;
     private final SectionMapper sectionMapper;
     private final UserRepository userRepository;
+
+    private Section requireActiveSection(Long sectionId) {
+        Section section = sectionRepository.findById(sectionId)
+                .orElseThrow(() -> new BadRequestException("Section not found"));
+        if (section.getStatus() == RecordStatus.DELETED) {
+            throw new BadRequestException("Section is deleted");
+        }
+        return section;
+    }
 
     // --- SECTIONS ---
 
@@ -118,8 +128,7 @@ public class SectionService {
     public Long addListItem(Long sectionId, CreateListItemRequestDto request) {
         // Security Check
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
-
-        Section section = sectionRepository.getReferenceById(sectionId);
+        Section section = requireActiveSection(sectionId);
         
         // Validate section type
         if (section.getType() != SectionType.LIST) {
@@ -140,7 +149,7 @@ public class SectionService {
     public List<ListItemDto> getListItems(Long sectionId) {
         // Security Check
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
-
+        requireActiveSection(sectionId);
         return listItemRepository.findBySectionIdAndStatusNotOrderByPositionAsc(sectionId, RecordStatus.DELETED).stream()
                 .map(sectionMapper::toListItemDto)
                 .collect(Collectors.toList());
@@ -152,6 +161,9 @@ public class SectionService {
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
         
         ListItem item = listItemRepository.findById(itemId).orElseThrow();
+        if (item.getSection() != null && item.getSection().getStatus() == RecordStatus.DELETED) {
+            throw new BadRequestException("Section is deleted");
+        }
         item.setCompleted(!item.isCompleted());
         listItemRepository.save(item);
     }
@@ -161,7 +173,7 @@ public class SectionService {
     public NoteDto getNote(Long sectionId) {
         // Security Check
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
-
+        requireActiveSection(sectionId);
         Note note = noteRepository.findBySectionId(sectionId)
             .orElseThrow(() -> new RuntimeException("Note not found for section " + sectionId));
 
@@ -184,7 +196,7 @@ public class SectionService {
     public NoteDto updateNote(Long sectionId, UpdateNoteRequestDto request) {
         // Security Check
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
-
+        requireActiveSection(sectionId);
         Note note = noteRepository.findBySectionId(sectionId)
             .orElseThrow(() -> new RuntimeException("Note not found for section " + sectionId));
 
@@ -222,8 +234,7 @@ public class SectionService {
     public Long addReminder(Long sectionId, CreateReminderRequestDto request) {
         // Security Check
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
-
-        Section section = sectionRepository.getReferenceById(sectionId);
+        Section section = requireActiveSection(sectionId);
         if (section.getType() != SectionType.REMINDER) {
             throw new IllegalArgumentException("Cannot add reminder to non-REMINDER section");
         }
@@ -247,7 +258,7 @@ public class SectionService {
     public List<ReminderDto> getReminders(Long sectionId) {
         // Security Check
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
-
+        requireActiveSection(sectionId);
         return reminderRepository.findBySectionIdAndStatusNotOrderByTriggerTimeAsc(sectionId, RecordStatus.DELETED).stream()
                 .map(sectionMapper::toReminderDto)
                 .collect(Collectors.toList());
@@ -259,6 +270,9 @@ public class SectionService {
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
         Reminder reminder = reminderRepository.findById(reminderId)
                 .orElseThrow(() -> new RuntimeException("Reminder not found"));
+        if (reminder.getSection() != null && reminder.getSection().getStatus() == RecordStatus.DELETED) {
+            throw new BadRequestException("Section is deleted");
+        }
         reminder.setStatus(RecordStatus.DELETED);
         reminderRepository.save(reminder);
     }
@@ -267,9 +281,11 @@ public class SectionService {
     public void updateReminder(Long reminderId, com.example.frly.section.dto.UpdateReminderRequestDto request) {
         // Security Check
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
-
         Reminder reminder = reminderRepository.findById(reminderId)
                 .orElseThrow(() -> new RuntimeException("Reminder not found"));
+        if (reminder.getSection() != null && reminder.getSection().getStatus() == RecordStatus.DELETED) {
+            throw new BadRequestException("Section is deleted");
+        }
 
         if (request.getTitle() != null) {
             reminder.setTitle(request.getTitle());
@@ -295,8 +311,7 @@ public class SectionService {
     @Transactional
     public Long addCalendarEvent(Long sectionId, com.example.frly.section.dto.CreateCalendarEventRequestDto request) {
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
-
-        Section section = sectionRepository.getReferenceById(sectionId);
+        Section section = requireActiveSection(sectionId);
         if (section.getType() != SectionType.CALENDAR) {
             throw new IllegalArgumentException("Cannot add calendar event to non-CALENDAR section");
         }
@@ -327,7 +342,7 @@ public class SectionService {
 
     public java.util.List<com.example.frly.section.dto.CalendarEventDto> getCalendarEvents(Long sectionId) {
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
-
+        requireActiveSection(sectionId);
         java.util.List<CalendarEvent> events = calendarEventRepository.findBySectionIdOrderByStartTimeAsc(sectionId);
 
         java.util.List<Long> eventIds = events.stream().map(CalendarEvent::getId).toList();
@@ -359,7 +374,11 @@ public class SectionService {
     @Transactional
     public void deleteCalendarEvent(Long eventId) {
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
-
+        CalendarEvent event = calendarEventRepository.findById(eventId)
+                .orElseThrow(() -> new RuntimeException("Calendar event not found"));
+        if (event.getSection() != null && event.getSection().getStatus() == RecordStatus.DELETED) {
+            throw new BadRequestException("Section is deleted");
+        }
         calendarEventMemberRepository.deleteByEventId(eventId);
         calendarEventRepository.deleteById(eventId);
     }
@@ -367,9 +386,11 @@ public class SectionService {
     @Transactional
     public void updateCalendarEvent(Long eventId, com.example.frly.section.dto.UpdateCalendarEventRequestDto request) {
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
-
         CalendarEvent event = calendarEventRepository.findById(eventId)
             .orElseThrow(() -> new RuntimeException("Calendar event not found"));
+        if (event.getSection() != null && event.getSection().getStatus() == RecordStatus.DELETED) {
+            throw new BadRequestException("Section is deleted");
+        }
 
         if (request.getTitle() != null) {
             event.setTitle(request.getTitle());

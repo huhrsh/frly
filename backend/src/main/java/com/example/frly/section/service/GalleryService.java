@@ -41,7 +41,11 @@ public class GalleryService {
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
 
         // 2. Validate Section
-        Section section = sectionRepository.getReferenceById(sectionId);
+        Section section = sectionRepository.findById(sectionId)
+                .orElseThrow(() -> new BadRequestException("Section not found"));
+        if (section.getStatus() == com.example.frly.common.enums.RecordStatus.DELETED) {
+            throw new BadRequestException("Section is deleted");
+        }
         if (section.getType() != SectionType.GALLERY) {
             throw new BadRequestException("Section is not a Gallery");
         }
@@ -86,11 +90,21 @@ public class GalleryService {
 
     public List<GalleryItem> getItems(Long sectionId) {
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
+        Section section = sectionRepository.findById(sectionId)
+                .orElseThrow(() -> new BadRequestException("Section not found"));
+        if (section.getStatus() == com.example.frly.common.enums.RecordStatus.DELETED) {
+            return java.util.Collections.emptyList();
+        }
         return galleryItemRepository.findBySectionIdAndStatusNotOrderByCreatedAtDesc(sectionId, com.example.frly.common.enums.RecordStatus.DELETED);
     }
 
     public long getItemCount(Long sectionId) {
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
+        Section section = sectionRepository.findById(sectionId)
+                .orElseThrow(() -> new BadRequestException("Section not found"));
+        if (section.getStatus() == com.example.frly.common.enums.RecordStatus.DELETED) {
+            return 0L;
+        }
         return galleryItemRepository.countBySectionIdAndStatusNot(sectionId, com.example.frly.common.enums.RecordStatus.DELETED);
     }
 

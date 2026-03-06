@@ -27,7 +27,7 @@ const JoinGroup = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await axiosClient.post('/groups/join', { inviteCode });
+            await axiosClient.post('/groups/join', { inviteCode: inviteCode.toUpperCase() });
             toast.success('Join request sent! An admin must approve you.');
             navigate('/dashboard');
         } catch (error) {
@@ -72,12 +72,12 @@ const JoinGroup = () => {
                             Join an existing group
                         </h1>
                         <p className="text-sm text-gray-700 max-w-md">
-                            Use the invite code that an admin shared with you, or accept a direct invite sent to your email, to join your group&apos;s shared workspace.
+                            Use the invite code that an admin shared with you, or accept a direct invite sent to your email, to join your group's shared workspace.
                         </p>
                         <div className="space-y-2 text-sm text-gray-700">
                             <p className="font-semibold text-gray-900">How joining works</p>
                             <ul className="list-disc list-inside space-y-1">
-                                <li>Ask a group admin for their FRYLY invite code.</li>
+                                <li>Ask a group admin for their fryly invite code.</li>
                                 <li>Or accept a pending invite that was emailed to you.</li>
                                 <li>Admins can approve or decline join requests.</li>
                             </ul>

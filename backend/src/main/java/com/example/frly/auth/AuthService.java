@@ -75,7 +75,7 @@ public class AuthService {
 
             String link = frontendBaseUrl.replaceAll("/$", "") + "/reset-password?token=" + rawToken;
 
-            String subject = "Reset your FRYLY password";
+            String subject = "Reset your fryly password";
             String template = emailService.loadTemplate("email/password-reset.html");
             String html = template
                     .replace("{{FIRST_NAME}}", user.getFirstName())

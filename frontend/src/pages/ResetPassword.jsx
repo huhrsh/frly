@@ -48,7 +48,7 @@ const ResetPassword = () => {
       <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-100 px-6 py-8">
         <h1 className="text-xl font-semibold text-gray-900 mb-1 text-center">Reset your password</h1>
         <p className="text-xs text-gray-500 mb-4 text-center">
-          Choose a new password for your FRYLY account.
+          Choose a new password for your fryly account.
         </p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

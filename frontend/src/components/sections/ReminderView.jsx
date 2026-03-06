@@ -134,7 +134,7 @@ const ReminderView = ({ sectionId }) => {
             <p className="text-xs text-gray-500 mb-2">Set one-off or repeating reminders for your group.</p>
 
             {/* <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
-                To keep costs low while we&apos;re early, FRYLY processes reminders roughly once every hour. Emails and bell notifications may arrive with a delay.
+                To keep costs low while we&apos;re early, fryly processes reminders roughly once every hour. Emails and bell notifications may arrive with a delay.
             </div> */}
 
             <form onSubmit={handleAddReminder} className="mb-4">

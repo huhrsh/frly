@@ -348,6 +348,12 @@ public class GroupService {
                         return new BadRequestException("Access Denied: You are not a member of this group");
                     });
 
+            // Prevent access to soft-deleted groups
+            if (member.getGroup() != null && member.getGroup().getStatus() == RecordStatus.DELETED) {
+                log.warn("SECURITY ALERT: User {} attempted access to deleted group {}", userId, groupId);
+                throw new BadRequestException("Access Denied: This group has been deleted");
+            }
+
             if (member.getStatus() != GroupMemberStatus.APPROVED) {
                 log.warn("SECURITY ALERT: Non-approved membership {} for user {} on group {}", member.getStatus(), userId, groupId);
                 throw new BadRequestException("Access Denied: Your membership is not approved for this group");

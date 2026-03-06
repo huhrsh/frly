@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
@@ -324,6 +325,27 @@ const Profile = () => {
                     </button>
                 </div>
             </form>
+
+            <div className="mt-6 border-t border-gray-100 pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <p className="text-xs font-medium text-gray-800">Help us make fryly better</p>
+                    <p className="text-[11px] text-gray-500">We read every bit of feedback and love honest reviews.</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    <Link
+                        to="/feedback"
+                        className="px-3 py-1.5 rounded-md border border-gray-200 bg-white text-[11px] font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                        Share feedback
+                    </Link>
+                    <Link
+                        to="/review"
+                        className="px-3 py-1.5 rounded-md border border-blue-100 bg-blue-50 text-[11px] font-medium text-blue-700 hover:bg-blue-100"
+                    >
+                        Leave a review
+                    </Link>
+                </div>
+            </div>
         </div>
     );
 };

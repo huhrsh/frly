@@ -27,6 +27,8 @@ import About from './pages/About';
 import Careers from './pages/Careers';
 import Blog from './pages/Blog';
 import Contact from './pages/Contact';
+import Feedback from './pages/Feedback';
+import Review from './pages/Review';
 
 function App() {
   return (
@@ -80,6 +82,22 @@ function App() {
           <Route path="/careers" element={<Careers />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/contact" element={<Contact />} />
+          <Route
+            path="/feedback"
+            element={
+              <ProtectedRoute>
+                <Feedback />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/review"
+            element={
+              <ProtectedRoute>
+                <Review />
+              </ProtectedRoute>
+            }
+          />
           {/* Dashboard is protected */}
           <Route
             path="/dashboard"
