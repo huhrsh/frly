@@ -53,21 +53,21 @@ const Home = () => {
                                     <p className="text-[11px] font-semibold text-gray-900">🏠 Flatmates · "Bills & Chores"</p>
                                     <p className="text-[11px] text-gray-500">Sections: Groceries list · Cleaning rota · Rent & utilities</p>
                                 </div>
-                                <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">Everyone sees the same list</span>
+                                <span className="inline-flex items-center rounded-full bg-emerald-50 px-4 py-1 text-[10px] font-medium text-emerald-700">Everyone sees the same list</span>
                             </div>
                             <div className="rounded-2xl bg-white/90 border border-indigo-50 px-3 py-2 flex items-center justify-between gap-3">
                                 <div>
                                     <p className="text-[11px] font-semibold text-gray-900">✈️ Friends · "Trip to Goa"</p>
                                     <p className="text-[11px] text-gray-500">Sections: Itinerary notes · Packing list · Gallery · Payments</p>
                                 </div>
-                                <span className="inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-700">Plans, photos & costs together</span>
+                                <span className="inline-flex items-center rounded-full bg-indigo-50 px-4 py-1 text-[10px] font-medium text-indigo-700">Plans, photos & costs together</span>
                             </div>
                             <div className="rounded-2xl bg-white/90 border border-slate-100 px-3 py-2 flex items-center justify-between gap-3">
                                 <div>
                                     <p className="text-[11px] font-semibold text-gray-900">👨‍👩‍👧 Family · "Home base"</p>
                                     <p className="text-[11px] text-gray-500">Sections: House rules · Important dates · Shared tasks · Docs</p>
                                 </div>
-                                <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-700">Things that shouldn&apos;t live in chat</span>
+                                <span className="inline-flex items-center rounded-full bg-slate-100 px-4 py-1 text-[10px] font-medium text-slate-700">Things that shouldn&apos;t live in chat</span>
                             </div>
                         </div>
                     </div>
@@ -133,24 +133,45 @@ const Home = () => {
             <section className="bg-gray-50 border-t border-gray-200">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
                     <div className="max-w-2xl mb-8">
-                        <h2 className="text-lg font-semibold text-gray-900">Built for real‑world groups</h2>
-                        <p className="mt-2 text-sm text-gray-600">FRYLY works best for people who already talk every day — families, flatmates, close teams and friend circles.</p>
+                        <h2 className="text-lg font-semibold text-gray-900">How FRYLY works in 3 steps</h2>
+                        <p className="mt-2 text-sm text-gray-600">
+                            When you sign in we guide you through creating your first group, adding a few sections, and inviting the people you live or plan with. The person who creates the group becomes an admin and stays in control.
+                        </p>
                     </div>
                     <div className="grid gap-6 md:grid-cols-3">
                         <div className="rounded-xl bg-white border border-gray-100 p-4 flex flex-col gap-2">
                             <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-50 text-[11px] font-semibold text-blue-700">1</span>
                             <h3 className="text-sm font-semibold text-gray-900">Create your group space</h3>
-                            <p className="text-xs text-gray-600">Set a name, invite code and a cover emoji or illustration that fits your group.</p>
+                            <p className="text-xs text-gray-600">Give it a name like "PG flatmates", "Family home" or "Goa trip". You&apos;ll get a unique invite code and become the group admin.</p>
                         </div>
                         <div className="rounded-xl bg-white border border-gray-100 p-4 flex flex-col gap-2">
                             <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-50 text-[11px] font-semibold text-blue-700">2</span>
-                            <h3 className="text-sm font-semibold text-gray-900">Add only the sections you need</h3>
-                            <p className="text-xs text-gray-600">Start with a couple of sections — like “Groceries” and “Bills” — and grow over time.</p>
+                            <h3 className="text-sm font-semibold text-gray-900">Add sections for what you share</h3>
+                            <p className="text-xs text-gray-600">Start with a couple of sections – notes, lists, gallery or payments – for things like groceries, chores, itineraries, or shared costs.</p>
                         </div>
                         <div className="rounded-xl bg-white border border-gray-100 p-4 flex flex-col gap-2">
                             <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-50 text-[11px] font-semibold text-blue-700">3</span>
-                            <h3 className="text-sm font-semibold text-gray-900">Stay in sync without more chats</h3>
-                            <p className="text-xs text-gray-600">Everyone sees the same source of truth — no more scrolling through messages to find “that one detail”.</p>
+                            <h3 className="text-sm font-semibold text-gray-900">Invite your people &amp; stay in sync</h3>
+                            <p className="text-xs text-gray-600">Share the invite code or send email invites. Admins approve join requests, manage members and sections; everyone else just adds items and checks what&apos;s due.</p>
+                        </div>
+                    </div>
+                    <div className="mt-6 grid gap-4 md:grid-cols-2 text-xs text-gray-600">
+                        <div className="rounded-xl bg-white border border-gray-100 p-4">
+                            <p className="text-[11px] font-semibold text-gray-900 mb-1">Admins can…</p>
+                            <ul className="list-disc list-inside space-y-0.5">
+                                <li>Create, rename and delete groups and sections</li>
+                                <li>Invite people by code or email and remove members</li>
+                                <li>Approve or reject join requests</li>
+                                <li>Keep the workspace tidy and up to date</li>
+                            </ul>
+                        </div>
+                        <div className="rounded-xl bg-white border border-gray-100 p-4">
+                            <p className="text-[11px] font-semibold text-gray-900 mb-1">Members can…</p>
+                            <ul className="list-disc list-inside space-y-0.5">
+                                <li>Add notes, checklist items, photos and payments</li>
+                                <li>See what&apos;s decided, what&apos;s due and what&apos;s paid</li>
+                                <li>Use FRYLY as the one place to come back to, instead of hunting in old chats</li>
+                            </ul>
                         </div>
                     </div>
                 </div>
@@ -173,13 +194,25 @@ const Home = () => {
                     </div>
                     <div className="flex-1 w-full">
                         <div className="rounded-3xl border border-gray-200 bg-gray-50/80 px-4 py-4 sm:py-5 space-y-3">
-                            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-600 mb-1">In practice, people use FRYLY for…</p>
-                            <ul className="text-[11px] text-gray-700 space-y-1 list-disc list-inside">
-                                <li>Keeping a single "Home" space for family info, rules and chores</li>
-                                <li>Running a shared "Travel" space with itinerary, bookings and receipts</li>
-                                <li>Organising side‑projects or hobby groups without heavy project tools</li>
-                                <li>Tracking recurring expenses between flatmates or friends</li>
-                            </ul>
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-600 mb-1">Real groups using FRYLY</p>
+                            <div className="grid gap-3 sm:grid-cols-2 text-[11px] text-gray-700">
+                                <div className="space-y-1">
+                                    <p className="font-semibold text-gray-900">PG / shared flat</p>
+                                    <p>One group for everyone in the PG, with sections for groceries, cleaning duties, maintenance issues and monthly rent splits.</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="font-semibold text-gray-900">Families</p>
+                                    <p>A "Home base" group with school schedules, house rules, important contacts, medicine notes and recurring chores.</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="font-semibold text-gray-900">Trip &amp; travel groups</p>
+                                    <p>Friends planning a trip keep flights, stay options, packing lists, photos and who-paid-what in one shared space.</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="font-semibold text-gray-900">Side projects &amp; small teams</p>
+                                    <p>Lightweight spaces for ideas, simple task lists, reference notes and shared files – without heavy project tools.</p>
+                                </div>
+                            </div>
                             <p className="text-[11px] text-gray-500">
                                 If your group keeps saying "pin this" or "remember this later" in chat, it probably belongs in FRYLY.
                             </p>

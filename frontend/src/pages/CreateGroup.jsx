@@ -4,14 +4,21 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 const CreateGroup = () => {
-    const [name, setName] = useState('');
     const [displayName, setDisplayName] = useState('');
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await axiosClient.post('/groups', { name, displayName });
+            // Generate a simple internal ID from the display name so users
+            // don’t have to think about unique system names.
+            const slug = (displayName || '')
+                .trim()
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/(^-|-$)/g, '');
+
+            await axiosClient.post('/groups', { name: slug || undefined, displayName });
             navigate('/dashboard');
         } catch (error) {
             console.error("Failed to create group", error);
@@ -19,8 +26,8 @@ const CreateGroup = () => {
         }
     };
 
-    return (
-        <div className="min-h-screen-dvh bg-gray-50 flex items-center justify-center px-4 py-8">
+        return (
+		<div className="min-h-[calc(100dvh-8rem)] bg-gray-50 flex items-center justify-center px-4 py-8">
             <div className="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
                 <div className="hidden lg:block">
                     <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 px-8 py-10 space-y-4">
@@ -33,8 +40,8 @@ const CreateGroup = () => {
                         <div className="space-y-2 text-sm text-gray-700">
                             <p className="font-semibold text-gray-900">Naming tips</p>
                             <ul className="list-disc list-inside space-y-1">
-                                <li>Use a clear, human-friendly display name for members.</li>
-                                <li>Choose a short unique ID for internal use (cannot be changed later).</li>
+                                <li>Use a clear, human-friendly name your group will recognise.</li>
+                                <li>Examples: "PG flatmates", "Family home", "Goa trip".</li>
                             </ul>
                         </div>
                     </div>
@@ -49,31 +56,16 @@ const CreateGroup = () => {
                     <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
                         <div>
                             <label className="block text-sm font-medium leading-6 text-slate-900">
-                                Unique Name (System ID)
+                                Group name
                             </label>
-                            <p className="mt-1 text-xs text-slate-500">Used internally and in URLs. Avoid spaces; use dashes or underscores.</p>
-                            <input
-                                type="text"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                required
-                                className="mt-2 block w-full rounded-lg border border-slate-200 bg-slate-50/60 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 px-3"
-                                placeholder="e.g. product-team, family-space"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium leading-6 text-slate-900">
-                                Display Name
-                            </label>
-                            <p className="mt-1 text-xs text-slate-500">What members will see in their dashboard.</p>
+                            <p className="mt-1 text-xs text-slate-500">This is what members will see in their dashboard.</p>
                             <input
                                 type="text"
                                 value={displayName}
                                 onChange={(e) => setDisplayName(e.target.value)}
                                 required
                                 className="mt-2 block w-full rounded-lg border border-slate-200 bg-slate-50/60 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 px-3"
-                                placeholder="e.g. Product Team, Family Space"
+                                placeholder="e.g. PG flatmates, Family home, Goa trip"
                             />
                         </div>
 

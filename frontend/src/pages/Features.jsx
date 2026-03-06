@@ -2,27 +2,56 @@ import React from 'react';
 
 const Features = () => {
   return (
-    <div className="max-w-4xl mx-auto py-10 px-4 sm:px-6">
-      <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-3">Features</h1>
-      <p className="text-sm text-gray-600 mb-6 max-w-2xl">
-        FRYLY helps small groups stay organised with shared spaces for everything you track together: notes, checklists, files, reminders, and expenses.
-      </p>
-      <div className="grid gap-4 sm:grid-cols-2 text-sm text-gray-700">
-        <div className="rounded-lg border border-gray-100 bg-white p-4">
-          <h2 className="font-semibold mb-1">Sections per group</h2>
-          <p>Create as many sections as you need for each group: notes, lists, galleries, reminders, folders and payments.</p>
+    <div className="max-w-5xl mx-auto py-10 px-4 sm:px-6">
+      <div className="mb-6">
+        <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-2">What you get with FRYLY</h1>
+        <p className="text-sm text-gray-600 max-w-2xl">
+          FRYLY gives your group a calm, shared workspace made of sections – so everyone knows where to put things and where to find them.
+        </p>
+      </div>
+
+      <div className="grid gap-5 md:grid-cols-3 text-sm text-gray-700">
+        <div className="rounded-xl border border-gray-100 bg-white p-4 flex flex-col gap-2">
+          <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Groups &amp; roles</p>
+          <h2 className="font-semibold">Admins and members</h2>
+          <p>
+            Every group has admins who can create or delete sections, approve join requests, invite or remove members, and keep things tidy – while members simply add notes, items, photos and payments.
+          </p>
         </div>
-        <div className="rounded-lg border border-gray-100 bg-white p-4">
-          <h2 className="font-semibold mb-1">Clean shared workspace</h2>
-          <p>Jump straight from the groups list into a focused workspace, or use the overview grid to see everything at a glance.</p>
+        <div className="rounded-xl border border-gray-100 bg-white p-4 flex flex-col gap-2">
+          <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Sections</p>
+          <h2 className="font-semibold">Flexible building blocks</h2>
+          <p>
+            Create as many sections as you need: notes, lists, reminders, galleries, folders and payments. Mix them to fit your use-case – from "PG groceries" to "Trip itinerary" and "Family docs".
+          </p>
         </div>
-        <div className="rounded-lg border border-gray-100 bg-white p-4">
-          <h2 className="font-semibold mb-1">Checklists & reminders</h2>
-          <p>Keep track of tasks with lightweight lists and time-based reminders that can also email you when something is due.</p>
+        <div className="rounded-xl border border-gray-100 bg-white p-4 flex flex-col gap-2">
+          <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Workspace</p>
+          <h2 className="font-semibold">Calm group view</h2>
+          <p>
+            Switch between a focused workspace for one section and an overview grid that shows the whole group at a glance – no feeds, no noise, just shared context.
+          </p>
         </div>
-        <div className="rounded-lg border border-gray-100 bg-white p-4">
-          <h2 className="font-semibold mb-1">Shared expenses</h2>
-          <p>Record what people paid, split costs fairly, and see clear balances for every member in the group.</p>
+        <div className="rounded-xl border border-gray-100 bg-white p-4 flex flex-col gap-2">
+          <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Tasks</p>
+          <h2 className="font-semibold">Checklists &amp; reminders</h2>
+          <p>
+            Use shared lists to track chores, packing, or errands, and attach due dates so FRYLY can remind you when something is close or overdue.
+          </p>
+        </div>
+        <div className="rounded-xl border border-gray-100 bg-white p-4 flex flex-col gap-2">
+          <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Money</p>
+          <h2 className="font-semibold">Shared expenses</h2>
+          <p>
+            Record who paid for what, split bills fairly, and see simple balances per person after trips, dinners or monthly rent.
+          </p>
+        </div>
+        <div className="rounded-xl border border-gray-100 bg-white p-4 flex flex-col gap-2">
+          <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Staying in sync</p>
+          <h2 className="font-semibold">Notifications that matter</h2>
+          <p>
+            Get notified when someone joins your group, when admins approve requests, or when important activity happens – without turning your workspace into another noisy chat.
+          </p>
         </div>
       </div>
     </div>
