@@ -163,11 +163,21 @@ const BentoGrid = ({ sections, previews, allSections, groupId, onOpenCreateModal
                                                 {allSections && allSections
                                                     .filter(s => s.parentId === section.id)
                                                     .slice(0, 3)
-                                                    .map(child => (
-                                                        <span key={child.id} className="text-[10px] bg-gray-50 border border-gray-100 px-1.5 py-0.5 rounded text-gray-500 truncate max-w-[80px]">
-                                                            {child.title}
-                                                        </span>
-                                                    ))}
+                                                    .map(child => {
+                                                        // Bold color coding based on child type
+                                                        const childBgClass = child.type === 'NOTE' ? 'bg-blue-100 border-blue-200 text-blue-700'
+                                                            : child.type === 'LIST' ? 'bg-emerald-100 border-emerald-200 text-emerald-700'
+                                                            : child.type === 'GALLERY' ? 'bg-rose-100 border-rose-200 text-rose-700'
+                                                            : child.type === 'REMINDER' ? 'bg-amber-100 border-amber-200 text-amber-700'
+                                                            : child.type === 'PAYMENT' ? 'bg-purple-100 border-purple-200 text-purple-700'
+                                                            : child.type === 'CALENDAR' ? 'bg-indigo-100 border-indigo-200 text-indigo-700'
+                                                            : 'bg-gray-100 border-gray-200 text-gray-700';
+                                                        return (
+                                                            <span key={child.id} className={`text-[10px] ${childBgClass} border px-1.5 py-0.5 rounded font-medium truncate max-w-[80px]`}>
+                                                                {child.title}
+                                                            </span>
+                                                        );
+                                                    })}
                                                 {childrenCount > 3 && <span className="text-[10px] text-gray-400 self-center">+ more</span>}
                                             </div>
                                         </div>

@@ -112,16 +112,12 @@ const FolderView = ({ sectionId, allSections, onOpenCreateModal, onSelectSection
                                         )}
                                     </ul>
                                 ) : preview?.kind === 'GALLERY' ? (
-                                    <div className="flex gap-1 overflow-hidden h-8">
-                                        {preview.images?.length ? preview.images.slice(0, 3).map((img, idx) => (
-                                            img.type?.startsWith('image/') ? (
-                                                <img key={idx} src={img.url} alt="" className="h-8 w-8 object-cover rounded-md border border-gray-100" />
-                                            ) : (
-                                                <div key={idx} className="h-8 w-8 bg-gray-100 rounded-md border border-gray-200 flex items-center justify-center text-gray-400 text-[8px]">FILE</div>
-                                            )
-                                        )) : (
-                                            <span className="text-gray-400 flex items-center h-full">No files</span>
-                                        )}
+                                    <div className="flex flex-col gap-1">
+                                        <p className="text-[10px] text-gray-600">
+                                            {typeof preview.totalCount === 'number' && preview.totalCount > 0
+                                                ? `${preview.totalCount} file${preview.totalCount !== 1 ? 's' : ''} stored`
+                                                : 'No files yet'}
+                                        </p>
                                     </div>
                                 ) : preview?.kind === 'PAYMENT' ? (
                                     <p className={`text-sm font-semibold ${preview.balance > 0 ? 'text-emerald-600' : preview.balance < 0 ? 'text-red-600' : 'text-gray-600'}`}>
