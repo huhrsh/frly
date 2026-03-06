@@ -43,7 +43,7 @@ const Header = () => {
             <div className="mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
                     <div className="flex-shrink-0 flex items-center">
-                        <Link to={user ? "/dashboard" : "/"} className="text-2xl font-[Inter] font-extrabold text-blue-600 flex items-center uppercase tracking-tight">
+                        <Link to={user ? "/dashboard" : "/"} className="uppercase text-2xl font-[Inter] font-extrabold text-blue-600 flex items-center tracking-tight">
                         <img src="/teamwork.png" alt="Fryly logo" className="h-7 w-7 mr-2" />
                             Fryly
                         </Link>
@@ -78,7 +78,7 @@ const Header = () => {
                                             onClick={handleProfile}
                                             className="w-full text-left px-3 py-2 hover:bg-gray-50 text-gray-700"
                                         >
-                                            Update profile
+                                            Profile
                                         </button>
                                         <button
                                             type="button"

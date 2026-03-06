@@ -75,4 +75,12 @@ public class UserService {
             throw new RuntimeException("Failed to upload avatar", e);
         }
     }
+
+    public UserDto deleteAvatar(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setPfpUrl(null);
+        User saved = userRepository.save(user);
+        return userMapper.toUserDto(saved);
+    }
 }

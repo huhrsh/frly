@@ -1,53 +1,52 @@
 package com.example.frly.email;
 
-import jakarta.mail.internet.MimeMessage;
+
+import com.sendgrid.*;
+import com.sendgrid.helpers.mail.Mail;
+import com.sendgrid.helpers.mail.objects.Content;
+import com.sendgrid.helpers.mail.objects.Email;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class EmailService {
 
-    private final JavaMailSender mailSender;
+    @Value("${app.mail.from:frylyapp@gmail.com}")
+    private String fromAddress = "frylyapp@gmail.com";
 
-    @Value("${app.mail.from:frlyofficial@gmail.com}")
-    private String fromAddress = "frlyofficial@gmail.com";
+    @Value("${sendgrid.api.key}")
+    private String sendGridApiKey;
 
     public void sendPlainText(String to, String subject, String body) {
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(to);
-            message.setFrom(fromAddress);
-            message.setSubject(subject);
-            message.setText(body);
-            mailSender.send(message);
-            log.info("Sent email to {} with subject {}", to, subject);
-        } catch (Exception ex) {
-            log.error("Failed to send email to {}", to, ex);
-        }
+        sendEmail(to, subject, body, false);
     }
 
     public void sendHtml(String to, String subject, String htmlBody) {
+        sendEmail(to, subject, htmlBody, true);
+    }
+
+    private void sendEmail(String to, String subject, String content, boolean isHtml) {
+        Email from = new Email(fromAddress);
+        Email toEmail = new Email(to);
+        Content mailContent = new Content(isHtml ? "text/html" : "text/plain", content);
+        Mail mail = new Mail(from, subject, toEmail, mailContent);
+        SendGrid sg = new SendGrid(sendGridApiKey);
+        Request request = new Request();
         try {
-            MimeMessage mimeMessage = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "UTF-8");
-            helper.setTo(to);
-            helper.setFrom(fromAddress);
-            helper.setSubject(subject);
-            helper.setText(htmlBody, true);
-            mailSender.send(mimeMessage);
-            log.info("Sent HTML email to {} with subject {}", to, subject);
+            request.setMethod(Method.POST);
+            request.setEndpoint("mail/send");
+            request.setBody(mail.build());
+            Response response = sg.api(request);
+            log.info("Sent {} email to {} with subject {}. Status: {}", isHtml ? "HTML" : "plain text", to, subject, response.getStatusCode());
         } catch (Exception ex) {
-            log.error("Failed to send HTML email to {}", to, ex);
+            log.error("Failed to send {} email to {}", isHtml ? "HTML" : "plain text", to, ex);
         }
     }
 

@@ -67,4 +67,11 @@ public class UserController {
         Long userId = com.example.frly.auth.AuthUtil.getCurrentUserId();
         return ResponseEntity.ok(groupService.getUserGroups(userId));
     }
+
+    @DeleteMapping("/me/avatar")
+    public ResponseEntity<UserDto> deleteAvatar() {
+        Long userId = com.example.frly.auth.AuthUtil.getCurrentUserId();
+        UserDto updated = userService.deleteAvatar(userId);
+        return ResponseEntity.ok(updated);
+    }
 }

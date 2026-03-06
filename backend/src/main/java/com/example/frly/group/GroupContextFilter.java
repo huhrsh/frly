@@ -21,19 +21,19 @@ public class GroupContextFilter implements Filter {
             throws IOException, ServletException {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         String groupId = httpRequest.getHeader("X-Group-ID");
-        log.debug(TENANT_FILTER_PROCESS + ": " + groupId);
+//        log.debug(TENANT_FILTER_PROCESS + ": " + groupId);
         if (groupId != null && !groupId.isEmpty()) {
             GroupContext.setGroupId(groupId);
-            log.info(TENANT_FILTER_SET + ": " + groupId);
+//            log.info(TENANT_FILTER_SET + ": " + groupId);
         } else {
             GroupContext.clear();
-            log.warn(TENANT_FILTER_NO_ID);
+//            log.warn(TENANT_FILTER_NO_ID);
         }
         try {
             chain.doFilter(request, response);
         } finally {
             GroupContext.clear();
-            log.debug(TENANT_FILTER_CLEAR);
+//            log.debug(TENANT_FILTER_CLEAR);
         }
     }
 }

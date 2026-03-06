@@ -164,7 +164,7 @@ const Profile = () => {
         <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                 <div>
-                    <h1 className="text-xl font-semibold text-gray-900">Account</h1>
+                    <h1 className="text-xl font-semibold text-gray-900">Profile</h1>
                     <p className="text-xs text-gray-500 mt-1">Manage your personal details, avatar and security.</p>
                 </div>
                 <button
@@ -178,8 +178,8 @@ const Profile = () => {
 
             <form className="space-y-6" onSubmit={handleSubmit}>
                 <div className="flex flex-col sm:flex-row gap-6">
-                    <div className="flex flex-col items-center sm:items-start w-full sm:w-40">
-                        <div className="h-20 w-20 rounded-full bg-blue-50 flex items-center justify-center overflow-hidden border border-blue-100 text-blue-600 font-semibold text-xl mb-3">
+                    <div className="flex flex-col items-center sm:items-center w-full sm:w-40">
+                        <div className="h-28 w-28 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden border border-blue-200 text-blue-600 font-semibold text-lg mb-3">
                             {form.pfpUrl ? (
                                 <img src={form.pfpUrl} alt="Profile" className="h-full w-full object-cover" />
                             ) : (
@@ -196,6 +196,36 @@ const Profile = () => {
                                 disabled={uploading}
                             />
                         </label>
+                        {form.pfpUrl && (
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    try {
+                                        const res = await axiosClient.delete('/users/me/avatar');
+                                        const updated = res.data;
+                                        setForm((prev) => ({
+                                            ...prev,
+                                            pfpUrl: '',
+                                        }));
+                                        updateUser({
+                                            id: updated.id,
+                                            email: updated.email,
+                                            firstName: updated.firstName,
+                                            lastName: updated.lastName,
+                                            contact: updated.contact,
+                                            pfpUrl: updated.pfpUrl,
+                                        });
+                                        toast.success('Profile picture removed');
+                                    } catch (error) {
+                                        console.error('Failed to remove avatar', error);
+                                        toast.error('Failed to remove profile picture');
+                                    }
+                                }}
+                                className="mt-2 px-3 py-1.5 rounded-md border border-gray-300 bg-white text-[11px] font-medium text-gray-700 hover:bg-gray-50 hover:text-red-600 transition"
+                            >
+                                Remove picture
+                            </button>
+                        )}
                     </div>
 
                     <div className="flex-1 space-y-4">
