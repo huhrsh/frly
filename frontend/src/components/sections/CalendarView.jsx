@@ -24,7 +24,8 @@ const CalendarView = ({ sectionId }) => {
     start: '',
     end: '',
     location: '',
-    category: 'GENERAL'
+    category: 'GENERAL',
+    memberIds: []
   });
   const [editingId, setEditingId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -110,6 +111,7 @@ const CalendarView = ({ sectionId }) => {
       end: '',
       location: '',
       category: 'GENERAL',
+      memberIds: [],
     });
     setEditingId(null);
   };
@@ -124,6 +126,7 @@ const CalendarView = ({ sectionId }) => {
         endTime: form.end || null,
         location: form.location,
         category: form.category,
+        memberIds: Array.isArray(form.memberIds) ? form.memberIds : [],
       };
       if (editingId) {
         await axiosClient.put(`/groups/sections/calendar-events/${editingId}`, payload);
@@ -158,6 +161,7 @@ const CalendarView = ({ sectionId }) => {
       end: toLocalInput(end),
       location: ev.location || '',
       category: ev.category || 'GENERAL',
+      memberIds: Array.isArray(ev.memberIds) ? ev.memberIds : [],
     });
   };
 
@@ -190,6 +194,33 @@ const CalendarView = ({ sectionId }) => {
   };
 
   const monthLabel = monthCursor.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+
+  const now = new Date();
+  const upcomingEvents = events
+    .filter((ev) => {
+      if (!ev.startTime) return false;
+      const start = new Date(ev.startTime);
+      const end = ev.endTime ? new Date(ev.endTime) : null;
+      // If we have an end time, treat events as upcoming/current until they finish.
+      if (end) {
+        return end >= now;
+      }
+      // Otherwise fall back to start time.
+      return start >= now;
+    })
+    .sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+
+  const pastEvents = events
+    .filter((ev) => {
+      if (!ev.startTime) return false;
+      const start = new Date(ev.startTime);
+      const end = ev.endTime ? new Date(ev.endTime) : null;
+      if (end) {
+        return end < now;
+      }
+      return start < now;
+    })
+    .sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
 
   return (
     <div className="h-full flex flex-col sm:p-4">
@@ -503,42 +534,70 @@ const CalendarView = ({ sectionId }) => {
             </form>
         </div>
 
-        {/* Right column: upcoming events only */}
+        {/* Right column: upcoming and past events */}
         <div className="bg-white rounded-xl border border-gray-100 p-3 flex flex-col">
           <div className="w-full flex flex-col">
-              <div className="flex items-center justify-between mb-2">
-              <p className="text-[11px] font-medium text-gray-600 uppercase tracking-wide">Upcoming events</p>
-            </div>
-            <div className="max-h-56 overflow-y-auto space-y-2">
-              {events
-                .filter((ev) => ev.startTime && new Date(ev.startTime) >= new Date())
-                .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
-                .slice(0, 8)
-                .map((ev) => (
-                  <div key={ev.id} className="flex items-center justify-between text-[11px] text-gray-700 py-1">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-[11px] font-medium text-gray-600 uppercase tracking-wide">Upcoming events</p>
+              </div>
+            <div className="max-h-40 overflow-y-auto space-y-2">
+              {upcomingEvents.slice(0, 8).map((ev) => (
+                  <div key={ev.id} className="flex items-center justify-between text-xs text-gray-800 py-1">
                     <div className="min-w-0">
                       <p className="truncate font-medium">{ev.title}</p>
-                      <p className="text-[10px] text-gray-400">
+                      <p className="text-[11px] text-gray-500">
                         {new Date(ev.startTime).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}{' '}
                         · {new Date(ev.startTime).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                       </p>
                       {ev.location && (
-                        <p className="text-[10px] text-gray-400 truncate">
+                        <p className="text-[11px] text-gray-500 truncate">
                           <MapPin size={10} className="inline mr-1" />
                           {ev.location}
                         </p>
                       )}
                     </div>
                     {Array.isArray(ev.memberIds) && ev.memberIds.length > 0 && (
-                      <span className="ml-2 text-[10px] text-gray-500 whitespace-nowrap">
+                      <span className="ml-2 text-[11px] text-gray-500 whitespace-nowrap">
                         {ev.memberIds.length} going
                       </span>
                     )}
                   </div>
                 ))}
-              {events.filter((ev) => ev.startTime && new Date(ev.startTime) >= new Date()).length === 0 && (
-                <p className="text-[11px] text-gray-400">No upcoming events.</p>
+              {upcomingEvents.length === 0 && (
+                <p className="text-xs text-gray-400">No upcoming events.</p>
               )}
+            </div>
+            <div className="mt-3 border-t border-gray-100 pt-2">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-[11px] font-medium text-gray-600 uppercase tracking-wide">Past events</p>
+              </div>
+              <div className="max-h-40 overflow-y-auto space-y-2">
+                {pastEvents.slice(0, 8).map((ev) => (
+                  <div key={ev.id} className="flex items-center justify-between text-xs text-gray-800 py-1">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{ev.title}</p>
+                      <p className="text-[11px] text-gray-500">
+                        {new Date(ev.startTime).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}{' '}
+                        · {new Date(ev.startTime).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                      {ev.location && (
+                        <p className="text-[11px] text-gray-500 truncate">
+                          <MapPin size={10} className="inline mr-1" />
+                          {ev.location}
+                        </p>
+                      )}
+                    </div>
+                    {Array.isArray(ev.memberIds) && ev.memberIds.length > 0 && (
+                      <span className="ml-2 text-[11px] text-gray-500 whitespace-nowrap">
+                        {ev.memberIds.length} went
+                      </span>
+                    )}
+                  </div>
+                ))}
+                {pastEvents.length === 0 && (
+                  <p className="text-xs text-gray-400">No past events yet.</p>
+                )}
+              </div>
             </div>
           </div>
         </div>

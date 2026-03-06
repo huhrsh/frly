@@ -144,11 +144,26 @@ const BentoGrid = ({ sections, previews, allSections, groupId, onOpenCreateModal
                                     ) : (
                                         <p className="text-xs text-gray-400">No events today</p>
                                     )}
-                                    {typeof preview.totalCount === 'number' && preview.totalCount > 0 && (
-                                        <p className="text-[10px] text-gray-400 mt-1">
-                                            {preview.totalCount} total event{preview.totalCount !== 1 ? 's' : ''}
-                                        </p>
-                                    )}
+                                    <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] text-gray-500">
+                                        {(preview.todayCount ?? (preview.todayEvents?.length || 0)) > 0 && (
+                                            <span>
+                                                Today: {preview.todayCount ?? preview.todayEvents.length}
+                                            </span>
+                                        )}
+                                        {(preview.upcomingCount ?? 0) > 0 && (
+                                            <span>
+                                                Upcoming: {preview.upcomingCount}
+                                            </span>
+                                        )}
+                                        {(preview.pastCount ?? 0) > 0 && (
+                                            <span>
+                                                Past: {preview.pastCount}
+                                            </span>
+                                        )}
+                                        {(!preview.totalCount || preview.totalCount === 0) && (
+                                            <span>No events yet</span>
+                                        )}
+                                    </div>
                                 </div>
                             ) : (
                                 // Folder

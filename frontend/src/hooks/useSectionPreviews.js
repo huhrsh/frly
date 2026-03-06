@@ -84,6 +84,9 @@ export const useSectionPreviews = (sections) => {
                         const today = new Date();
                         today.setHours(0, 0, 0, 0);
 
+                        const tomorrow = new Date(today);
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+
                         const isSameDay = (a, b) => {
                             const da = new Date(a);
                             const db = new Date(b);
@@ -100,10 +103,17 @@ export const useSectionPreviews = (sections) => {
                                 startTime: ev.startTime,
                             }));
 
+                        const pastCount = events.filter(ev => ev.startTime && new Date(ev.startTime) < today).length;
+                        const upcomingCount = events.filter(ev => ev.startTime && new Date(ev.startTime) >= tomorrow).length;
+                        const todayCount = todayEvents.length;
+
                         newPreviews[section.id] = {
                             kind: 'CALENDAR',
                             todayEvents,
                             totalCount: events.length,
+                            pastCount,
+                            todayCount,
+                            upcomingCount,
                         };
                     }
                 } catch (error) {

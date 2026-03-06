@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import axiosClient from '../api/axiosClient';
+import PasswordInput from '../components/PasswordInput';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -41,6 +42,10 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!password || password.length < 8) {
+            toast.error('Password must be at least 8 characters');
+            return;
+        }
         try {
             await login(email, password);
             navigate(from, { replace: true });
@@ -108,11 +113,11 @@ const Login = () => {
                                     </button>
                                 </div>
                             </div>
+                            <p className="mt-0.5 text-[11px] text-slate-500">Minimum 8 characters.</p>
                             <div className="mt-2">
-                                <input
+                                <PasswordInput
                                     id="password"
                                     name="password"
-                                    type="password"
                                     autoComplete="current-password"
                                     required
                                     value={password}

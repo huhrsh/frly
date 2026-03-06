@@ -161,7 +161,7 @@ const GroupView = () => {
     useEffect(() => {
         const params = new URLSearchParams(location.search || '');
         if (params.get('manage') === '1' && currentGroup && currentGroup.id === parseInt(groupId)) {
-            setShowManageModal(true);
+            handleOpenManageModal();
         }
     }, [location.search, currentGroup, groupId]);
 
@@ -339,10 +339,23 @@ const GroupView = () => {
         setShowCreateModal(true);
     };
 
+    const handleOpenManageModal = () => {
+        if (!currentGroup) return;
+        // Refresh latest data every time the manage modal opens
+        fetchSections();
+        fetchMembers();
+        if (currentGroup.currentUserRole === 'ADMIN') {
+            fetchPendingRequests();
+        }
+        setShowManageModal(true);
+    };
+
     const handleApproveRequest = async (memberId) => {
         try {
             await axiosClient.patch(`/groups/members/${memberId}/approve`);
             setPendingRequests(prev => prev.filter(r => r.memberId !== memberId));
+            // Refresh members so the approved user appears immediately in lists
+            await fetchMembers();
             toast.success('Member approved successfully.');
         } catch (error) {
             console.error('Failed to approve member', error);
@@ -527,7 +540,7 @@ const GroupView = () => {
                                 {currentGroup && (
                                     <button
                                         type="button"
-                                        onClick={() => setShowManageModal(true)}
+                                        onClick={handleOpenManageModal}
                                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 bg-white text-[11px] font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300"
                                     >
                                         {currentGroup.currentUserRole === 'ADMIN' ? 'Manage group' : 'View group'}
@@ -943,7 +956,7 @@ const GroupView = () => {
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => setShowManageModal(true)}
+                                    onClick={handleOpenManageModal}
                                     className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 bg-white hover:bg-gray-50"
                                 >
                                     Manage group
@@ -952,7 +965,7 @@ const GroupView = () => {
                         ) : (
                             <button
                                 type="button"
-                                onClick={() => setShowManageModal(true)}
+                                onClick={handleOpenManageModal}
                                 className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 bg-white hover:bg-gray-50"
                             >
                                 View group

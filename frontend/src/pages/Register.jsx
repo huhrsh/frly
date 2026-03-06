@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import PasswordInput from '../components/PasswordInput';
 
 const Register = () => {
     const [firstName, setFirstName] = useState('');
@@ -13,12 +14,17 @@ const Register = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!password || password.length < 8) {
+            toast.error('Password must be at least 8 characters');
+            return;
+        }
         try {
             await register(firstName, lastName, email, password);
             toast.success('Registration successful! Please login.');
             navigate('/login');
         } catch (error) {
-            toast.error('Registration failed. Please try again.');
+            const msg = error?.response?.data?.message || 'Registration failed. Please try again.';
+            toast.error(msg);
         }
     };
 
@@ -92,9 +98,9 @@ const Register = () => {
 
                         <div>
                             <label htmlFor="password" className="block text-sm font-medium leading-6 text-gray-900">Password</label>
+                            <p className="mt-0.5 text-[11px] text-slate-500">Minimum 8 characters.</p>
                             <div className="mt-2">
-                                <input
-                                    type="password"
+                                <PasswordInput
                                     id="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
