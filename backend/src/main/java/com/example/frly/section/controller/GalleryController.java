@@ -37,6 +37,12 @@ public class GalleryController {
                 .collect(Collectors.toList()));
     }
 
+    @GetMapping("/{sectionId}/gallery/count")
+    public ResponseEntity<Long> getGalleryItemCount(@PathVariable Long sectionId) {
+        long count = galleryService.getItemCount(sectionId);
+        return ResponseEntity.ok(count);
+    }
+
     @DeleteMapping("/gallery/{itemId}")
     public ResponseEntity<Void> deleteGalleryItem(@PathVariable Long itemId) throws IOException {
         galleryService.deleteItem(itemId);

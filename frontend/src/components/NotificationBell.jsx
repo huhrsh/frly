@@ -26,14 +26,41 @@ const NotificationBell = () => {
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const containerRef = useRef(null);
+    const [page, setPage] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
+    const pollingRef = useRef(null);
 
-    const fetchNotifications = async () => {
+    const fetchUnreadCount = async () => {
+        try {
+            const response = await axiosClient.get('/notifications/unread-count');
+            const data = response.data;
+            const count = typeof data === 'number' ? data : (data && typeof data.count === 'number' ? data.count : 0);
+            setUnreadCount(count);
+        } catch (error) {
+            console.error('Failed to load unread notification count', error);
+        }
+    };
+
+    const fetchNotificationsPage = async (pageToLoad = 0) => {
         setLoading(true);
         try {
-            const response = await axiosClient.get('/notifications');
-            const items = response.data || [];
-            setNotifications(items);
-            setUnreadCount(items.filter(n => !n.read).length);
+            const response = await axiosClient.get('/notifications', {
+                params: { page: pageToLoad, size: 10 },
+            });
+            const data = response.data || {};
+            const items = data.content || data.items || [];
+            if (pageToLoad === 0) {
+                setNotifications(items);
+            } else {
+                setNotifications(prev => {
+                    const existingIds = new Set(prev.map(n => n.id));
+                    const toAdd = items.filter(n => !existingIds.has(n.id));
+                    return [...prev, ...toAdd];
+                });
+            }
+            const isLast = typeof data.last === 'boolean' ? data.last : items.length < 10;
+            setHasMore(!isLast);
+            setPage(pageToLoad);
         } catch (error) {
             console.error('Failed to load notifications', error);
         } finally {
@@ -41,10 +68,14 @@ const NotificationBell = () => {
         }
     };
 
+    // NOTE: We previously polled the unread-count every 10 seconds.
+    // To reduce load in the early stages, this polling is disabled.
+    // We now fetch counts only when the user opens the notification panel.
+    //
+
+    // Fetch unread count once on mount (no polling)
     useEffect(() => {
-        // Fetch once on mount so the badge is correct on page load
-        fetchNotifications();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        fetchUnreadCount();
     }, []);
 
     useEffect(() => {
@@ -65,8 +96,15 @@ const NotificationBell = () => {
     const toggleOpen = () => {
         const next = !open;
         setOpen(next);
-        if (next && !loading) {
-            fetchNotifications();
+        if (next) {
+            // Reset pagination and load notifications + latest count only when opening
+            setNotifications([]);
+            setHasMore(true);
+            setPage(0);
+            if (!loading) {
+                fetchUnreadCount();
+                fetchNotificationsPage(0);
+            }
         }
     };
 
@@ -80,6 +118,13 @@ const NotificationBell = () => {
         }
     };
 
+    const handleScroll = (event) => {
+        const target = event.currentTarget;
+        if (!loading && hasMore && target.scrollTop + target.clientHeight >= target.scrollHeight - 16) {
+            fetchNotificationsPage(page + 1);
+        }
+    };
+
     return (
         <div className="relative" ref={containerRef}>
             <button
@@ -89,19 +134,38 @@ const NotificationBell = () => {
             >
                 <Bell size={18} />
                 {unreadCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold">
-                        {unreadCount}
+                    <span className="absolute top-1 right-1 h-2 w-2 inline-flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">
+                        
                     </span>
                 )}
             </button>
 
             {open && (
                 <div className="absolute right-0 mt-2 w-72 bg-white rounded-md shadow-lg border border-gray-100 z-50">
-                    <div className="px-3 py-2 border-b flex items-center justify-between">
+                    <div className="px-3 py-2 border-b flex items-center justify-between gap-2">
                         <span className="text-xs font-semibold text-gray-700">Notifications</span>
-                        {loading && <span className="text-[10px] text-gray-400">Loading...</span>}
+                        <div className="flex items-center gap-2">
+                            {unreadCount > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        try {
+                                            await axiosClient.post('/notifications/mark-all-read');
+                                            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                                            setUnreadCount(0);
+                                        } catch (error) {
+                                            console.error('Failed to mark all notifications as read', error);
+                                        }
+                                    }}
+                                    className="text-[10px] text-blue-600 hover:text-blue-800"
+                                >
+                                    Mark all read
+                                </button>
+                            )}
+                            {loading && <span className="text-[10px] text-gray-400">Loading...</span>}
+                        </div>
                     </div>
-                    <div className="max-h-80 overflow-y-auto">
+                    <div className="max-h-80 overflow-y-auto" onScroll={handleScroll}>
                         {notifications.length === 0 && !loading ? (
                             <div className="px-3 py-4 text-xs text-gray-400 text-center">
                                 No notifications yet.

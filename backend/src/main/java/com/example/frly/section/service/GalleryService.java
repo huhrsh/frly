@@ -89,6 +89,11 @@ public class GalleryService {
         return galleryItemRepository.findBySectionIdAndStatusNotOrderByCreatedAtDesc(sectionId, com.example.frly.common.enums.RecordStatus.DELETED);
     }
 
+    public long getItemCount(Long sectionId) {
+        groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
+        return galleryItemRepository.countBySectionIdAndStatusNot(sectionId, com.example.frly.common.enums.RecordStatus.DELETED);
+    }
+
     @Transactional
     public void deleteItem(Long itemId) throws IOException {
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());

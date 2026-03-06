@@ -55,15 +55,11 @@ export const useSectionPreviews = (sections) => {
                             }))
                         };
                     } else if (section.type === 'GALLERY') {
-                        const res = await axiosClient.get(`/groups/sections/${section.id}/gallery`);
-                        const items = Array.isArray(res.data) ? res.data : [];
+                        const res = await axiosClient.get(`/groups/sections/${section.id}/gallery/count`);
+                        const totalCount = typeof res.data === 'number' ? res.data : 0;
                         newPreviews[section.id] = {
                             kind: 'GALLERY',
-                            images: items.slice(0, 4).map(img => ({
-                                url: img.url,
-                                type: img.contentType
-                            })),
-                            totalCount: items.length
+                            totalCount
                         };
                     } else if (section.type === 'PAYMENT') {
                         const [balancesRes, expensesRes] = await Promise.all([
