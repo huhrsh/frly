@@ -55,7 +55,7 @@ const Login = () => {
                 <div className="hidden lg:block">
                     <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 px-8 py-10 space-y-4">
                         <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
-                            Welcome back to <span className="text-blue-600">FRYLY</span>
+                            Welcome back to <span className="text-blue-600 lowercase">fryly</span>
                         </h1>
                         <p className="text-sm text-gray-700 max-w-md">
                             Jump straight into your shared spaces, notes, lists and reminders. Everything in your groups stays organised and secure.

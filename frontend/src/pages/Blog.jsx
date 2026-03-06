@@ -5,7 +5,7 @@ const Blog = () => {
     <div className="max-w-3xl mx-auto py-10 px-4 sm:px-6">
       <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-3">Blog</h1>
       <p className="text-sm text-gray-600 mb-4">
-        The blog will eventually share short notes on how groups use FRYLY in real life, along with product updates and small design decisions.
+        The blog will eventually share short notes on how groups use fryly in real life, along with product updates and small design decisions.
       </p>
       <p className="text-sm text-gray-600">
         For now there are no public posts yet. Check back after a few more product iterations.

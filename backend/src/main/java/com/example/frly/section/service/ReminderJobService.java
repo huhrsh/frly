@@ -31,7 +31,7 @@ public class ReminderJobService {
     private final NotificationService notificationService;
 
     // Run roughly once an hour instead of every minute to reduce load
-    @Scheduled(fixedRate = 3_600_000)
+    @Scheduled(fixedRate = 60_000)
     public void processDueReminders() {
         String originalGroupId = GroupContext.getGroupId();
         try {
@@ -71,7 +71,7 @@ public class ReminderJobService {
             // Respect user-level preference for EMAILS only; in-app notifications are still created.
             if (user.isReminderEmailEnabled()) {
                 try {
-                    String subject = "FRYLY reminder: " + reminder.getTitle();
+                    String subject = "fryly reminder: " + reminder.getTitle();
                     String template = emailService.loadTemplate("email/reminder-due.html");
                     String description = reminder.getDescription() != null ? reminder.getDescription() : "";
 

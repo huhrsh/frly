@@ -117,7 +117,7 @@ const BentoGrid = ({ sections, previews, allSections, groupId, onOpenCreateModal
                                             ? `${preview.totalCount} file${preview.totalCount !== 1 ? 's' : ''} stored`
                                             : 'No files yet'}
                                     </p>
-                                    <p className="text-[10px] text-gray-400">Open to browse and upload files.</p>
+                                    {/* <p className="text-[10px] text-gray-400">Open to browse and upload files.</p> */}
                                 </div>
                             ) : preview?.kind === 'PAYMENT' ? (
                                 <div className="flex flex-col gap-1">

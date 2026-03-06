@@ -42,8 +42,11 @@ public class PaymentService {
     @Transactional
     public Long addExpense(Long sectionId, CreatePaymentExpenseRequestDto request) {
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
-
-        Section section = sectionRepository.getReferenceById(sectionId);
+        Section section = sectionRepository.findById(sectionId)
+                .orElseThrow(() -> new BadRequestException("Section not found"));
+        if (section.getStatus() == RecordStatus.DELETED) {
+            throw new BadRequestException("Section is deleted");
+        }
         if (section.getType() != SectionType.PAYMENT) {
             throw new BadRequestException("Cannot add payment expense to non-PAYMENT section");
         }
@@ -163,7 +166,11 @@ public class PaymentService {
     @Transactional(readOnly = true)
     public List<PaymentExpenseDto> getExpenses(Long sectionId) {
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
-
+        Section section = sectionRepository.findById(sectionId)
+                .orElseThrow(() -> new BadRequestException("Section not found"));
+        if (section.getStatus() == RecordStatus.DELETED) {
+            return List.of();
+        }
         List<PaymentExpense> expenses = paymentExpenseRepository.findBySectionIdAndStatusNotOrderByExpenseDateDesc(sectionId, com.example.frly.common.enums.RecordStatus.DELETED);
         List<PaymentShare> allShares = paymentShareRepository.findByExpenseSectionIdAndStatusNot(sectionId, com.example.frly.common.enums.RecordStatus.DELETED);
 
@@ -203,7 +210,11 @@ public class PaymentService {
     @Transactional(readOnly = true)
     public List<PaymentBalanceDto> getBalances(Long sectionId) {
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
-
+        Section section = sectionRepository.findById(sectionId)
+                .orElseThrow(() -> new BadRequestException("Section not found"));
+        if (section.getStatus() == RecordStatus.DELETED) {
+            return List.of();
+        }
         List<PaymentExpense> expenses = paymentExpenseRepository.findBySectionIdAndStatusNotOrderByExpenseDateDesc(sectionId, com.example.frly.common.enums.RecordStatus.DELETED);
         List<PaymentShare> allShares = paymentShareRepository.findByExpenseSectionIdAndStatusNot(sectionId, com.example.frly.common.enums.RecordStatus.DELETED);
 

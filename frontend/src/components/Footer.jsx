@@ -5,10 +5,10 @@ const Footer = () => {
     return (
         <footer className="mt-10 border-t border-gray-200 bg-white pt-6 pb-4">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6 text-sm">
-                    <div>
-                        <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-                            FRYLY
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 mb-6 text-sm">
+                    <div className="col-span-2 sm:col-span-1">
+                        <span className="lowercase text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+                            fryly
                         </span>
                         <p className="mt-3 text-xs text-gray-500 leading-relaxed max-w-xs">
                             Organise your shared spaces, notes, and reminders in one simple, beautiful place.
@@ -32,13 +32,15 @@ const Footer = () => {
                                 <li><Link to="/careers" className="hover:text-blue-600 transition">Careers</Link></li>
                                 <li><Link to="/blog" className="hover:text-blue-600 transition">Blog</Link></li>
                                 <li><Link to="/contact" className="hover:text-blue-600 transition">Contact</Link></li>
+                                <li><Link to="/feedback" className="hover:text-blue-600 transition">Feedback</Link></li>
+                                <li><Link to="/review" className="hover:text-blue-600 transition">Reviews</Link></li>
                             </ul>
                         </div>
                 </div>
 
                 <div className="pt-4 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-3 text-xs text-gray-400">
                     <p>
-                        FRYLY · v0.1.0
+                        fryly · v0.1.0
                     </p>
                     <p>
                         Made with 💙 by 
