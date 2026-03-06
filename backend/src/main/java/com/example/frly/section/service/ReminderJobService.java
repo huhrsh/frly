@@ -1,5 +1,6 @@
 package com.example.frly.section.service;
 
+import com.example.frly.common.enums.RecordStatus;
 import com.example.frly.email.EmailService;
 import com.example.frly.group.GroupContext;
 import com.example.frly.group.model.Group;
@@ -44,7 +45,7 @@ public class ReminderJobService {
     @Transactional
     protected void processDueRemindersForCurrentGroup() {
         LocalDateTime now = LocalDateTime.now();
-        List<Reminder> due = reminderRepository.findByIsSentFalseAndNotifyTrueAndTriggerTimeLessThanEqual(now);
+        List<Reminder> due = reminderRepository.findByIsSentFalseAndNotifyTrueAndStatusAndTriggerTimeLessThanEqual(RecordStatus.ACTIVE, now);
 
         if (due.isEmpty()) {
             return;

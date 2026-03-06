@@ -5,11 +5,10 @@ import com.example.frly.user.User;
 import com.example.frly.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -31,12 +30,16 @@ public class NotificationService {
     }
 
     @Transactional(readOnly = true)
-    public List<NotificationDto> getCurrentUserNotifications() {
+    public Page<NotificationDto> getCurrentUserNotifications(Pageable pageable) {
         Long userId = AuthUtil.getCurrentUserId();
-        return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId)
-                .stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
+        return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable)
+                .map(this::toDto);
+    }
+
+    @Transactional(readOnly = true)
+    public long getCurrentUserUnreadCount() {
+        Long userId = AuthUtil.getCurrentUserId();
+        return notificationRepository.countByUserIdAndReadIsFalse(userId);
     }
 
     @Transactional
@@ -56,5 +59,16 @@ public class NotificationService {
         dto.setRead(notification.isRead());
         dto.setCreatedAt(notification.getCreatedAt());
         return dto;
+    }
+
+    @Transactional
+    public void markAllAsReadForCurrentUser() {
+        Long userId = AuthUtil.getCurrentUserId();
+        notificationRepository.findByUserIdOrderByCreatedAtDesc(userId)
+                .forEach(n -> {
+                    if (!n.isRead()) {
+                        n.setRead(true);
+                    }
+                });
     }
 }

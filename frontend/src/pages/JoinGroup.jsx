@@ -63,10 +63,11 @@ const JoinGroup = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-8">
+        <div className="min-h-screen-dvh bg-gray-50 flex items-center justify-center px-4 py-8">
             <div className="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
                 <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 px-6 py-8 sm:px-8">
                     <div className="grid grid-cols-1 lg:grid-cols-[1.2fr,1fr] gap-8 items-start">
+                        {/* Left: information */}
                         <div className="space-y-4">
                             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900">
                                 Join an existing group
@@ -82,15 +83,49 @@ const JoinGroup = () => {
                                     <li>Admins may still need to approve certain joins.</li>
                                 </ul>
                             </div>
+                        </div>
 
-                            <div className="mt-6">
+                        {/* Right: actions (join by code + invites) */}
+                        <div className="space-y-5">
+                            <div className="bg-slate-50/60 rounded-2xl border border-gray-100 px-4 py-6 sm:px-6">
+                                <h2 className="text-lg sm:text-xl font-semibold leading-7 tracking-tight text-slate-900 text-center">
+                                    Join Group by code
+                                </h2>
+                                <p className="mt-1 text-xs text-center text-slate-500">
+                                    Paste the invite code shared with you by a group admin.
+                                </p>
+
+                                <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
+                                    <div>
+                                        <label className="block text-sm font-medium leading-6 text-slate-900">
+                                            Invite Code
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={inviteCode}
+                                            onChange={(e) => setInviteCode(e.target.value)}
+                                            required
+                                            className="mt-2 block w-full rounded-lg border border-slate-200 bg-slate-50/60 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 px-3 tracking-widest uppercase"
+                                            placeholder="e.g. ABCD-1234"
+                                        />
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        className="w-full inline-flex justify-center items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition"
+                                    >
+                                        Request to join
+                                    </button>
+                                </form>
+                            </div>
+
+                            <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-5 sm:px-5">
                                 <div className="flex items-center justify-between gap-2">
                                     <h2 className="text-base font-semibold leading-6 text-slate-900">Pending invites</h2>
                                     <span className="inline-flex items-center justify-center rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-medium text-blue-700 border border-blue-100">
                                         {loadingInvites ? '...' : `${invites.length} invite${invites.length === 1 ? '' : 's'}`}
                                     </span>
                                 </div>
-                                <p className="mt-1 text-[11px] text-slate-500">These are direct group invites sent to your FRYLY account.</p>
                                 {loadingInvites ? (
                                     <p className="mt-3 text-xs text-slate-500">Loading your invites...</p>
                                 ) : invites.length === 0 ? (
@@ -98,10 +133,10 @@ const JoinGroup = () => {
                                 ) : (
                                     <ul className="mt-3 space-y-3">
                                         {invites.map((invite) => (
-                                            <li key={invite.id} className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+                                            <li key={invite.id} className="flex items-center justify-between rounded-lg border border-slate-100 bg-white px-3 py-2">
                                                 <div>
                                                     <p className="text-sm font-medium text-slate-900">{invite.groupDisplayName}</p>
-                                                    <p className="text-xs text-slate-500">Invited to this group</p>
+                                                    <p className="text-xs text-slate-500">Direct invite to this group</p>
                                                 </div>
                                                 <div className="flex gap-2">
                                                     <button
@@ -124,45 +159,6 @@ const JoinGroup = () => {
                                     </ul>
                                 )}
                             </div>
-                        </div>
-
-                        <div className="bg-slate-50/60 rounded-2xl border border-gray-100 px-4 py-6 sm:px-6">
-                            <h2 className="text-lg sm:text-xl font-semibold leading-7 tracking-tight text-slate-900 text-center">
-                                Join Group by code
-                            </h2>
-                            <p className="mt-1 text-xs text-center text-slate-500">Paste the invite code shared with you by a group admin.</p>
-
-                            {!loadingInvites && invites.length > 0 && (
-                                <div className="mt-5 mb-4 rounded-lg border border-blue-100 bg-blue-50/60 px-3 py-3 text-xs text-slate-700">
-                                    <p className="font-medium text-slate-900">You also have direct invites</p>
-                                    <p className="mt-1">
-                                        You can accept or decline them from the list on the left or from your dashboard.
-                                    </p>
-                                </div>
-                            )}
-
-                            <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
-                        <div>
-                            <label className="block text-sm font-medium leading-6 text-slate-900">
-                                Invite Code
-                            </label>
-                            <input
-                                type="text"
-                                value={inviteCode}
-                                onChange={(e) => setInviteCode(e.target.value)}
-                                required
-                                className="mt-2 block w-full rounded-lg border border-slate-200 bg-slate-50/60 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 px-3 tracking-widest uppercase"
-                                placeholder="e.g. ABCD-1234"
-                            />
-                        </div>
-
-                            <button
-                                type="submit"
-                                className="w-full inline-flex justify-center items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition"
-                            >
-                                Request to join
-                            </button>
-                            </form>
                         </div>
                     </div>
                 </div>

@@ -13,6 +13,7 @@ import {
     Edit2,
     UploadCloud
 } from 'lucide-react';
+import ConfirmModal from '../ConfirmModal';
 
 const GalleryView = ({ sectionId }) => {
     const [images, setImages] = useState([]);
@@ -24,6 +25,7 @@ const GalleryView = ({ sectionId }) => {
     const [previewText, setPreviewText] = useState(null);
     const [previewLoading, setPreviewLoading] = useState(false);
     const [previewError, setPreviewError] = useState(null);
+    const [deleteTarget, setDeleteTarget] = useState(null);
 
     // Menu state: { itemId: number | null }
     const [openMenuId, setOpenMenuId] = useState(null);
@@ -121,7 +123,6 @@ const GalleryView = ({ sectionId }) => {
     };
 
     const handleDelete = async (itemId) => {
-        if (!confirm("Delete this file?")) return;
         try {
             await axiosClient.delete(`/groups/sections/gallery/${itemId}`);
             setImages(images.filter(img => img.id !== itemId));
@@ -130,6 +131,11 @@ const GalleryView = ({ sectionId }) => {
             console.error("Delete failed", error);
             toast.error("Delete failed");
         }
+    };
+
+    const requestDelete = (item) => {
+        setDeleteTarget(item);
+        setOpenMenuId(null);
     };
 
     const startRename = (item) => {
@@ -410,7 +416,7 @@ const GalleryView = ({ sectionId }) => {
                                                 <Download size={14} /> Download
                                             </button>
                                             <button
-                                                onClick={() => handleDelete(img.id)}
+                                                onClick={() => requestDelete(img)}
                                                 className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                                             >
                                                 <Trash2 size={14} /> Delete
@@ -435,7 +441,7 @@ const GalleryView = ({ sectionId }) => {
             )}
 
             {previewItem && (
-                <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70" onClick={() => setPreviewItem(null)}>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={() => setPreviewItem(null)}>
                     <div
                         className="relative bg-white rounded-xl shadow-2xl max-w-6xl w-[95vw] max-h-[90vh] flex flex-col"
                         onClick={(e) => e.stopPropagation()}
@@ -509,6 +515,20 @@ const GalleryView = ({ sectionId }) => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {deleteTarget && (
+                <ConfirmModal
+                    title="Delete file?"
+                    message={`Are you sure you want to delete "${deleteTarget.title || deleteTarget.originalFilename}"? This cannot be undone.`}
+                    confirmLabel="Delete file"
+                    cancelLabel="Cancel"
+                    onConfirm={async () => {
+                        await handleDelete(deleteTarget.id);
+                        setDeleteTarget(null);
+                    }}
+                    onCancel={() => setDeleteTarget(null)}
+                />
             )}
         </div>
     );
