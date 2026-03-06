@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'react-toastify';
 import { Trash2, PlusCircle } from 'lucide-react';
 
 const GroupManageModal = ({
@@ -74,7 +75,13 @@ const GroupManageModal = ({
                     className="text-[11px] px-2 py-1 rounded bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200"
                     onClick={() => {
                       if (!group?.inviteCode) return;
-                      navigator.clipboard.writeText(group.inviteCode).catch(() => {});
+                      navigator.clipboard.writeText(group.inviteCode)
+                        .then(() => {
+                          toast.success('Invite code copied');
+                        })
+                        .catch(() => {
+                          toast.error('Could not copy invite code');
+                        });
                     }}
                   >
                     Copy

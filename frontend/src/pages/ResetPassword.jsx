@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import { toast } from 'react-toastify';
+import { useAuth } from '../context/AuthContext';
+import PasswordInput from '../components/PasswordInput';
 
 const useQuery = () => {
   return new URLSearchParams(useLocation().search);
@@ -11,10 +13,19 @@ const ResetPassword = () => {
   const query = useQuery();
   const navigate = useNavigate();
   const token = query.get('token') || '';
+  const { user, logout } = useAuth();
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // If user is already logged in, log them out when visiting reset page
+  useEffect(() => {
+    if (user) {
+      logout();
+      toast.info('You have been signed out to reset your password.');
+    }
+  }, [user, logout]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -53,8 +64,8 @@ const ResetPassword = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-800 mb-1">New password</label>
-            <input
-              type="password"
+            <p className="text-[11px] text-gray-500 mb-1">Minimum 8 characters.</p>
+            <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -63,8 +74,7 @@ const ResetPassword = () => {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-800 mb-1">Confirm password</label>
-            <input
-              type="password"
+            <PasswordInput
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"

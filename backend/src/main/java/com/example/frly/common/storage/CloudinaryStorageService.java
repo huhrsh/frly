@@ -26,9 +26,12 @@ public class CloudinaryStorageService implements FileStorageService {
         Map<String, Object> uploadResult = cloudinary.uploader().upload(file.getBytes(),
                 ObjectUtils.asMap(
                         "folder", folder,
-                        "resource_type", "auto", // Detect image/video/raw
-                        "use_filename", true,    // Use the original filename
-                        "unique_filename", false // Keep the name as is (handle uniqueness via folder if needed, or let cloudinary append random if conflict? - actually better to keep unique_filename default true but use_filename true puts name in public_id)
+                "resource_type", "auto", // Detect image/video/raw
+                // Use the original filename for readability, but keep
+                // Cloudinary's default unique public IDs so uploads
+                // with the same name do not overwrite each other.
+                "use_filename", true,
+                "unique_filename", true
                 ));
         
         return uploadResult;

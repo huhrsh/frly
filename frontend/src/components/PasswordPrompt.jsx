@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import PasswordInput from './PasswordInput';
 
 const PasswordPrompt = ({ onSubmit, onCancel, error }) => {
     const [password, setPassword] = useState('');
@@ -17,8 +18,7 @@ const PasswordPrompt = ({ onSubmit, onCancel, error }) => {
                 {error && <p className="text-red-500 text-xs text-center mb-2">{error}</p>}
 
                 <form onSubmit={handleSubmit}>
-                    <input
-                        type="password"
+                    <PasswordInput
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         className="w-full border rounded-md p-2 mb-4 focus:ring-blue-500 focus:border-blue-500"

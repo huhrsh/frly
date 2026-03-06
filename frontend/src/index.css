@@ -12,6 +12,16 @@ body {
   @apply bg-gray-50;
 }
 
+/* Hide scrollbars but keep scroll behavior (for modals, etc.) */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
 /* Toast layout tweaks for mobile: narrower, padded from top, slightly inset from left */
 @media (max-width: 640px) {
   .Toastify__toast-container--top-right {
