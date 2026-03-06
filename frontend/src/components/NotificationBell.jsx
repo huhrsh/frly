@@ -68,16 +68,14 @@ const NotificationBell = () => {
         }
     };
 
+    // NOTE: We previously polled the unread-count every 10 seconds.
+    // To reduce load in the early stages, this polling is disabled.
+    // We now fetch counts only when the user opens the notification panel.
+    //
+
+    // Fetch unread count once on mount (no polling)
     useEffect(() => {
-        // Poll only the unread-count so we don't keep fetching full notifications list
         fetchUnreadCount();
-        pollingRef.current = setInterval(fetchUnreadCount, 10000);
-        return () => {
-            if (pollingRef.current) {
-                clearInterval(pollingRef.current);
-            }
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
@@ -99,11 +97,12 @@ const NotificationBell = () => {
         const next = !open;
         setOpen(next);
         if (next) {
-            // Reset pagination and load the first page of notifications only when opening
+            // Reset pagination and load notifications + latest count only when opening
             setNotifications([]);
             setHasMore(true);
             setPage(0);
             if (!loading) {
+                fetchUnreadCount();
                 fetchNotificationsPage(0);
             }
         }
@@ -135,8 +134,8 @@ const NotificationBell = () => {
             >
                 <Bell size={18} />
                 {unreadCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold">
-                        {unreadCount}
+                    <span className="absolute top-1 right-1 h-2 w-2 inline-flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">
+                        
                     </span>
                 )}
             </button>

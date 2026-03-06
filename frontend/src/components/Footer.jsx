@@ -36,16 +36,21 @@ const Footer = () => {
                         </div>
                 </div>
 
-                <div className="pt-4 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-3">
-                    <p className="text-xs text-gray-400">
-                        © {new Date().getFullYear()} FRYLY Inc. All rights reserved.
+                <div className="pt-4 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-3 text-xs text-gray-400">
+                    <p>
+                        FRYLY · v0.1.0
                     </p>
-                    <div className="flex space-x-3 text-gray-300 text-xs">
-                        {/* Social placeholders */}
-                        <span>Twitter</span>
-                        <span>Instagram</span>
-                        <span>GitHub</span>
-                    </div>
+                    <p>
+                        Made with 💙 by 
+                        <a
+                            href="https://www.linkedin.com/in/harsh-jain-10467a22b/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-700 ml-1"
+                        >
+                            Harsh Jain
+                        </a>
+                    </p>
                 </div>
             </div>
         </footer>

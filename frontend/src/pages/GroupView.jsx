@@ -17,7 +17,7 @@ import GroupManageModal from '../components/GroupManageModal';
 import UserInfoModal from '../components/UserInfoModal';
 import { useSectionPreviews } from '../hooks/useSectionPreviews';
 import { toast } from 'react-toastify';
-import { Copy, Trash2, LayoutPanelLeft, LayoutGrid, Users, ArrowLeft, Check } from 'lucide-react';
+import { Copy, Trash2, LayoutPanelLeft, LayoutGrid, Users, ArrowLeft, Check, ChevronRight } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 import { useAuth } from '../context/AuthContext';
 
@@ -51,6 +51,10 @@ const GroupView = () => {
     const [inviteCodeCopied, setInviteCodeCopied] = useState(false);
 
     const [viewMode, setViewMode] = useState('WORKSPACE'); // WORKSPACE | BENTO
+
+    const [showSections, setShowSections] = useState(true);
+    const [showMembers, setShowMembers] = useState(false);
+    const [showPendingInvites, setShowPendingInvites] = useState(false);
 
     // We only fetch previews for root sections in the main view
     const rootSections = sections.filter(s => !s.parentId);
@@ -541,7 +545,7 @@ const GroupView = () => {
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        navigator.clipboard.writeText(currentGroup.inviteCode).then(() => {
+                                        navigator.clipboard.writeText(currentGroup.inviteCode || '').then(() => {
                                             setInviteCodeCopied(true);
                                             toast.success('Invite code copied');
                                             setTimeout(() => setInviteCodeCopied(false), 1500);
@@ -592,185 +596,201 @@ const GroupView = () => {
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-2">
-                        <div className="px-3 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Sections</div>
-                        <nav className="space-y-2">
-                            {sectionsLoading ? (
-                                <div className="text-center text-gray-400 text-sm py-4">Loading sections...</div>
-                            ) : (
-                                rootSections.map(section => (
-                                    <SidebarSection
-                                        key={section.id}
-                                        section={section}
-                                        allSections={sections}
-                                        selectedSection={selectedSection}
-                                        onSelect={handleSelectSection}
-                                    />
-                                ))
-                            )}
-                        </nav>
+                        <button
+                            type="button"
+                            onClick={() => setShowSections(prev => !prev)}
+                            className="flex w-full items-center justify-between px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500 hover:bg-gray-50 rounded-md"
+                        >
+                            <span>Sections</span>
+                            <ChevronRight
+                                size={12}
+                                className={`text-gray-400 transition-transform ${showSections ? 'rotate-90' : ''}`}
+                            />
+                        </button>
+                        {showSections && (
+                            <nav className="mt-1 space-y-2">
+                                {sectionsLoading ? (
+                                    <div className="text-center text-gray-400 text-sm py-4">Loading sections...</div>
+                                ) : (
+                                    rootSections.map(section => (
+                                        <SidebarSection
+                                            key={section.id}
+                                            section={section}
+                                            allSections={sections}
+                                            selectedSection={selectedSection}
+                                            onSelect={handleSelectSection}
+                                        />
+                                    ))
+                                )}
+                            </nav>
+                        )}
                     </div>
 
                     <div className="p-4 border-t space-y-3">
-                        <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-                            <div className="flex items-center gap-1 font-semibold">
-                                <Users size={12} className="text-gray-500" />
-                                <span>Members</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-[10px]">
-                                    {membersLoading ? '…' : members.length}
+                        <div className="space-y-2">
+                            <button
+                                type="button"
+                                onClick={() => setShowMembers(prev => !prev)}
+                                className="flex w-full items-center justify-between text-xs text-gray-600 px-2 py-1.5 rounded-md hover:bg-gray-50"
+                            >
+                                <span className="flex items-center gap-1 font-semibold">
+                                    <Users size={12} className="text-gray-500" />
+                                    <span>Members</span>
                                 </span>
-                                {/* Removed Manage button for simplicity */}
-                            </div>
-                        </div>
-                        <ul className="space-y-1 max-h-none md:max-h-72 overflow-y-auto text-[11px] text-gray-700">
-                            {members.length === 0 && !membersLoading ? (
-                                <li className="text-gray-400">No members loaded.</li>
-                            ) : (
-                                members.map(member => (
-                                    <li
-                                        key={member.userId}
-                                        className="flex items-center justify-between gap-2 px-2 py-1 rounded-md hover:bg-gray-50"
-                                        title={`${member.firstName || ''} ${member.lastName || ''} \n${member.email || ''}`}
-                                    >
-                                        <div className="flex items-center gap-2 min-w-0">
-                                            {member.pfpUrl || member.avatarUrl ? (
-                                                <div className="h-7 w-7 rounded-full overflow-hidden bg-gray-100 border border-gray-200 shrink-0 flex items-center justify-center">
-                                                    <img
-                                                        src={member.pfpUrl || member.avatarUrl}
-                                                        alt={member.firstName || member.email}
-                                                        className="h-full w-full object-cover"
-                                                    />
-                                                </div>
-                                            ) : (
-                                                <div className="h-7 w-7 rounded-full bg-blue-50 flex items-center justify-center text-[10px] font-semibold text-blue-600 border border-blue-100 shrink-0">
-                                                    {((member.firstName?.[0] || '') + (member.lastName?.[0] || '') || (member.email?.[0] || '?')).toUpperCase()}
-                                                </div>
-                                            )}
-                                            <div className="min-w-0">
-                                                <button
-                                                    type="button"
-                                                    className="truncate font-medium text-left hover:underline"
-                                                    onClick={() => setSelectedMemberForInfo(member)}
-                                                >
-                                                    {member.firstName} {member.lastName}
-                                                </button>
-                                                {member.email && (
-                                                    <p className="text-[10px] text-gray-500 truncate">{member.email}</p>
-                                                )}
-                                            </div>
-                                        </div>
-                                        {currentGroup?.currentUserRole === 'ADMIN' && member.role !== 'ADMIN' && (
-                                            <button
-                                                type="button"
-                                                onClick={() => handleRemoveMember(member)}
-                                                className="text-[10px] text-red-600 hover:text-red-700"
+                                <span className="flex items-center gap-1">
+                                    <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-[10px]">
+                                        {membersLoading ? '…' : members.length}
+                                    </span>
+                                    <ChevronRight
+                                        size={12}
+                                        className={`text-gray-400 transition-transform ${showMembers ? 'rotate-90' : ''}`}
+                                    />
+                                </span>
+                            </button>
+
+                            {showMembers && (
+                                <ul className="mt-2 space-y-1 max-h-none md:max-h-72 overflow-y-auto text-[11px] text-gray-700">
+                                    {members.length === 0 && !membersLoading ? (
+                                        <li className="text-gray-400">No members loaded.</li>
+                                    ) : (
+                                        members.map(member => (
+                                            <li
+                                                key={member.userId}
+                                                className="flex items-center justify-between gap-2 px-2 py-1 rounded-md hover:bg-gray-50"
+                                                title={`${member.firstName || ''} ${member.lastName || ''} \n${member.email || ''}`}
                                             >
-                                                Remove
-                                            </button>
-                                        )}
-                                    </li>
-                                ))
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    {member.pfpUrl || member.avatarUrl ? (
+                                                        <div className="h-7 w-7 rounded-full overflow-hidden bg-gray-100 border border-gray-200 shrink-0 flex items-center justify-center">
+                                                            <img
+                                                                src={member.pfpUrl || member.avatarUrl}
+                                                                alt={member.firstName || member.email}
+                                                                className="h-full w-full object-cover"
+                                                            />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="h-7 w-7 rounded-full bg-blue-50 flex items-center justify-center text-[10px] font-semibold text-blue-600 border border-blue-100 shrink-0">
+                                                            {((member.firstName?.[0] || '') + (member.lastName?.[0] || '') || (member.email?.[0] || '?')).toUpperCase()}
+                                                        </div>
+                                                    )}
+                                                    <div className="min-w-0">
+                                                        <button
+                                                            type="button"
+                                                            className="truncate font-medium text-left hover:underline"
+                                                            onClick={() => setSelectedMemberForInfo(member)}
+                                                        >
+                                                            {member.firstName} {member.lastName}
+                                                        </button>
+                                                        {member.email && (
+                                                            <p className="text-[10px] text-gray-500 truncate">{member.email}</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-1 flex-shrink-0">
+                                                    {currentGroup?.currentUserRole !== 'ADMIN' && member.role == 'ADMIN' && (
+                                                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200">
+                                                            {member.role}
+                                                        </span>
+                                                    )}
+                                                    {currentGroup?.currentUserRole === 'ADMIN' && member.role !== 'ADMIN' && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleRemoveMember(member)}
+                                                            className="p-1 text-gray-400 hover:text-red-500"
+                                                        >
+                                                            <Trash2 size={12} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </li>
+                                        ))
+                                    )}
+                                </ul>
                             )}
-                        </ul>
+                        </div>
 
                         {currentGroup?.currentUserRole === 'ADMIN' && (
-                            <div className="pt-2 border-t border-gray-100 text-xs text-gray-600">
-                                <div className="flex justify-between items-center mb-1">
-                                    <span className="font-semibold">Join Requests</span>
-                                    <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-[10px]">
-                                        {pendingLoading ? '…' : pendingRequests.length}
+                            <div className="space-y-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPendingInvites(prev => !prev)}
+                                    className="flex w-full items-center justify-between text-xs text-gray-600 px-2 py-1.5 rounded-md hover:bg-gray-50"
+                                >
+                                    <span className="flex items-center gap-1 font-semibold">
+                                        <span>Pending invites</span>
                                     </span>
-                                </div>
-                                {pendingRequests.length === 0 && !pendingLoading ? (
-                                    <p className="text-gray-400 text-[11px]">No pending requests</p>
-                                ) : (
-                                    <ul className="space-y-1 max-h-32 overflow-y-auto">
-                                        {pendingRequests.map(req => (
-                                            <li key={req.memberId} className="flex items-center justify-between text-[11px]">
-                                                <span className="truncate mr-2">
-                                                    {req.firstName} {req.lastName}
-                                                </span>
-                                                <button
-                                                    onClick={() => handleApproveRequest(req.memberId)}
-                                                    className="px-2 py-0.5 text-[10px] bg-blue-600 text-white rounded hover:bg-blue-700"
-                                                >
-                                                    Approve
-                                                </button>
+                                    <span className="flex items-center gap-1">
+                                        <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-[10px]">
+                                            {pendingLoading ? '…' : pendingRequests.length}
+                                        </span>
+                                        <ChevronRight
+                                            size={12}
+                                            className={`text-gray-400 transition-transform ${showPendingInvites ? 'rotate-90' : ''}`}
+                                        />
+                                    </span>
+                                </button>
+
+                                {showPendingInvites && (
+                                    <ul className="mt-1 space-y-1 max-h-40 overflow-y-auto text-[11px] text-gray-700">
+                                        {pendingRequests.length === 0 && !pendingLoading ? (
+                                            <li className="text-gray-400 px-2 py-1.5 text-[11px] bg-gray-50 rounded-md border border-dashed border-gray-200">
+                                                No pending invites.
                                             </li>
-                                        ))}
+                                        ) : (
+                                            pendingRequests.map(req => (
+                                                <li
+                                                    key={req.memberId}
+                                                    className="flex items-center justify-between gap-2 px-2 py-1 rounded-md hover:bg-gray-50"
+                                                >
+                                                    <div className="min-w-0">
+                                                        <p className="font-medium truncate">
+                                                            {req.firstName} {req.lastName}
+                                                        </p>
+                                                        {req.email && (
+                                                            <p className="text-[10px] text-gray-500 truncate">{req.email}</p>
+                                                        )}
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleApproveRequest(req.memberId)}
+                                                        className="px-2 py-0.5 rounded-md bg-blue-600 text-white text-[10px] font-medium hover:bg-blue-700 flex-shrink-0"
+                                                    >
+                                                        Approve
+                                                    </button>
+                                                </li>
+                                            ))
+                                        )}
                                     </ul>
                                 )}
                             </div>
                         )}
-                        {/* Link to dashboard or something could go here */}
                     </div>
                 </aside>
 
-                {/* Main Content */}
-                <main className="flex-1 overflow-hidden flex flex-col w-full">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 sm:px-6 py-3 border-b bg-white shadow-sm">
+                {/* Main workspace */}
+                <main className="flex-1 flex flex-col bg-gray-50">
+                    <div className="border-b bg-white px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between gap-2">
                         <div className="min-w-0">
                             {selectedSection ? (
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <h2 className="text-sm sm:text-base font-semibold text-gray-900 truncate">
-                                            {selectedSection.title}
-                                        </h2>
-                                        <span className={`text-[11px] px-2 py-0.5 rounded-full border ${selectedSection.type === 'NOTE' ? 'bg-blue-50 border-blue-100 text-blue-700'
-                                            : selectedSection.type === 'LIST' ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
-                                                : selectedSection.type === 'GALLERY' ? 'bg-rose-50 border-rose-100 text-rose-700'
-                                                    : selectedSection.type === 'REMINDER' ? 'bg-amber-50 border-amber-100 text-amber-700'
-                                                        : selectedSection.type === 'PAYMENT' ? 'bg-indigo-50 border-indigo-100 text-indigo-700'
-                                                            : selectedSection.type === 'CALENDAR' ? 'bg-indigo-50 border-indigo-100 text-indigo-700'
-                                                                : 'bg-gray-50 border-gray-200 text-gray-700'
-                                            }`}>
-                                            {selectedSection.type === 'NOTE' ? 'Note'
-                                                : selectedSection.type === 'LIST' ? 'Checklist'
-                                                    : selectedSection.type === 'GALLERY' ? 'Files'
-                                                        : selectedSection.type === 'REMINDER' ? 'Reminder'
-                                                            : selectedSection.type === 'PAYMENT' ? 'Expenses'
-                                                                : selectedSection.type === 'CALENDAR' ? 'Calendar'
-                                                                    : 'Folder'}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        {selectedSection.parentId && (
-                                            <button
-                                                onClick={() => {
-                                                    const parent = sections.find(s => s.id === selectedSection.parentId);
-                                                    if (parent) handleSelectSection(parent);
-                                                }}
-                                                className="text-[11px] text-gray-500 hover:text-gray-700"
-                                            >
-                                                ↑ Back to parent folder
-                                            </button>
-                                        )}
-                                        {selectedSection && currentGroup?.currentUserRole === 'ADMIN' && (
-                                            <button
-                                                type="button"
-                                                onClick={handleDeleteSection}
-                                                className="sm:hidden inline-flex items-center gap-1 rounded-md border border-red-200 bg-white px-2 py-1 text-[11px] font-medium text-red-600 shadow-sm hover:bg-red-50"
-                                            >
-                                                <Trash2 size={12} />
-                                                Delete
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
+                                <>
+                                    <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">Current section</p>
+                                    <h2 className="text-sm sm:text-base font-semibold text-gray-900 truncate">
+                                        {selectedSection.title}
+                                    </h2>
+                                </>
                             ) : (
-                                <div>
+                                <>
                                     <h2 className="text-sm sm:text-base font-semibold text-gray-900">Workspace</h2>
-                                    <p className="text-xs text-gray-500">Select a section from the sidebar to start.</p>
-                                </div>
+                                    <p className="text-[11px] text-gray-500">Select a section from the sidebar to start.</p>
+                                </>
                             )}
                         </div>
-                        <div className="flex items-center gap-2 justify-end">
+                        <div className="flex items-center gap-2">
                             {selectedSection && currentGroup?.currentUserRole === 'ADMIN' && (
                                 <button
                                     type="button"
                                     onClick={handleDeleteSection}
-                                    className="hidden sm:inline-flex items-center gap-1 rounded-md border border-red-200 bg-white px-3 py-1.5 text-xs sm:text-sm font-medium text-red-600 shadow-sm hover:bg-red-50"
+                                    className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 shadow-sm hover:bg-red-50"
                                 >
                                     <Trash2 size={14} />
                                     <span>Delete section</span>

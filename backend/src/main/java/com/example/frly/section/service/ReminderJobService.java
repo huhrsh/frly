@@ -5,6 +5,7 @@ import com.example.frly.email.EmailService;
 import com.example.frly.group.GroupContext;
 import com.example.frly.group.model.Group;
 import com.example.frly.group.repository.GroupRepository;
+import com.example.frly.notification.NotificationService;
 import com.example.frly.section.model.Reminder;
 import com.example.frly.section.repository.ReminderRepository;
 import com.example.frly.user.User;
@@ -27,8 +28,10 @@ public class ReminderJobService {
     private final UserRepository userRepository;
     private final EmailService emailService;
     private final GroupRepository groupRepository;
+    private final NotificationService notificationService;
 
-    @Scheduled(fixedRate = 60_000)
+    // Run roughly once an hour instead of every minute to reduce load
+    @Scheduled(fixedRate = 3_600_000)
     public void processDueReminders() {
         String originalGroupId = GroupContext.getGroupId();
         try {
@@ -65,28 +68,30 @@ public class ReminderJobService {
                 continue;
             }
 
-            // Respect user-level preference: if disabled, mark as processed but don't send
-            if (!user.isReminderEmailEnabled()) {
-                reminder.setSent(true);
-                continue;
+            // Respect user-level preference for EMAILS only; in-app notifications are still created.
+            if (user.isReminderEmailEnabled()) {
+                try {
+                    String subject = "FRYLY reminder: " + reminder.getTitle();
+                    String template = emailService.loadTemplate("email/reminder-due.html");
+                    String description = reminder.getDescription() != null ? reminder.getDescription() : "";
+
+                    String html = template
+                            .replace("{{FIRST_NAME}}", user.getFirstName() != null ? user.getFirstName() : "there")
+                            .replace("{{REMINDER_TITLE}}", reminder.getTitle() != null ? reminder.getTitle() : "Your reminder")
+                            .replace("{{REMINDER_DESCRIPTION}}", description);
+
+                    emailService.sendHtml(user.getEmail(), subject, html);
+                } catch (Exception ex) {
+                    log.error("Failed to send reminder email for reminder {}", reminder.getId(), ex);
+                    // Don't mark as sent here so we can retry on the next run
+                    continue;
+                }
             }
 
-            try {
-                String subject = "FRYLY reminder: " + reminder.getTitle();
-                String template = emailService.loadTemplate("email/reminder-due.html");
-                String description = reminder.getDescription() != null ? reminder.getDescription() : "";
-
-                String html = template
-                        .replace("{{FIRST_NAME}}", user.getFirstName() != null ? user.getFirstName() : "there")
-                        .replace("{{REMINDER_TITLE}}", reminder.getTitle() != null ? reminder.getTitle() : "Your reminder")
-                        .replace("{{REMINDER_DESCRIPTION}}", description);
-
-                emailService.sendHtml(user.getEmail(), subject, html);
-            } catch (Exception ex) {
-                log.error("Failed to send reminder email for reminder {}", reminder.getId(), ex);
-                // Don't mark as sent here so we can retry on the next run
-                continue;
-            }
+            // Always create an in-app notification so the reminder also appears in the bell icon.
+            String notifTitle = reminder.getTitle() != null ? reminder.getTitle() : "Reminder due";
+            String notifMessage = "Reminder due: " + notifTitle;
+            notificationService.notifyUser(user.getId(), "REMINDER_DUE", notifMessage);
 
             // Handle frequency: ONCE (or null) => mark sent; DAILY/WEEKLY => schedule next occurrence
             String freq = reminder.getFrequency();

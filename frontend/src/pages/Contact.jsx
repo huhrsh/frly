@@ -12,7 +12,7 @@ const Contact = () => {
       </p>
       <div className="mt-4 rounded-lg border border-gray-100 bg-white p-4 text-sm text-gray-700">
         <p className="font-semibold mb-1">Email</p>
-        <p>support@fryly.app (placeholder)</p>
+        <p>frlyofficial@gmail.com</p>
       </div>
     </div>
   );

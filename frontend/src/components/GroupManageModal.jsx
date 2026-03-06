@@ -211,7 +211,7 @@ const GroupManageModal = ({
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        {m.role === 'ADMIN' && (
+                        {!isAdmin && m.role === 'ADMIN' && (
                           <span className="px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-100 text-[9px] uppercase">
                             Admin
                           </span>
