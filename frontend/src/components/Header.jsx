@@ -78,7 +78,7 @@ const Header = () => {
                                             onClick={handleProfile}
                                             className="w-full text-left px-3 py-2 hover:bg-gray-50 text-gray-700"
                                         >
-                                            Update profile
+                                            Profile
                                         </button>
                                         <button
                                             type="button"

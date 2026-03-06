@@ -23,6 +23,12 @@
     </properties>
     
     <dependencies>
+        <!-- SendGrid Java SDK for API email sending -->
+        <dependency>
+            <groupId>com.sendgrid</groupId>
+            <artifactId>sendgrid-java</artifactId>
+            <version>4.10.1</version>
+        </dependency>
         <!-- Spring Boot Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
