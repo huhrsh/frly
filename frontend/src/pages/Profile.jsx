@@ -179,7 +179,7 @@ const Profile = () => {
             <form className="space-y-6" onSubmit={handleSubmit}>
                 <div className="flex flex-col sm:flex-row gap-6">
                     <div className="flex flex-col items-center sm:items-center w-full sm:w-40">
-                        <div className="h-28 w-28 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-200 text-gray-700 font-semibold text-lg mb-3">
+                        <div className="h-28 w-28 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden border border-blue-200 text-blue-600 font-semibold text-lg mb-3">
                             {form.pfpUrl ? (
                                 <img src={form.pfpUrl} alt="Profile" className="h-full w-full object-cover" />
                             ) : (
