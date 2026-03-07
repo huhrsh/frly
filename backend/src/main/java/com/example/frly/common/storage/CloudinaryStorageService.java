@@ -21,19 +21,28 @@ public class CloudinaryStorageService implements FileStorageService {
     public Map<String, Object> uploadFile(MultipartFile file, String folder) throws IOException {
         log.info("Uploading file to Cloudinary path: {}", folder);
         
-        // Convert to Map for SDK
+        // Decide whether this is a gallery/document upload (tenant-scoped) or something else (e.g. avatar).
+        // Gallery uploads use the dedicated signed preset configured in Cloudinary.
+        boolean isGalleryUpload = folder != null && folder.contains("tenant_");
+
         @SuppressWarnings("unchecked")
-        Map<String, Object> uploadResult = cloudinary.uploader().upload(file.getBytes(),
-                ObjectUtils.asMap(
-                        "folder", folder,
+        Map<String, Object> uploadResult = cloudinary.uploader().upload(
+            file.getBytes(),
+            ObjectUtils.asMap(
+                "folder", folder,
                 "resource_type", "auto", // Detect image/video/raw
-                // Use the original filename for readability, but keep
-                // Cloudinary's default unique public IDs so uploads
-                // with the same name do not overwrite each other.
+                // Use the original filename for readability, while keeping
+                // Cloudinary's unique public IDs so uploads with the same
+                // name do not overwrite each other.
                 "use_filename", true,
-                "unique_filename", true
-                ));
-        
+                "unique_filename", true,
+                // For gallery/doc uploads we rely on the `gallery_docs_private`
+                // preset created in Cloudinary (signed + authenticated delivery).
+                // The preset's folder (e.g. "fryly") combines with this "folder"
+                // argument to produce paths like "fryly/tenant_1/section_2/...".
+                "upload_preset", isGalleryUpload ? "gallery_docs_private" : null
+            ));
+
         return uploadResult;
     }
 
@@ -41,5 +50,21 @@ public class CloudinaryStorageService implements FileStorageService {
     public void deleteFile(String publicId) throws IOException {
         log.info("Deleting file from Cloudinary: {}", publicId);
         cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
+    }
+
+    @Override
+    public String generateAccessUrl(String publicId) {
+        // Centralized place to construct delivery URLs for stored assets.
+        // Gallery/documents are stored using the `gallery_docs_private` preset
+        // and should be served via the `authenticated` delivery type. Avatars
+        // and other public assets continue to use the default `upload` type.
+
+        boolean isGalleryAsset = publicId != null && publicId.contains("/tenant_");
+
+        return cloudinary.url()
+            .secure(true)
+            .type(isGalleryAsset ? "authenticated" : "upload")
+            .signed(isGalleryAsset)
+            .generate(publicId);
     }
 }

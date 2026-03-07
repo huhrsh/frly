@@ -8,6 +8,8 @@ import com.example.frly.group.GroupContext;
 import com.example.frly.group.model.Group;
 import com.example.frly.group.repository.GroupRepository;
 import com.example.frly.group.service.GroupService;
+import com.example.frly.section.SectionMapper;
+import com.example.frly.section.dto.GalleryItemDto;
 import com.example.frly.section.model.GalleryItem;
 import com.example.frly.section.model.Section;
 import com.example.frly.section.model.SectionType;
@@ -15,6 +17,8 @@ import com.example.frly.section.repository.GalleryItemRepository;
 import com.example.frly.section.repository.SectionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -34,9 +38,10 @@ public class GalleryService {
     private final GroupService groupService;
     private final FileStorageService fileStorageService;
     private final SectionService sectionService; // Inject SectionService for password validation
+    private final SectionMapper sectionMapper;
 
     @Transactional
-    public GalleryItem uploadItem(Long sectionId, MultipartFile file) throws IOException {
+    public GalleryItemDto uploadItem(Long sectionId, MultipartFile file) throws IOException {
         // 1. Security Check
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
 
@@ -63,8 +68,8 @@ public class GalleryService {
         }
 
         // 4. Upload to Cloudinary
-        // Folder structure: tenant_{groupId}/section_{sectionId}
-        String folderPath = "tenant_" + groupId + "/section_" + sectionId;
+        // Folder structure: fryly/tenant_{groupId}/section_{sectionId}
+        String folderPath = "fryly/tenant_" + groupId + "/section_" + sectionId;
         Map<String, Object> uploadResult = fileStorageService.uploadFile(file, folderPath);
 
         // 5. Create Entity
@@ -85,17 +90,27 @@ public class GalleryService {
         groupRepository.save(group);
 
         log.info("Uploaded gallery item {} ({}) for group {}", item.getId(), fileSize, groupId);
-        return item;
+
+        GalleryItemDto dto = sectionMapper.toGalleryItemDto(item);
+        dto.setUrl(fileStorageService.generateAccessUrl(item.getPublicId()));
+        return dto;
     }
 
-    public List<GalleryItem> getItems(Long sectionId) {
+    public Page<GalleryItemDto> getItems(Long sectionId, Pageable pageable) {
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
         Section section = sectionRepository.findById(sectionId)
                 .orElseThrow(() -> new BadRequestException("Section not found"));
         if (section.getStatus() == com.example.frly.common.enums.RecordStatus.DELETED) {
-            return java.util.Collections.emptyList();
+            return Page.empty(pageable);
         }
-        return galleryItemRepository.findBySectionIdAndStatusNotOrderByCreatedAtDesc(sectionId, com.example.frly.common.enums.RecordStatus.DELETED);
+
+        return galleryItemRepository
+                .findBySectionIdAndStatusNotOrderByCreatedAtDesc(sectionId, com.example.frly.common.enums.RecordStatus.DELETED, pageable)
+                .map(item -> {
+                    GalleryItemDto dto = sectionMapper.toGalleryItemDto(item);
+                    dto.setUrl(fileStorageService.generateAccessUrl(item.getPublicId()));
+                    return dto;
+                });
     }
 
     public long getItemCount(Long sectionId) {
@@ -141,5 +156,19 @@ public class GalleryService {
                 .orElseThrow(() -> new BadRequestException("Item not found"));
         item.setTitle(newTitle);
         galleryItemRepository.save(item);
+    }
+
+    public String getItemAccessUrl(Long itemId) {
+        groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
+
+        GalleryItem item = galleryItemRepository.findById(itemId)
+                .orElseThrow(() -> new BadRequestException("Item not found"));
+
+        Section section = item.getSection();
+        if (section == null || section.getStatus() == com.example.frly.common.enums.RecordStatus.DELETED) {
+            throw new BadRequestException("Section is deleted");
+        }
+
+        return fileStorageService.generateAccessUrl(item.getPublicId());
     }
 }
