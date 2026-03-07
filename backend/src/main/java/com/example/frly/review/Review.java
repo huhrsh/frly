@@ -5,6 +5,7 @@ import lombok.*;
 import java.time.Instant;
 
 @Entity
+@Table(name = "review", schema = "config")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Review {
     @Id

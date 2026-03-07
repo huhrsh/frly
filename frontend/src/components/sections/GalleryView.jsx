@@ -17,6 +17,9 @@ import ConfirmModal from '../ConfirmModal';
 
 const GalleryView = ({ sectionId }) => {
     const [images, setImages] = useState([]);
+    const [page, setPage] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
+    const [loadingPage, setLoadingPage] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [renamingId, setRenamingId] = useState(null);
     const [renameText, setRenameText] = useState('');
@@ -30,11 +33,16 @@ const GalleryView = ({ sectionId }) => {
     // Menu state: { itemId: number | null }
     const [openMenuId, setOpenMenuId] = useState(null);
     const menuRef = useRef(null);
+    const loadMoreRef = useRef(null);
     const [isDragging, setIsDragging] = useState(false);
     const dragCounter = useRef(0);
 
     useEffect(() => {
-        fetchImages();
+        // Reset pagination when section changes
+        setImages([]);
+        setPage(0);
+        setHasMore(true);
+        fetchImages(0);
         // Close menu on click outside
         const handleClickOutside = (event) => {
             if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -47,14 +55,46 @@ const GalleryView = ({ sectionId }) => {
         };
     }, [sectionId]);
 
-    const fetchImages = async () => {
+    const fetchImages = async (pageToLoad) => {
+        if (loadingPage || !hasMore) return;
         try {
-            const res = await axiosClient.get(`/groups/sections/${sectionId}/gallery`);
-            setImages(res.data);
+            setLoadingPage(true);
+            const res = await axiosClient.get(`/groups/sections/${sectionId}/gallery`, {
+                params: { page: pageToLoad, size: 25 }
+            });
+            const { content, last } = res.data;
+            setImages(prev => pageToLoad === 0 ? content : [...prev, ...content]);
+            setHasMore(!last);
+            setPage(pageToLoad + 1);
         } catch (error) {
             console.error("Failed to fetch gallery", error);
+        } finally {
+            setLoadingPage(false);
         }
     };
+
+    useEffect(() => {
+        if (!hasMore) return;
+        const observer = new IntersectionObserver((entries) => {
+            const first = entries[0];
+            if (first.isIntersecting && !loadingPage) {
+                fetchImages(page);
+            }
+        }, {
+            threshold: 0.1
+        });
+
+        const current = loadMoreRef.current;
+        if (current) {
+            observer.observe(current);
+        }
+
+        return () => {
+            if (current) {
+                observer.unobserve(current);
+            }
+        };
+    }, [hasMore, loadingPage, page, sectionId]);
 
     const uploadFiles = async (files) => {
         const fileArray = Array.from(files || []);
@@ -80,7 +120,11 @@ const GalleryView = ({ sectionId }) => {
         if (successCount > 0) toast.success(`Uploaded ${successCount} files`);
         if (failCount > 0) toast.error(`Failed to upload ${failCount} files`);
 
-        fetchImages();
+        // Refresh the first page so newly uploaded files appear without a full reload
+        setImages([]);
+        setPage(0);
+        setHasMore(true);
+        await fetchImages(0);
         setUploading(false);
     };
 
@@ -429,6 +473,13 @@ const GalleryView = ({ sectionId }) => {
                     </div>
                 ))}
             </div>
+
+            {/* Infinite scroll sentinel */}
+            {hasMore && (
+                <div ref={loadMoreRef} className="h-8 flex items-center justify-center text-xs text-gray-400">
+                    {loadingPage ? 'Loading more files…' : ''}
+                </div>
+            )}
 
             {images.length === 0 && (
                 <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-lg bg-gray-50 flex flex-col items-center">
