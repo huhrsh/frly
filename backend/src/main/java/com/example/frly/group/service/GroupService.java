@@ -4,7 +4,6 @@ import com.example.frly.group.dto.CreateGroupRequestDto;
 import com.example.frly.group.dto.GroupResponseDto;
 import com.example.frly.group.dto.GroupMemberSimpleDto;
 import com.example.frly.group.dto.UpdateViewPreferenceRequestDto;
-import com.example.frly.group.enums.GroupViewPreference;
 import com.example.frly.group.dto.JoinGroupRequestDto;
 import com.example.frly.group.dto.GroupJoinRequestDto;
 import com.example.frly.auth.AuthUtil;
@@ -27,9 +26,8 @@ import com.example.frly.common.exception.BadRequestException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
-import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
+import java.util.Optional;
 
 import static com.example.frly.constants.LogConstants.*;
 
@@ -105,7 +103,7 @@ public class GroupService {
         }
         
         // Check for existing membership to support re-join behavior
-        java.util.Optional<GroupMember> existingOpt = groupMemberRepository.findByUserIdAndGroupId(userId, group.getId());
+        Optional<GroupMember> existingOpt = groupMemberRepository.findByUserIdAndGroupId(userId, group.getId());
         if (existingOpt.isPresent()) {
             GroupMember existing = existingOpt.get();
             if (existing.getStatus() == GroupMemberStatus.REMOVED) {
@@ -317,17 +315,10 @@ public class GroupService {
             throw new BadRequestException("viewPreference is required");
         }
 
-        GroupViewPreference preference;
-        try {
-            preference = GroupViewPreference.valueOf(request.getViewPreference().toUpperCase());
-        } catch (IllegalArgumentException ex) {
-            throw new BadRequestException("Invalid viewPreference value");
-        }
-
         GroupMember member = groupMemberRepository.findByUserIdAndGroupId(userId, groupId)
                 .orElseThrow(() -> new BadRequestException("Access Denied: You are not a member of this group"));
 
-        member.setViewPreference(preference);
+        member.setViewPreference(request.getViewPreference());
         groupMemberRepository.save(member);
     }
 

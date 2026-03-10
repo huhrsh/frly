@@ -40,8 +40,8 @@ public class GroupMember {
     @Enumerated(EnumType.STRING)
     private GroupMemberStatus status = GroupMemberStatus.PENDING;
 
-        @Column(name = "view_preference", nullable = false)
-        @Enumerated(EnumType.STRING)
-        private GroupViewPreference viewPreference = GroupViewPreference.WORKSPACE;
+    @Column(name = "view_preference", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private GroupViewPreference viewPreference = GroupViewPreference.WORKSPACE;
 
 }

@@ -13,8 +13,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.time.Instant;
+import java.util.Base64;
 
 import static com.example.frly.constants.LogConstants.*;
 
@@ -57,8 +60,7 @@ public class AuthService {
     public void sendPasswordResetEmail(String email) {
         userRepository.findByEmail(email).ifPresent(user -> {
             // Invalidate previous tokens for this user by marking them used
-            passwordResetTokenRepository.findAll().stream()
-                    .filter(t -> t.getUser().getId().equals(user.getId()) && t.getUsedAt() == null)
+            passwordResetTokenRepository.findByUserIdAndUsedAtIsNull(user.getId())
                     .forEach(t -> {
                         t.setUsedAt(java.time.Instant.now());
                         passwordResetTokenRepository.save(t);
@@ -92,27 +94,27 @@ public class AuthService {
 
         String tokenHash = sha256(token);
         PasswordResetToken resetToken = passwordResetTokenRepository
-                .findFirstByTokenHashAndUsedAtIsNullAndExpiresAtAfter(tokenHash, java.time.Instant.now())
+                .findFirstByTokenHashAndUsedAtIsNullAndExpiresAtAfter(tokenHash, Instant.now())
                 .orElseThrow(() -> new RuntimeException("Invalid or expired token"));
 
         User user = resetToken.getUser();
         user.setEncryptedPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
 
-        resetToken.setUsedAt(java.time.Instant.now());
+        resetToken.setUsedAt(Instant.now());
         passwordResetTokenRepository.save(resetToken);
     }
 
     private String generateRandomToken() {
         byte[] bytes = new byte[32];
         random.nextBytes(bytes);
-        return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
     private String sha256(String value) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(value.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            byte[] hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));
             StringBuilder hex = new StringBuilder(hash.length * 2);
             for (byte b : hash) {
                 String h = Integer.toHexString(0xff & b);
