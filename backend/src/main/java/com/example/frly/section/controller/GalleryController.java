@@ -15,6 +15,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Map;
 
+import static org.springframework.data.domain.Sort.Direction.DESC;
+
 @RestController
 @RequestMapping("/api/groups/sections")
 @RequiredArgsConstructor
@@ -32,7 +34,7 @@ public class GalleryController {
     @GetMapping("/{sectionId}/gallery")
     public ResponseEntity<Page<GalleryItemDto>> getGalleryItems(
             @PathVariable Long sectionId,
-            @PageableDefault(size = 25, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(size = 25, sort = "createdAt", direction = DESC) Pageable pageable) {
         Page<GalleryItemDto> page = galleryService.getItems(sectionId, pageable);
         return ResponseEntity.ok(page);
     }
@@ -50,7 +52,7 @@ public class GalleryController {
     }
 
     @PatchMapping("/gallery/{itemId}")
-    public ResponseEntity<Void> renameGalleryItem(@PathVariable Long itemId, @RequestBody java.util.Map<String, String> payload) {
+    public ResponseEntity<Void> renameGalleryItem(@PathVariable Long itemId, @RequestBody Map<String, String> payload) {
         String newTitle = payload.get("title");
         if (newTitle == null || newTitle.isBlank()) {
              return ResponseEntity.badRequest().build();

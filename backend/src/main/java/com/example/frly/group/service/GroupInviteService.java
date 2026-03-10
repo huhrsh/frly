@@ -9,6 +9,7 @@ import com.example.frly.group.dto.CreateGroupInviteRequestDto;
 import com.example.frly.group.dto.GroupInviteSummaryDto;
 import com.example.frly.group.enums.GroupInviteStatus;
 import com.example.frly.group.enums.GroupMemberStatus;
+import com.example.frly.group.mapper.GroupInviteMapper;
 import com.example.frly.group.model.Group;
 import com.example.frly.group.model.GroupInviteToken;
 import com.example.frly.group.model.GroupMember;
@@ -24,12 +25,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -42,6 +43,7 @@ public class GroupInviteService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final EmailService emailService;
+    private final GroupInviteMapper groupInviteMapper;
 
     private final SecureRandom random = new SecureRandom();
 
@@ -142,7 +144,7 @@ public class GroupInviteService {
                     return gm;
                 });
 
-        member.setStatus(com.example.frly.group.enums.GroupMemberStatus.APPROVED);
+        member.setStatus(GroupMemberStatus.APPROVED);
         groupMemberRepository.save(member);
 
         invite.setStatus(GroupInviteStatus.ACCEPTED);
@@ -233,29 +235,12 @@ public class GroupInviteService {
 
     @Transactional(readOnly = true)
     public List<GroupInviteSummaryDto> getInvitesForUser(Long userId) {
-        // Get newest invites first, then keep only the latest per group to avoid duplicates
+        // Database-level filtering: only latest invite per group
         return inviteRepository
-                .findByUserIdAndStatusAndExpiresAtAfterOrderByCreatedAtDesc(userId, GroupInviteStatus.PENDING, Instant.now())
+                .findLatestPendingInvitesPerGroup(userId, GroupInviteStatus.PENDING, Instant.now())
                 .stream()
-                .collect(Collectors.toMap(
-					invite -> invite.getGroup().getId(),
-					invite -> invite,
-					(existing, replacement) -> existing // keep first (newest) invite per group
-			))
-                .values()
-                .stream()
-                .map(invite -> {
-                    GroupInviteSummaryDto dto = new GroupInviteSummaryDto();
-                    dto.setId(invite.getId());
-                    dto.setGroupId(invite.getGroup().getId());
-                    dto.setGroupDisplayName(invite.getGroup().getDisplayName());
-                    dto.setEmail(invite.getEmail());
-                    dto.setStatus(invite.getStatus());
-                    dto.setCreatedAt(invite.getCreatedAt());
-                    dto.setExpiresAt(invite.getExpiresAt());
-                    return dto;
-                })
-                .collect(Collectors.toList());
+                .map(groupInviteMapper::toGroupInviteSummaryDto)
+                .toList();
     }
 
     private GroupInviteToken resolveActiveInvite(String token) {
@@ -277,7 +262,7 @@ public class GroupInviteService {
     private String sha256(String value) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(value.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            byte[] hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));
             StringBuilder hex = new StringBuilder(hash.length * 2);
             for (byte b : hash) {
                 String h = Integer.toHexString(0xff & b);

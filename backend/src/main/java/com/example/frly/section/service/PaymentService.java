@@ -16,6 +16,7 @@ import com.example.frly.section.model.SectionType;
 import com.example.frly.section.repository.PaymentExpenseRepository;
 import com.example.frly.section.repository.PaymentShareRepository;
 import com.example.frly.section.repository.SectionRepository;
+import com.example.frly.section.mapper.PaymentMapper;
 import com.example.frly.user.User;
 import com.example.frly.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,10 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,60 +36,20 @@ public class PaymentService {
     private final UserRepository userRepository;
     private final PaymentExpenseRepository paymentExpenseRepository;
     private final PaymentShareRepository paymentShareRepository;
+    private final PaymentMapper paymentMapper;
 
     @Transactional
     public Long addExpense(Long sectionId, CreatePaymentExpenseRequestDto request) {
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
-        Section section = sectionRepository.findById(sectionId)
-                .orElseThrow(() -> new BadRequestException("Section not found"));
-        if (section.getStatus() == RecordStatus.DELETED) {
-            throw new BadRequestException("Section is deleted");
-        }
-        if (section.getType() != SectionType.PAYMENT) {
-            throw new BadRequestException("Cannot add payment expense to non-PAYMENT section");
-        }
 
-        if (request.getTotalAmount() == null || request.getTotalAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BadRequestException("totalAmount must be positive");
-        }
-        if (request.getPaidByUserId() == null) {
-            throw new BadRequestException("paidByUserId is required");
-        }
-        if (request.getShares() == null || request.getShares().isEmpty()) {
-            throw new BadRequestException("At least one share is required");
-        }
-
-        // Validate that sum of all shares equals totalAmount
-        java.math.BigDecimal sharesTotal = request.getShares().stream()
-                .map(CreatePaymentExpenseRequestDto.ShareInput::getShareAmount)
-                .filter(java.util.Objects::nonNull)
-                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
-
-        if (sharesTotal.compareTo(request.getTotalAmount()) != 0) {
-            throw new BadRequestException("Sum of shares must equal total amount");
-        }
-
-        User payer = userRepository.getReferenceById(request.getPaidByUserId());
+        Section section = validatePaymentSection(sectionId);
+        validateExpenseRequest(request);
 
         PaymentExpense expense = new PaymentExpense();
-        expense.setSection(section);
-        expense.setPaidBy(payer);
-        expense.setDescription(request.getDescription());
-        expense.setTotalAmount(request.getTotalAmount());
-        // For now we only support INR; ignore any other currency in the request
-        expense.setCurrency("INR");
-        expense.setExpenseDate(request.getExpenseDate());
-
+        updateExpenseFromRequest(expense, request, section);
         expense = paymentExpenseRepository.save(expense);
 
-        for (CreatePaymentExpenseRequestDto.ShareInput shareInput : request.getShares()) {
-            User user = userRepository.getReferenceById(shareInput.getUserId());
-            PaymentShare share = new PaymentShare();
-            share.setExpense(expense);
-            share.setUser(user);
-            share.setShareAmount(shareInput.getShareAmount());
-            paymentShareRepository.save(share);
-        }
+        createShares(expense, request.getShares());
 
         return expense.getId();
     }
@@ -100,6 +58,8 @@ public class PaymentService {
     public void updateExpense(Long sectionId, Long expenseId, CreatePaymentExpenseRequestDto request) {
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
 
+        validateExpenseRequest(request);
+
         PaymentExpense expense = paymentExpenseRepository.findById(expenseId)
             .orElseThrow(() -> new BadRequestException("Expense not found"));
 
@@ -107,45 +67,14 @@ public class PaymentService {
             throw new BadRequestException("Expense does not belong to this section");
         }
 
-        if (request.getTotalAmount() == null || request.getTotalAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BadRequestException("totalAmount must be positive");
-        }
-        if (request.getPaidByUserId() == null) {
-            throw new BadRequestException("paidByUserId is required");
-        }
-        if (request.getShares() == null || request.getShares().isEmpty()) {
-            throw new BadRequestException("At least one share is required");
-        }
-
-        BigDecimal sharesTotal = request.getShares().stream()
-                .map(CreatePaymentExpenseRequestDto.ShareInput::getShareAmount)
-                .filter(java.util.Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        if (sharesTotal.compareTo(request.getTotalAmount()) != 0) {
-            throw new BadRequestException("Sum of shares must equal total amount");
-        }
-
-        User payer = userRepository.getReferenceById(request.getPaidByUserId());
-
-        expense.setPaidBy(payer);
-        expense.setDescription(request.getDescription());
-        expense.setTotalAmount(request.getTotalAmount());
-        expense.setCurrency("INR");
-        expense.setExpenseDate(request.getExpenseDate());
+        updateExpenseFromRequest(expense, request, null);
+        paymentExpenseRepository.save(expense);
 
         // Replace all existing shares for this expense
         List<PaymentShare> existing = paymentShareRepository.findByExpenseIdAndStatusNot(expenseId, RecordStatus.DELETED);
         paymentShareRepository.deleteAll(existing);
 
-        for (CreatePaymentExpenseRequestDto.ShareInput shareInput : request.getShares()) {
-            User user = userRepository.getReferenceById(shareInput.getUserId());
-            PaymentShare share = new PaymentShare();
-            share.setExpense(expense);
-            share.setUser(user);
-            share.setShareAmount(shareInput.getShareAmount());
-            paymentShareRepository.save(share);
-        }
+        createShares(expense, request.getShares());
     }
 
     @Transactional
@@ -159,52 +88,45 @@ public class PaymentService {
             throw new BadRequestException("Expense does not belong to this section");
         }
 
-        expense.setStatus(com.example.frly.common.enums.RecordStatus.DELETED);
+        expense.setStatus(RecordStatus.DELETED);
         paymentExpenseRepository.save(expense);
     }
 
     @Transactional(readOnly = true)
     public List<PaymentExpenseDto> getExpenses(Long sectionId) {
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
+
         Section section = sectionRepository.findById(sectionId)
                 .orElseThrow(() -> new BadRequestException("Section not found"));
         if (section.getStatus() == RecordStatus.DELETED) {
             return List.of();
         }
-        List<PaymentExpense> expenses = paymentExpenseRepository.findBySectionIdAndStatusNotOrderByExpenseDateDesc(sectionId, com.example.frly.common.enums.RecordStatus.DELETED);
-        List<PaymentShare> allShares = paymentShareRepository.findByExpenseSectionIdAndStatusNot(sectionId, com.example.frly.common.enums.RecordStatus.DELETED);
 
+        List<PaymentExpense> expenses = paymentExpenseRepository
+                .findBySectionIdAndStatusNotOrderByExpenseDateDesc(sectionId, RecordStatus.DELETED);
+        List<PaymentShare> allShares = paymentShareRepository
+                .findByExpenseSectionIdAndStatusNot(sectionId, RecordStatus.DELETED);
+
+        // Group shares by expense ID for efficient lookup
         Map<Long, List<PaymentShare>> sharesByExpense = allShares.stream()
             .collect(Collectors.groupingBy(share -> share.getExpense().getId()));
 
-        List<PaymentExpenseDto> result = new ArrayList<>();
-        for (PaymentExpense expense : expenses) {
-            PaymentExpenseDto dto = new PaymentExpenseDto();
-            dto.setId(expense.getId());
-            dto.setSectionId(expense.getSection().getId());
-            dto.setPaidByUserId(expense.getPaidBy().getId());
-            dto.setPaidByFirstName(expense.getPaidBy().getFirstName());
-            dto.setPaidByLastName(expense.getPaidBy().getLastName());
-            dto.setDescription(expense.getDescription());
-            dto.setTotalAmount(expense.getTotalAmount());
-            dto.setCurrency(expense.getCurrency());
-            dto.setExpenseDate(expense.getExpenseDate());
+        // Map expenses to DTOs using mapper
+        return expenses.stream()
+                .map(expense -> {
+                    PaymentExpenseDto dto = paymentMapper.toPaymentExpenseDto(expense);
 
-            List<PaymentShare> shares = sharesByExpense.getOrDefault(expense.getId(), List.of());
-            List<PaymentShareDto> shareDtos = new ArrayList<>();
-            for (PaymentShare share : shares) {
-                PaymentShareDto sDto = new PaymentShareDto();
-                sDto.setUserId(share.getUser().getId());
-                sDto.setFirstName(share.getUser().getFirstName());
-                sDto.setLastName(share.getUser().getLastName());
-                sDto.setShareAmount(share.getShareAmount());
-                shareDtos.add(sDto);
-            }
-            dto.setShares(shareDtos);
-            result.add(dto);
-        }
+                    // Map shares using mapper
+                    List<PaymentShareDto> shareDtos = sharesByExpense
+                            .getOrDefault(expense.getId(), List.of())
+                            .stream()
+                            .map(paymentMapper::toPaymentShareDto)
+                            .toList();
 
-        return result;
+                    dto.setShares(shareDtos);
+                    return dto;
+                })
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -215,8 +137,8 @@ public class PaymentService {
         if (section.getStatus() == RecordStatus.DELETED) {
             return List.of();
         }
-        List<PaymentExpense> expenses = paymentExpenseRepository.findBySectionIdAndStatusNotOrderByExpenseDateDesc(sectionId, com.example.frly.common.enums.RecordStatus.DELETED);
-        List<PaymentShare> allShares = paymentShareRepository.findByExpenseSectionIdAndStatusNot(sectionId, com.example.frly.common.enums.RecordStatus.DELETED);
+        List<PaymentExpense> expenses = paymentExpenseRepository.findBySectionIdAndStatusNotOrderByExpenseDateDesc(sectionId, RecordStatus.DELETED);
+        List<PaymentShare> allShares = paymentShareRepository.findByExpenseSectionIdAndStatusNot(sectionId, RecordStatus.DELETED);
 
         Map<Long, List<PaymentShare>> sharesByExpense = allShares.stream()
             .collect(Collectors.groupingBy(share -> share.getExpense().getId()));
@@ -254,5 +176,75 @@ public class PaymentService {
         }
 
         return new ArrayList<>(balances.values());
+    }
+
+    /**
+     * Validates that the section exists, is active, and is a PAYMENT section
+     */
+    private Section validatePaymentSection(Long sectionId) {
+        Section section = sectionRepository.findById(sectionId)
+                .orElseThrow(() -> new BadRequestException("Section not found"));
+        if (section.getStatus() == RecordStatus.DELETED) {
+            throw new BadRequestException("Section is deleted");
+        }
+        if (section.getType() != SectionType.PAYMENT) {
+            throw new BadRequestException("Cannot add payment expense to non-PAYMENT section");
+        }
+        return section;
+    }
+
+    /**
+     * Validates the expense request data (amounts, shares, etc.)
+     */
+    private void validateExpenseRequest(CreatePaymentExpenseRequestDto request) {
+        if (request.getTotalAmount() == null || request.getTotalAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BadRequestException("totalAmount must be positive");
+        }
+        if (request.getPaidByUserId() == null) {
+            throw new BadRequestException("paidByUserId is required");
+        }
+        if (request.getShares() == null || request.getShares().isEmpty()) {
+            throw new BadRequestException("At least one share is required");
+        }
+
+        // Validate that sum of all shares equals totalAmount
+        BigDecimal sharesTotal = request.getShares().stream()
+                .map(CreatePaymentExpenseRequestDto.ShareInput::getShareAmount)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        if (sharesTotal.compareTo(request.getTotalAmount()) != 0) {
+            throw new BadRequestException("Sum of shares must equal total amount");
+        }
+    }
+
+    /**
+     * Creates or updates expense entity from request DTO
+     */
+    private void updateExpenseFromRequest(PaymentExpense expense, CreatePaymentExpenseRequestDto request, Section section) {
+        User payer = userRepository.getReferenceById(request.getPaidByUserId());
+
+        if (section != null) {
+            expense.setSection(section);
+        }
+        expense.setPaidBy(payer);
+        expense.setDescription(request.getDescription());
+        expense.setTotalAmount(request.getTotalAmount());
+        expense.setCurrency("INR"); // For now we only support INR
+        expense.setExpenseDate(request.getExpenseDate());
+    }
+
+    /**
+     * Creates payment shares for an expense
+     */
+    private void createShares(PaymentExpense expense, List<CreatePaymentExpenseRequestDto.ShareInput> shareInputs) {
+        for (CreatePaymentExpenseRequestDto.ShareInput shareInput : shareInputs) {
+            User user = userRepository.getReferenceById(shareInput.getUserId());
+            PaymentShare share = new PaymentShare();
+            share.setExpense(expense);
+            share.setUser(user);
+            share.setShareAmount(shareInput.getShareAmount());
+            paymentShareRepository.save(share);
+        }
     }
 }

@@ -8,15 +8,21 @@ import com.sendgrid.helpers.mail.objects.Email;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
-import java.io.InputStream;
+import org.springframework.util.StreamUtils;
+
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class EmailService {
+
+    private final ConcurrentHashMap<String, String> templateCache = new ConcurrentHashMap<>();
 
     @Value("${app.mail.from:frylyapp@gmail.com}")
     private String fromAddress = "frylyapp@gmail.com";
@@ -51,15 +57,18 @@ public class EmailService {
     }
 
     public String loadTemplate(String templatePath) {
-        try {
-            InputStream in = getClass().getClassLoader().getResourceAsStream(templatePath);
-            if (in == null) {
-                throw new IllegalArgumentException("Email template not found: " + templatePath);
+        // Return cached template if available
+        return templateCache.computeIfAbsent(templatePath, path -> {
+            try {
+                ClassPathResource resource = new ClassPathResource(path);
+                if (!resource.exists()) {
+                    throw new IllegalArgumentException("Email template not found: " + path);
+                }
+                // Properly closes InputStream automatically
+                return StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
+            } catch (IOException ex) {
+                throw new RuntimeException("Failed to load email template: " + path, ex);
             }
-            byte[] bytes = in.readAllBytes();
-            return new String(bytes, StandardCharsets.UTF_8);
-        } catch (Exception ex) {
-            throw new RuntimeException("Failed to load email template: " + templatePath, ex);
-        }
+        });
     }
 }

@@ -6,7 +6,11 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "feedback", schema = "config")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Feedback {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
