@@ -14,6 +14,7 @@ import CreateSectionModal from '../components/CreateSectionModal';
 import { toast } from 'react-toastify';
 import { Trash2, ArrowLeft, Home, LayoutPanelLeft, LayoutGrid, Users } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
+import LinksSection from '../components/sections/LinksSection';
 
 const SectionView = () => {
     const { groupId, sectionId } = useParams();
@@ -161,6 +162,8 @@ const SectionView = () => {
                 return <GalleryView sectionId={section.id} />;
             case 'REMINDER':
                 return <ReminderView sectionId={section.id} />;
+            case 'LINKS':
+                return <LinksSection sectionId={section.id} />;
             case 'PAYMENT':
                 return <PaymentView sectionId={section.id} />;
             case 'CALENDAR':
@@ -191,6 +194,8 @@ const SectionView = () => {
                         ? 'Expenses'
                         : section?.type === 'CALENDAR'
                             ? 'Calendar'
+                            : section?.type === 'LINKS'
+                                ? 'Links'
                             : 'Folder';
 
     if (groupLoading && loading) {
@@ -275,17 +280,18 @@ const SectionView = () => {
                                 {section && (
                                     <span
                                         className={`px-2 py-0.5 rounded-full border ${section.type === 'NOTE'
-                                                ? 'bg-blue-50 border-blue-100 text-blue-700'
-                                                : section.type === 'LIST'
-                                                    ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
-                                                    : section.type === 'GALLERY'
-                                                        ? 'bg-rose-50 border-rose-100 text-rose-700'
-                                                        : section.type === 'REMINDER'
-                                                            ? 'bg-amber-50 border-amber-100 text-amber-700'
-                                                            : section.type === 'PAYMENT'
+                                            ? 'bg-blue-50 border-blue-100 text-blue-700'
+                                            : section.type === 'LIST'
+                                                ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                                                : section.type === 'GALLERY'
+                                                    ? 'bg-rose-50 border-rose-100 text-rose-700'
+                                                    : section.type === 'REMINDER'
+                                                        ? 'bg-amber-50 border-amber-100 text-amber-700'
+                                                        : section.type === 'PAYMENT'
+                                                            ? 'bg-indigo-50 border-indigo-100 text-indigo-700'
+                                                            : section.type === 'CALENDAR'
                                                                 ? 'bg-indigo-50 border-indigo-100 text-indigo-700'
-                                                                : section.type === 'CALENDAR'
-                                                                    ? 'bg-indigo-50 border-indigo-100 text-indigo-700'
+                                                                : section.type === 'LINKS' ? 'bg-blue-50 border-blue-100 text-blue-700'
                                                                     : 'bg-gray-50 border-gray-200 text-gray-700'
                                             }`}
                                     >

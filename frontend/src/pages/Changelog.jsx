@@ -9,6 +9,10 @@ const Changelog = () => {
       </p>
       <ul className="space-y-4 text-sm text-gray-700">
         <li>
+          <p className="font-semibold">Links Section</p>
+          <p>A new Links section is added for quick access to important links.</p>
+        </li>
+        <li>
           <p className="font-semibold">Workspace & sections</p>
           <p>New workspace layout with focused section views, better mobile navigation, and clearer delete permissions for admins.</p>
         </li>

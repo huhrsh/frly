@@ -10,6 +10,7 @@ import ReminderView from '../components/sections/ReminderView';
 import CalendarView from '../components/sections/CalendarView';
 import FolderView from '../components/sections/FolderView';
 import PaymentView from '../components/sections/PaymentView';
+import LinksSection from '../components/sections/LinksSection';
 import CreateSectionModal from '../components/CreateSectionModal';
 import SidebarSection from '../components/SidebarSection';
 import BentoGrid from '../components/BentoGrid';
@@ -133,6 +134,13 @@ const GroupView = () => {
 
         if (sectionIdParam) {
             const targetId = parseInt(sectionIdParam, 10);
+
+            // If sections are still loading, don't touch the URL yet. We'll
+            // resolve the section once the list has finished loading.
+            if (sectionsLoading) {
+                return;
+            }
+
             const found = sections.find(s => s.id === targetId);
             if (found) {
                 if (!selectedSection || selectedSection.id !== found.id) {
@@ -141,7 +149,8 @@ const GroupView = () => {
                 return;
             }
 
-            // If the ID in the URL no longer exists, clear it and reset selection.
+            // If the ID in the URL no longer exists *after* sections are
+            // loaded, clear it and reset selection.
             params.delete('section');
             navigate({ search: params.toString() ? `?${params.toString()}` : '' }, { replace: true });
             if (selectedSection) {
@@ -155,7 +164,7 @@ const GroupView = () => {
         if (selectedSection && !sections.find(s => s.id === selectedSection.id)) {
             setSelectedSection(null);
         }
-    }, [sections, location.search, selectedSection, navigate]);
+    }, [sections, sectionsLoading, location.search, selectedSection, navigate]);
 
     // Open manage modal when navigated from dashboard with ?manage=1
     useEffect(() => {
@@ -463,6 +472,7 @@ const GroupView = () => {
                     onOpenCreateModal={currentGroup?.currentUserRole === 'ADMIN' ? handleOpenCreateModal : undefined}
                 />
             );
+            case 'LINKS': return <LinksSection sectionId={selectedSection.id} />;
             default: return <div className="p-4">Unknown Type</div>;
         }
     };
@@ -891,7 +901,7 @@ const GroupView = () => {
 
     // BENTO / OVERVIEW VIEW: grid of sections with quick info
     return (
-        <div className="min-h-screen bg-gray-50 px-2 sm:px-4 flex flex-col">
+        <div className="min-h-[50dvh] bg-neutral-50 px-2 sm:px-4 flex flex-col">
             <div className="max-w-7xl mx-auto space-y-6 flex-1 w-full">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex-1 min-w-0">

@@ -3,6 +3,7 @@ package com.example.frly.section;
 import com.example.frly.section.dto.*;
 import com.example.frly.section.model.GalleryItem;
 import com.example.frly.section.model.ListItem;
+import com.example.frly.section.model.LinkItem;
 import com.example.frly.section.model.Note;
 import com.example.frly.section.model.Reminder;
 import com.example.frly.section.model.Section;
@@ -21,6 +22,9 @@ public interface SectionMapper {
     SectionDto toSectionDto(Section section);
 
     ListItemDto toListItemDto(ListItem listItem);
+
+    @Mapping(target = "sectionId", source = "section.id")
+    LinkDto toLinkDto(LinkItem linkItem);
 
     @Mapping(target = "sectionId", source = "section.id")
     NoteDto toNoteDto(Note note);

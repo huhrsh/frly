@@ -27,7 +27,7 @@ const CreateSectionModal = ({ onClose, onCreated, groupId, parentId = null }) =>
                 <div className="px-5 pt-5 pb-3 border-b border-gray-100 flex items-center justify-between">
                     <div>
                         <h2 className="text-sm font-semibold text-gray-900">Create new section</h2>
-                        <p className="mt-0.5 text-xs text-gray-500">Add a note, list, folder, or expense area to this group.</p>
+                        <p className="mt-0.5 text-xs text-gray-500">Add a note, checklist, links, folder, or expense area to this group.</p>
                     </div>
                     <button
                         type="button"
@@ -63,6 +63,7 @@ const CreateSectionModal = ({ onClose, onCreated, groupId, parentId = null }) =>
                             <option value="REMINDER">Reminder</option>
                             <option value="PAYMENT">Expenses</option>
                             <option value="CALENDAR">Calendar</option>
+                            <option value="LINKS">Links</option>
                             <option value="FOLDER">Folder</option>
                         </select>
                     </div>

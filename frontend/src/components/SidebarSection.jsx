@@ -40,6 +40,13 @@ const SidebarSection = ({ section, allSections, selectedSection, onSelect, depth
             typeLabelClasses = isSelected ? 'text-emerald-700' : 'text-emerald-500';
             indicatorClasses = 'border-emerald-400';
             break;
+        case 'LINKS':
+            typeClasses = isSelected
+                ? 'bg-sky-50 text-sky-700 shadow-sm'
+                : 'text-gray-700 hover:bg-sky-50 hover:text-sky-800';
+            typeLabelClasses = isSelected ? 'text-sky-700' : 'text-sky-500';
+            indicatorClasses = 'border-sky-400';
+            break;
         case 'GALLERY':
             typeClasses = isSelected
                 ? 'bg-rose-50 text-rose-700 shadow-sm'
@@ -126,9 +133,10 @@ const SidebarSection = ({ section, allSections, selectedSection, onSelect, depth
                     <span className={`ml-2 text-[10px] uppercase tracking-wide flex-shrink-0 ${typeLabelClasses}`}>
                         {section.type === 'NOTE' && 'Note'}
                         {section.type === 'LIST' && 'Checklist'}
+                        {section.type === 'LINKS' && 'Links'}
                         {section.type === 'GALLERY' && 'Files'}
-                        {section.type === 'REMINDER' && 'Reminder'}
-                        {section.type === 'PAYMENT' && 'Expenses'}
+                        {section.type === 'REMINDER' && 'Reminders'}
+                        {section.type === 'PAYMENT' && 'Payments'}
                         {section.type === 'CALENDAR' && 'Calendar'}
                     </span>
                 )}
