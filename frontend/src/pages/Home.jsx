@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
+import PageMeta from '../components/PageMeta';
 
 const Home = () => {
     const [reviews, setReviews] = useState([]);
@@ -20,6 +21,10 @@ const Home = () => {
 
     return (
         <div className="bg-white">
+            <PageMeta
+                title="fryly – Shared workspace for flatmates, families and groups"
+                description="Create a calm shared workspace for your group. Keep notes, lists, reminders, links, photos and expenses organised together in fryly."
+            />
             {/* HERO */}
             <section className="relative overflow-hidden bg-gradient-to-b from-blue-50 via-white to-white">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-16 pb-20 sm:pt-20 sm:pb-24">

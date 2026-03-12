@@ -1,8 +1,13 @@
 import React from 'react';
+import PageMeta from '../components/PageMeta';
 
 const Features = () => {
   return (
     <div className="max-w-5xl mx-auto py-10 px-4 sm:px-6">
+      <PageMeta
+        title="fryly features – Sections, workspaces and shared tools"
+        description="Explore what you get with fryly: shared groups, flexible sections for notes, lists, reminders, links, galleries, payments and more."
+      />
       <div className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-2">What you get with fryly</h1>
         <p className="text-sm text-gray-600 max-w-2xl">

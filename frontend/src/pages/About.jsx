@@ -1,8 +1,13 @@
 import React from 'react';
+import PageMeta from '../components/PageMeta';
 
 const About = () => {
   return (
     <div className="max-w-3xl mx-auto py-10 px-4 sm:px-6">
+      <PageMeta
+        title="About fryly – Shared workspace for everyday groups"
+        description="Learn why we built fryly: a simple shared workspace for families, flatmates, trips and small teams to stay organised together."
+      />
       <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-3">About fryly</h1>
       <p className="text-sm text-gray-600 mb-4">
         fryly is a shared workspace for families, friends, and small teams who want a single place to keep track of everyday life together.

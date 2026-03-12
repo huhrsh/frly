@@ -1,8 +1,13 @@
 import React from 'react';
+import PageMeta from '../components/PageMeta';
 
 const Changelog = () => {
   return (
     <div className="max-w-3xl mx-auto py-10 px-4 sm:px-6">
+      <PageMeta
+        title="fryly changelog – What’s new"
+        description="See recent updates to fryly, including new sections like Links, workspace improvements, payments and reminders."
+      />
       <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-3">Changelog</h1>
       <p className="text-sm text-gray-600 mb-6">
         A quick overview of recent improvements in fryly.
