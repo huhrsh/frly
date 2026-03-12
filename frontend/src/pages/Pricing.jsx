@@ -1,8 +1,13 @@
 import React from 'react';
+import PageMeta from '../components/PageMeta';
 
 const Pricing = () => {
   return (
     <div className="max-w-3xl mx-auto py-10 px-4 sm:px-6">
+      <PageMeta
+        title="fryly pricing – Early access"
+        description="fryly is currently in an early invite-only phase with simple limits. Learn about how pricing will evolve as the product grows."
+      />
       <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-3">Pricing</h1>
       <p className="text-sm text-gray-600 mb-4">
         fryly is currently in an early, invite-only phase.
