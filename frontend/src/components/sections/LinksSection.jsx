@@ -148,15 +148,15 @@ export default function LinksSection({ sectionId }) {
             e.preventDefault();
             handleSave();
           }}
-          className="mb-4 flex flex-col sm:flex-row gap-2 "
+          className="mb-4 space-y-2"
         >
-          <div className="flex-1 flex flex-col max-w-[50%] sm:flex-row gap-2 ">
+          <div className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               value={form.key}
               onChange={e => setForm(f => ({ ...f, key: e.target.value }))}
               placeholder="Label, e.g. Team docs"
-              className="flex-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 placeholder:text-gray-400"
+              className="w-full sm:flex-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 placeholder:text-gray-400"
               required
             />
             <input
@@ -164,17 +164,17 @@ export default function LinksSection({ sectionId }) {
               value={form.url}
               onChange={e => setForm(f => ({ ...f, url: e.target.value }))}
               placeholder="https://example.com/page"
-              className="flex-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 placeholder:text-gray-400"
+              className="w-full sm:flex-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 placeholder:text-gray-400"
               required
             />
           </div>
-          <div className="flex sm:w-[50%] gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
             <input
               type="text"
               value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               placeholder="Short description (optional)"
-              className="px-3 py-2.5 flex-grow border border-gray-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 placeholder:text-gray-400"
+              className="w-full sm:flex-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 placeholder:text-gray-400"
             />
             <button
               type="submit"
