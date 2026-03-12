@@ -40,6 +40,13 @@ export const useSectionPreviews = (sections) => {
                             kind: 'LIST',
                             items: items.slice(0, 3).map(item => ({ text: item.text, completed: item.completed }))
                         };
+                    } else if (section.type === 'LINKS') {
+                        const res = await axiosClient.get(`/groups/sections/${section.id}/links`);
+                        const links = Array.isArray(res.data) ? res.data : [];
+                        newPreviews[section.id] = {
+                            kind: 'LINKS',
+                            count: links.length,
+                        };
                     } else if (section.type === 'REMINDER') {
                         const res = await axiosClient.get(`/groups/sections/${section.id}/reminders`);
                         let items = Array.isArray(res.data) ? res.data : [];

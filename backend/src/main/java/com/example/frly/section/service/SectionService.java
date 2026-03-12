@@ -1,15 +1,9 @@
 package com.example.frly.section.service;
 
 import com.example.frly.common.enums.RecordStatus;
-import com.example.frly.section.dto.CreateListItemRequestDto;
-import com.example.frly.section.dto.CreateSectionRequestDto;
-import com.example.frly.section.dto.ListItemDto;
-import com.example.frly.section.dto.SectionDto;
+import com.example.frly.section.dto.*;
 import com.example.frly.section.model.ListItem;
-import com.example.frly.section.dto.NoteDto;
-import com.example.frly.section.dto.UpdateNoteRequestDto;
-import com.example.frly.section.dto.ReminderDto;
-import com.example.frly.section.dto.CreateReminderRequestDto;
+import com.example.frly.section.model.LinkItem;
 import com.example.frly.section.model.Note;
 import com.example.frly.section.model.Reminder;
 import com.example.frly.section.model.CalendarEvent;
@@ -39,6 +33,7 @@ public class SectionService {
 
     private final SectionRepository sectionRepository;
     private final ListItemRepository listItemRepository;
+    private final LinkItemRepository linkItemRepository;
     private final NoteRepository noteRepository;
     private final ReminderRepository reminderRepository;
     private final CalendarEventRepository calendarEventRepository;
@@ -153,6 +148,84 @@ public class SectionService {
 
         item.setCompleted(!item.isCompleted());
         listItemRepository.save(item);
+    }
+
+    // --- LINK ITEMS ---
+
+    @Transactional
+    public Long addLink(Long sectionId, CreateLinkRequestDto request) {
+        validateGroupAccess();
+        Section section = requireActiveSection(sectionId);
+        validateSectionType(section, SectionType.LINKS, "Cannot add link to non-LINKS section");
+
+        LinkItem link = new LinkItem();
+        link.setSection(section);
+        link.setKey(request.getKey());
+        link.setUrl(request.getUrl());
+        link.setDescription(request.getDescription());
+        link.setPosition(999); // naive default; can be updated via reorder
+
+        link = linkItemRepository.save(link);
+        return link.getId();
+    }
+
+    public List<LinkDto> getLinks(Long sectionId) {
+        validateGroupAccess();
+        requireActiveSection(sectionId);
+        return linkItemRepository.findBySectionIdAndStatusNotOrderByPositionAsc(sectionId, RecordStatus.DELETED).stream()
+                .map(sectionMapper::toLinkDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void updateLink(Long linkId, UpdateLinkRequestDto request) {
+        validateGroupAccess();
+        LinkItem link = linkItemRepository.findById(linkId)
+                .orElseThrow(() -> new BadRequestException("Link not found"));
+        validateSectionNotDeleted(link.getSection());
+
+        if (request.getKey() != null) {
+            link.setKey(request.getKey());
+        }
+        if (request.getUrl() != null) {
+            link.setUrl(request.getUrl());
+        }
+        if (request.getDescription() != null) {
+            link.setDescription(request.getDescription());
+        }
+
+        linkItemRepository.save(link);
+    }
+
+    @Transactional
+    public void deleteLink(Long linkId) {
+        validateGroupAccess();
+        LinkItem link = linkItemRepository.findById(linkId)
+                .orElseThrow(() -> new BadRequestException("Link not found"));
+        validateSectionNotDeleted(link.getSection());
+
+        link.setStatus(RecordStatus.DELETED);
+        linkItemRepository.save(link);
+    }
+
+    @Transactional
+    public void reorderLinks(Long sectionId, List<Long> orderedIds) {
+        validateGroupAccess();
+        Section section = requireActiveSection(sectionId);
+        validateSectionType(section, SectionType.LINKS, "Cannot reorder links for non-LINKS section");
+
+        List<LinkItem> links = linkItemRepository.findBySectionIdAndStatusNot(sectionId, RecordStatus.DELETED);
+        java.util.Map<Long, LinkItem> byId = links.stream()
+                .collect(Collectors.toMap(LinkItem::getId, l -> l));
+
+        int pos = 1;
+        for (Long id : orderedIds) {
+            LinkItem link = byId.get(id);
+            if (link != null) {
+                link.setPosition(pos++);
+            }
+        }
+        linkItemRepository.saveAll(links);
     }
 
     // --- NOTES ---

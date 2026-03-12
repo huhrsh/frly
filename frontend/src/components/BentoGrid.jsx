@@ -14,19 +14,21 @@ const BentoGrid = ({ sections, previews, allSections, groupId, onOpenCreateModal
 
                 const typeLabel = section.type === 'NOTE' ? 'Note'
                     : section.type === 'LIST' ? 'Checklist'
-                        : section.type === 'GALLERY' ? 'Files'
-                            : section.type === 'REMINDER' ? 'Reminder'
-                                : section.type === 'PAYMENT' ? 'Expenses'
-                                    : section.type === 'CALENDAR' ? 'Calendar'
-                                        : 'Folder';
+                        : section.type === 'LINKS' ? 'Links'
+                            : section.type === 'GALLERY' ? 'Files'
+                                : section.type === 'REMINDER' ? 'Reminder'
+                                    : section.type === 'PAYMENT' ? 'Expenses'
+                                        : section.type === 'CALENDAR' ? 'Calendar'
+                                            : 'Folder';
 
                 const typeBadgeClass = section.type === 'NOTE' ? 'bg-blue-50 text-blue-700'
                     : section.type === 'LIST' ? 'bg-emerald-50 text-emerald-700'
-                        : section.type === 'GALLERY' ? 'bg-rose-50 text-rose-700'
-                            : section.type === 'REMINDER' ? 'bg-amber-50 text-amber-700'
-                                : section.type === 'PAYMENT' ? 'bg-purple-50 text-purple-700'
-                                    : section.type === 'CALENDAR' ? 'bg-indigo-50 text-indigo-700'
-                                        : 'bg-gray-100 text-gray-700';
+                        : section.type === 'LINKS' ? 'bg-sky-50 text-sky-700'
+                            : section.type === 'GALLERY' ? 'bg-rose-50 text-rose-700'
+                                : section.type === 'REMINDER' ? 'bg-amber-50 text-amber-700'
+                                    : section.type === 'PAYMENT' ? 'bg-purple-50 text-purple-700'
+                                        : section.type === 'CALENDAR' ? 'bg-indigo-50 text-indigo-700'
+                                            : 'bg-gray-100 text-gray-700';
 
                 const preview = previews[section.id];
 
@@ -92,6 +94,12 @@ const BentoGrid = ({ sections, previews, allSections, groupId, onOpenCreateModal
                                         <li className="text-gray-400">No items yet</li>
                                     )}
                                 </ul>
+                            ) : preview?.kind === 'LINKS' ? (
+                                <p className="text-xs text-gray-500">
+                                    {typeof preview.count === 'number' && preview.count > 0
+                                        ? `${preview.count} link${preview.count === 1 ? '' : 's'}`
+                                        : 'No links yet'}
+                                </p>
                             ) : preview?.kind === 'REMINDER' ? (
                                 <ul className="space-y-1 max-h-16 overflow-hidden">
                                     {preview.reminders?.length ? preview.reminders.map((r, idx) => (

@@ -119,7 +119,7 @@ const ListView = ({ sectionId }) => {
                                             onChange={() => toggleItem(item)}
                                             className="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 cursor-pointer"
                                         />
-                                        <span className="text-sm text-gray-800 truncate">
+                                        <span className="text-sm text-gray-800 whitespace-normal break-words md:truncate md:whitespace-nowrap">
                                             {item.text}
                                         </span>
                                     </div>
@@ -153,7 +153,7 @@ const ListView = ({ sectionId }) => {
                                                 onChange={() => toggleItem(item)}
                                                 className="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 cursor-pointer"
                                             />
-                                            <span className="text-sm line-through text-gray-400 truncate">
+                                            <span className="text-sm line-through text-gray-400 whitespace-normal break-words md:truncate md:whitespace-nowrap">
                                                 {item.text}
                                             </span>
                                         </div>

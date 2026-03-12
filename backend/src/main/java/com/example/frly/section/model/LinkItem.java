@@ -1,0 +1,38 @@
+package com.example.frly.section.model;
+
+import com.example.frly.common.GroupAwareEntity;
+import com.example.frly.common.enums.RecordStatus;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
+@Entity
+@Table(name = "link_items", schema = "config")
+@Getter
+@Setter
+public class LinkItem extends GroupAwareEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "section_id", nullable = false)
+    private Section section;
+
+    @Column(name = "link_key", nullable = false)
+    private String key;
+
+    @Column(nullable = false)
+    private String url;
+
+    @Column
+    private String description;
+
+    @Column(name = "position_order")
+    private Integer position;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private RecordStatus status = RecordStatus.ACTIVE;
+}

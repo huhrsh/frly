@@ -55,6 +55,37 @@ public class SectionController {
         return ResponseEntity.ok().build();
     }
 
+    // --- LINKS ---
+
+    @PostMapping("/{sectionId}/links")
+    public ResponseEntity<Long> addLink(@PathVariable Long sectionId, @RequestBody CreateLinkRequestDto request) {
+        Long linkId = sectionService.addLink(sectionId, request);
+        return ResponseEntity.ok(linkId);
+    }
+
+    @GetMapping("/{sectionId}/links")
+    public ResponseEntity<java.util.List<LinkDto>> getLinks(@PathVariable Long sectionId) {
+        return ResponseEntity.ok(sectionService.getLinks(sectionId));
+    }
+
+    @PutMapping("/links/{linkId}")
+    public ResponseEntity<Void> updateLink(@PathVariable Long linkId, @RequestBody UpdateLinkRequestDto request) {
+        sectionService.updateLink(linkId, request);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/links/{linkId}")
+    public ResponseEntity<Void> deleteLink(@PathVariable Long linkId) {
+        sectionService.deleteLink(linkId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/{sectionId}/links/reorder")
+    public ResponseEntity<Void> reorderLinks(@PathVariable Long sectionId, @RequestBody java.util.List<Long> orderedIds) {
+        sectionService.reorderLinks(sectionId, orderedIds);
+        return ResponseEntity.ok().build();
+    }
+
     // --- NOTES ---
 
     @GetMapping("/{sectionId}/note")
