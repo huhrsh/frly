@@ -1,0 +1,21 @@
+{
+  "name": "fryly",
+  "short_name": "fryly",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "description": "Shared workspace for flatmates, families and small groups.",
+  "icons": [
+    {
+      "src": "/teamwork.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/teamwork.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
