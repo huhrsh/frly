@@ -4,6 +4,9 @@ import com.example.frly.auth.AuthUtil;
 import com.example.frly.common.enums.RecordStatus;
 import com.example.frly.common.exception.BadRequestException;
 import com.example.frly.group.GroupContext;
+import com.example.frly.group.enums.GroupMemberStatus;
+import com.example.frly.group.model.GroupMember;
+import com.example.frly.group.repository.GroupMemberRepository;
 import com.example.frly.group.service.GroupService;
 import com.example.frly.section.dto.CreatePaymentExpenseRequestDto;
 import com.example.frly.section.dto.PaymentBalanceDto;
@@ -20,6 +23,10 @@ import com.example.frly.section.mapper.PaymentMapper;
 import com.example.frly.user.User;
 import com.example.frly.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +44,7 @@ public class PaymentService {
     private final PaymentExpenseRepository paymentExpenseRepository;
     private final PaymentShareRepository paymentShareRepository;
     private final PaymentMapper paymentMapper;
+    private final GroupMemberRepository groupMemberRepository;
 
     @Transactional
     public Long addExpense(Long sectionId, CreatePaymentExpenseRequestDto request) {
@@ -107,61 +115,101 @@ public class PaymentService {
         List<PaymentShare> allShares = paymentShareRepository
                 .findByExpenseSectionIdAndStatusNot(sectionId, RecordStatus.DELETED);
 
-        // Group shares by expense ID for efficient lookup
         Map<Long, List<PaymentShare>> sharesByExpense = allShares.stream()
-            .collect(Collectors.groupingBy(share -> share.getExpense().getId()));
+                .collect(Collectors.groupingBy(share -> share.getExpense().getId()));
 
-        // Map expenses to DTOs using mapper
         return expenses.stream()
                 .map(expense -> {
                     PaymentExpenseDto dto = paymentMapper.toPaymentExpenseDto(expense);
-
-                    // Map shares using mapper
-                    List<PaymentShareDto> shareDtos = sharesByExpense
-                            .getOrDefault(expense.getId(), List.of())
+                    List<PaymentShareDto> shareDtos = sharesByExpense.getOrDefault(expense.getId(), List.of())
                             .stream()
                             .map(paymentMapper::toPaymentShareDto)
-                            .toList();
-
+                            .collect(Collectors.toList());
                     dto.setShares(shareDtos);
                     return dto;
                 })
-                .toList();
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PaymentExpenseDto> getExpensesPaged(Long sectionId, int page, int size) {
+        groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
+
+        Section section = sectionRepository.findById(sectionId)
+                .orElseThrow(() -> new BadRequestException("Section not found"));
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+        if (section.getStatus() == RecordStatus.DELETED) {
+            return Page.empty(pageable);
+        }
+
+        Page<PaymentExpense> expensesPage = paymentExpenseRepository
+                .findBySectionIdAndStatusNot(sectionId, RecordStatus.DELETED, pageable);
+        List<PaymentShare> allShares = paymentShareRepository
+                .findByExpenseSectionIdAndStatusNot(sectionId, RecordStatus.DELETED);
+
+        Map<Long, List<PaymentShare>> sharesByExpense = allShares.stream()
+                .collect(Collectors.groupingBy(share -> share.getExpense().getId()));
+
+        return expensesPage.map(expense -> {
+            PaymentExpenseDto dto = paymentMapper.toPaymentExpenseDto(expense);
+            List<PaymentShareDto> shareDtos = sharesByExpense.getOrDefault(expense.getId(), List.of())
+                    .stream()
+                    .map(paymentMapper::toPaymentShareDto)
+                    .collect(Collectors.toList());
+            dto.setShares(shareDtos);
+            return dto;
+        });
     }
 
     @Transactional(readOnly = true)
     public List<PaymentBalanceDto> getBalances(Long sectionId) {
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
+
         Section section = sectionRepository.findById(sectionId)
                 .orElseThrow(() -> new BadRequestException("Section not found"));
         if (section.getStatus() == RecordStatus.DELETED) {
             return List.of();
         }
-        List<PaymentExpense> expenses = paymentExpenseRepository.findBySectionIdAndStatusNotOrderByExpenseDateDesc(sectionId, RecordStatus.DELETED);
-        List<PaymentShare> allShares = paymentShareRepository.findByExpenseSectionIdAndStatusNot(sectionId, RecordStatus.DELETED);
+
+        Long groupId = Long.valueOf(section.getGroupId());
+        Set<Long> activeUserIds = groupMemberRepository.findByGroupIdAndStatus(groupId, GroupMemberStatus.APPROVED)
+                .stream()
+                .map(m -> m.getUser().getId())
+                .collect(Collectors.toSet());
+
+        List<PaymentExpense> expenses = paymentExpenseRepository
+                .findBySectionIdAndStatusNotOrderByExpenseDateDesc(sectionId, RecordStatus.DELETED);
+        List<PaymentShare> allShares = paymentShareRepository
+                .findByExpenseSectionIdAndStatusNot(sectionId, RecordStatus.DELETED);
 
         Map<Long, List<PaymentShare>> sharesByExpense = allShares.stream()
-            .collect(Collectors.groupingBy(share -> share.getExpense().getId()));
+                .collect(Collectors.groupingBy(share -> share.getExpense().getId()));
 
         Map<Long, PaymentBalanceDto> balances = new HashMap<>();
 
         for (PaymentExpense expense : expenses) {
             Long payerId = expense.getPaidBy().getId();
-            balances.computeIfAbsent(payerId, id -> {
-                PaymentBalanceDto dto = new PaymentBalanceDto();
-                dto.setUserId(id);
-                dto.setFirstName(expense.getPaidBy().getFirstName());
-                dto.setLastName(expense.getPaidBy().getLastName());
-                dto.setBalance(BigDecimal.ZERO);
-                return dto;
-            });
+            if (activeUserIds.contains(payerId)) {
+                balances.computeIfAbsent(payerId, id -> {
+                    PaymentBalanceDto dto = new PaymentBalanceDto();
+                    dto.setUserId(id);
+                    dto.setFirstName(expense.getPaidBy().getFirstName());
+                    dto.setLastName(expense.getPaidBy().getLastName());
+                    dto.setBalance(BigDecimal.ZERO);
+                    return dto;
+                });
 
-            PaymentBalanceDto payerBalance = balances.get(payerId);
-            payerBalance.setBalance(payerBalance.getBalance().add(expense.getTotalAmount()));
+                PaymentBalanceDto payerBalance = balances.get(payerId);
+                payerBalance.setBalance(payerBalance.getBalance().add(expense.getTotalAmount()));
+            }
 
             List<PaymentShare> shares = sharesByExpense.getOrDefault(expense.getId(), List.of());
             for (PaymentShare share : shares) {
                 Long userId = share.getUser().getId();
+                if (!activeUserIds.contains(userId)) {
+                    continue;
+                }
                 balances.computeIfAbsent(userId, id -> {
                     PaymentBalanceDto dto = new PaymentBalanceDto();
                     dto.setUserId(id);
@@ -232,6 +280,9 @@ public class PaymentService {
         expense.setTotalAmount(request.getTotalAmount());
         expense.setCurrency("INR"); // For now we only support INR
         expense.setExpenseDate(request.getExpenseDate());
+        if (expense.getExpenseType() == null) {
+            expense.setExpenseType("NORMAL");
+        }
     }
 
     /**
@@ -245,6 +296,102 @@ public class PaymentService {
             share.setUser(user);
             share.setShareAmount(shareInput.getShareAmount());
             paymentShareRepository.save(share);
+        }
+    }
+
+    @Transactional
+    public void settleSection(Long sectionId) {
+        groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
+
+        Section section = validatePaymentSection(sectionId);
+
+        Long groupId = Long.valueOf(section.getGroupId());
+        Set<Long> activeUserIds = groupMemberRepository.findByGroupIdAndStatus(groupId, GroupMemberStatus.APPROVED)
+            .stream()
+            .map(m -> m.getUser().getId())
+            .collect(Collectors.toSet());
+
+        // Compute current balances
+        List<PaymentExpense> expenses = paymentExpenseRepository
+                .findBySectionIdAndStatusNotOrderByExpenseDateDesc(sectionId, RecordStatus.DELETED);
+        List<PaymentShare> allShares = paymentShareRepository
+                .findByExpenseSectionIdAndStatusNot(sectionId, RecordStatus.DELETED);
+
+        Map<Long, List<PaymentShare>> sharesByExpense = allShares.stream()
+                .collect(Collectors.groupingBy(share -> share.getExpense().getId()));
+
+        Map<Long, BigDecimal> balances = new HashMap<>();
+
+        for (PaymentExpense expense : expenses) {
+            Long payerId = expense.getPaidBy().getId();
+            if (activeUserIds.contains(payerId)) {
+                balances.putIfAbsent(payerId, BigDecimal.ZERO);
+                balances.put(payerId, balances.get(payerId).add(expense.getTotalAmount()));
+            }
+
+            List<PaymentShare> shares = sharesByExpense.getOrDefault(expense.getId(), List.of());
+            for (PaymentShare share : shares) {
+                Long userId = share.getUser().getId();
+                if (!activeUserIds.contains(userId)) {
+                    continue;
+                }
+                balances.putIfAbsent(userId, BigDecimal.ZERO);
+                balances.put(userId, balances.get(userId).subtract(share.getShareAmount()));
+            }
+        }
+
+        List<Map.Entry<Long, BigDecimal>> creditors = balances.entrySet().stream()
+                .filter(e -> e.getValue().compareTo(BigDecimal.ZERO) > 0)
+                .sorted((a, b) -> b.getValue().compareTo(a.getValue()))
+                .collect(Collectors.toList());
+
+        List<Map.Entry<Long, BigDecimal>> debtors = balances.entrySet().stream()
+                .filter(e -> e.getValue().compareTo(BigDecimal.ZERO) < 0)
+                .sorted((a, b) -> a.getValue().compareTo(b.getValue()))
+                .collect(Collectors.toList());
+
+        int ci = 0;
+        int di = 0;
+
+        while (ci < creditors.size() && di < debtors.size()) {
+            Map.Entry<Long, BigDecimal> cred = creditors.get(ci);
+            Map.Entry<Long, BigDecimal> debt = debtors.get(di);
+
+            BigDecimal credAmt = cred.getValue();
+            BigDecimal debtAmt = debt.getValue().abs();
+
+            BigDecimal transfer = credAmt.min(debtAmt);
+            if (transfer.compareTo(BigDecimal.ZERO) <= 0) {
+                break;
+            }
+
+            // Debtor pays creditor via a settlement expense
+            PaymentExpense settlement = new PaymentExpense();
+            settlement.setSection(section);
+            settlement.setPaidBy(userRepository.getReferenceById(debt.getKey()));
+            settlement.setDescription("Settlement");
+            settlement.setTotalAmount(transfer);
+            settlement.setCurrency("INR");
+            settlement.setExpenseDate(java.time.OffsetDateTime.now());
+            settlement.setExpenseType("SETTLEMENT");
+
+            settlement = paymentExpenseRepository.save(settlement);
+
+            PaymentShare share = new PaymentShare();
+            share.setExpense(settlement);
+            share.setUser(userRepository.getReferenceById(cred.getKey()));
+            share.setShareAmount(transfer);
+            paymentShareRepository.save(share);
+
+            cred.setValue(credAmt.subtract(transfer));
+            debt.setValue(debt.getValue().add(transfer));
+
+            if (cred.getValue().compareTo(BigDecimal.ZERO) <= 0) {
+                ci++;
+            }
+            if (debt.getValue().compareTo(BigDecimal.ZERO) >= 0) {
+                di++;
+            }
         }
     }
 }

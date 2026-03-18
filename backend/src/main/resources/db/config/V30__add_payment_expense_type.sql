@@ -1,0 +1,2 @@
+ALTER TABLE payment_expenses
+    ADD COLUMN IF NOT EXISTS expense_type VARCHAR(20) NOT NULL DEFAULT 'NORMAL';

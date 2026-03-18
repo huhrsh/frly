@@ -12,7 +12,7 @@ import FolderView from '../components/sections/FolderView';
 import PaymentView from '../components/sections/PaymentView';
 import CreateSectionModal from '../components/CreateSectionModal';
 import { toast } from 'react-toastify';
-import { Trash2, ArrowLeft, Home, LayoutPanelLeft, LayoutGrid, Users } from 'lucide-react';
+import { Trash2, ArrowLeft, Home, LayoutPanelLeft, LayoutGrid, Users, Pencil, Check, X } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 import LinksSection from '../components/sections/LinksSection';
 
@@ -28,6 +28,8 @@ const SectionView = () => {
     const [confirmConfig, setConfirmConfig] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [createModalParentId, setCreateModalParentId] = useState(null);
+    const [renamingSectionId, setRenamingSectionId] = useState(null);
+    const [renameTitle, setRenameTitle] = useState('');
 
     // Ensure group context is set and details loaded
     useEffect(() => {
@@ -124,6 +126,39 @@ const SectionView = () => {
         });
     };
 
+    const handleStartRenameSection = () => {
+        if (!section) return;
+        setRenamingSectionId(section.id);
+        setRenameTitle(section.title || '');
+    };
+
+    const handleCancelRenameSection = () => {
+        setRenamingSectionId(null);
+        setRenameTitle('');
+    };
+
+    const handleSubmitRenameSection = async () => {
+        if (!section) return;
+        const trimmed = (renameTitle || '').trim();
+        if (!trimmed) {
+            toast.error('Title cannot be empty');
+            return;
+        }
+
+        try {
+            await axiosClient.patch(`/groups/sections/${section.id}/title`, { title: trimmed });
+            setSections(prev => prev.map(s => (s.id === section.id ? { ...s, title: trimmed } : s)));
+            setSection(prev => (prev ? { ...prev, title: trimmed } : prev));
+            toast.success('Section renamed');
+            setRenamingSectionId(null);
+            setRenameTitle('');
+        } catch (err) {
+            console.error('Failed to rename section', err);
+            const msg = err.response?.data?.message || 'Failed to rename section';
+            toast.error(msg);
+        }
+    };
+
     const handleOpenCreateModal = (parentId = null) => {
         setCreateModalParentId(parentId);
         setShowCreateModal(true);
@@ -157,7 +192,7 @@ const SectionView = () => {
             case 'NOTE':
                 return <NoteView sectionId={section.id} />;
             case 'LIST':
-                return <ListView sectionId={section.id} />;
+                return <ListView sectionId={section.id} section={section} />;
             case 'GALLERY':
                 return <GalleryView sectionId={section.id} />;
             case 'REMINDER':
@@ -247,20 +282,20 @@ const SectionView = () => {
                                     <Trash2 size={14} />
                                     Delete section
                                 </button>
-                                <div className="hidden sm:inline-flex items-center rounded-full border border-gray-200 bg-white p-0.5 text-[11px] shadow-sm">
+                                <div className="hidden sm:inline-flex gap-1 items-center rounded-full border border-gray-200 bg-white p-0.5 text-xs shadow-sm">
                                     <button
                                         type="button"
                                         onClick={handleGoToWorkspace}
-                                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                                        className="inline-flex items-center gap-1 px-3.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                                     >
-                                        <LayoutPanelLeft size={12} />
+                                        <LayoutPanelLeft size={14} />
                                         Workspace
                                     </button>
                                     <button
                                         type="button"
-                                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full font-medium bg-blue-600 text-white shadow"
+                                        className="inline-flex items-center gap-1 px-3.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full font-medium bg-blue-600 text-white shadow"
                                     >
-                                        <LayoutGrid size={12} />
+                                        <LayoutGrid size={14} />
                                         Overview
                                     </button>
                                 </div>
@@ -270,9 +305,60 @@ const SectionView = () => {
 
                     <div className="flex items-start justify-between gap-3 pb-3 border-b-2 border-gray-100">
                         <div className="min-w-0 ">
-                            <h1 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">
-                                {section?.title || 'Section'}
-                            </h1>
+                            {section ? (
+                                <>
+                                    {renamingSectionId === section.id ? (
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="text"
+                                                className="w-40 sm:w-64 lg:w-80 px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                                value={renameTitle}
+                                                onChange={(e) => setRenameTitle(e.target.value)}
+                                                maxLength={120}
+                                                autoFocus
+                                            />
+                                            {currentGroup?.currentUserRole === 'ADMIN' && (
+                                                <>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleSubmitRenameSection}
+                                                        className="inline-flex items-center px-2.5 py-1 rounded-md bg-blue-600 text-white text-xs font-medium hover:bg-blue-700"
+                                                    >
+                                                        Save
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleCancelRenameSection}
+                                                        className="inline-flex items-center px-2.5 py-1 rounded-md border border-gray-200 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-1.5">
+                                            <h1 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">
+                                                {section.title}
+                                            </h1>
+                                            {currentGroup?.currentUserRole === 'ADMIN' && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleStartRenameSection}
+                                                    className="inline-flex items-center justify-center p-1 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 flex-shrink-0"
+                                                    aria-label="Rename section"
+                                                >
+                                                    <Pencil size={16} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <h1 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">
+                                    Section
+                                </h1>
+                            )}
                             <div className="mt-1 flex items-center gap-2 text-xs sm:text-[13px] text-gray-500">
                                 {currentGroup && (
                                     <span className="truncate">in {currentGroup.displayName}</span>
@@ -300,7 +386,7 @@ const SectionView = () => {
                                 )}
                             </div>
                         </div>
-                        {section && currentGroup?.currentUserRole === 'ADMIN' && (
+                        {section && currentGroup?.currentUserRole === 'ADMIN' && renamingSectionId !== section.id && (
                             <button
                                 type="button"
                                 onClick={handleDeleteSection}

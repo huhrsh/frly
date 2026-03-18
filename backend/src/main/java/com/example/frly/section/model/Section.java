@@ -30,6 +30,9 @@ public class Section extends GroupAwareEntity {
     @Column(nullable = false)
     private RecordStatus status = RecordStatus.ACTIVE;
 
+    @Column(name = "list_display_mode", nullable = false)
+    private String listDisplayMode = "CHECKBOX";
+
     // Section-level password protection was removed; columns dropped via migration.
 
     @ManyToOne(fetch = FetchType.LAZY)

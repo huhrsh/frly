@@ -10,5 +10,6 @@ public class SectionDto {
     private SectionType type;
     private Integer position;
     private Long parentId;
+    private String listDisplayMode;
     // Section-level passwords removed; this flag is deprecated and no longer sent.
 }
