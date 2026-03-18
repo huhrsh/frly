@@ -6,6 +6,8 @@ import PublicRoute from './components/PublicRoute';
 import ScrollToTop from './ScrollToTop';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import OfflineBanner from './components/OfflineBanner';
+import InstallPrompt from './components/InstallPrompt';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -35,6 +37,8 @@ function App() {
 	<div className="min-h-[100dvh] flex flex-col bg-gray-50">
       <ToastContainer position="top-right" autoClose={3000} />
       <Header />
+  <OfflineBanner />
+  <InstallPrompt />
       <main className="flex-1 px-4 py-4 sm:px-6 sm:py-6">
         <ScrollToTop />
         <Routes>
