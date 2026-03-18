@@ -22,8 +22,8 @@ const Home = () => {
     return (
         <div className="bg-white">
             <PageMeta
-                title="fryly – Shared workspace for flatmates, families and groups"
-                description="Create a calm shared workspace for your group. Keep notes, lists, reminders, links, photos and expenses organised together in fryly."
+                title="fryly – Shared home base for flats, families and close crews"
+                description="Fryly is a calm shared home base for the people you live and plan with every week – flats, families and recurring crews. Keep notes, lists, reminders, links, photos and expenses organised together outside noisy chats."
             />
             {/* HERO */}
             <section className="relative overflow-hidden bg-gradient-to-b from-blue-50 via-white to-white">
@@ -31,13 +31,13 @@ const Home = () => {
                     <div className="text-center max-w-3xl mx-auto">
                         <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-4 py-1.5 text-xs font-medium text-blue-700 mb-6">
                             <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-                            Your group's shared space
+                            Best for shared homes, families and close crews
                         </div>
                         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-gray-900 leading-tight">
-                            Stop losing plans in chat.
+                            A shared home base for your flat or family.
                         </h1>
                         <p className="mt-6 text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
-                            One shared workspace for flatmates, families & small groups. Keep lists, plans, photos and payments in sync.
+                            For the people you share life with every week – keep chores, bills, trips and important info together in one calm workspace, instead of buried in chat.
                         </p>
                         
                         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -56,7 +56,7 @@ const Home = () => {
                         </div>
 
                         <p className="mt-6 text-sm text-gray-500">
-                            No credit card · No setup hassle · Just create and invite
+                            No credit card · Best for ongoing groups · Just create and invite
                         </p>
                     </div>
 
@@ -64,7 +64,7 @@ const Home = () => {
                     <div className="mt-40 max-w-5xl mx-auto">
                         <div className="text-center mb-8">
                             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Who uses fryly?</h2>
-                            <p className="mt-2 text-sm sm:text-base text-gray-600">Real groups solving real problems</p>
+                            <p className="mt-2 text-sm sm:text-base text-gray-600">Everyday groups you keep coming back to</p>
                         </div>
 
                         <div className="grid gap-4 sm:grid-cols-3">
@@ -76,11 +76,11 @@ const Home = () => {
                                 <p className="mt-3 text-xs font-medium text-gray-700">Chores · Bills · Groceries · Maintenance</p>
                             </div>
                             <div className="group rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-50 p-6 border-2 border-blue-100 hover:border-blue-200 transition-all hover:shadow-lg">
-                                <h3 className="text-sm font-bold text-gray-900 mb-2">Trips &amp; Travel</h3>
+                                <h3 className="text-sm font-bold text-gray-900 mb-2">Your regular crew &amp; trips</h3>
                                 <p className="text-xs text-gray-600">
-                                    "Where's the hotel booking?" "Who paid for dinner?" Track itineraries, flight details, split expenses, and store trip photos in a shared album everyone can access.
+                                    Annual trips, weekend plans, the same group of friends. Keep itineraries, bookings, shared links, photos and who-paid-what in a space you reuse beyond one night out.
                                 </p>
-                                <p className="mt-3 text-xs font-medium text-gray-700">Itinerary · Bookings · Photos · Expenses</p>
+                                <p className="mt-3 text-xs font-medium text-gray-700">Trips · Outings · Shared expenses</p>
                             </div>
                             <div className="group rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 p-6 border-2 border-emerald-100 hover:border-emerald-200 transition-all hover:shadow-lg">
                                 <h3 className="text-sm font-bold text-gray-900 mb-2">Families</h3>

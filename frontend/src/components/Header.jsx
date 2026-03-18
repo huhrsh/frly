@@ -135,7 +135,7 @@ const Header = () => {
                                 </p>
                                 <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">How fryly works</h2>
                                 <p className="text-sm text-gray-500 mt-2">
-                                    A shared home for your group&apos;s notes, checklists, files, reminders, calendar and expenses.
+                                    A shared home base for the people you live and plan with \\u2013 notes, checklists, files, reminders, calendar and expenses in one place.
                                 </p>
                             </div>
                             <button
@@ -150,9 +150,9 @@ const Header = () => {
                             <section className="p-4 sm:p-5 rounded-2xl border border-gray-100 bg-gray-50/80">
                                 <h3 className="text-[13px] font-semibold text-gray-900 mb-2">1. Core idea</h3>
                                 <p className="text-sm text-gray-700">
-                                    Fryly is built for real groups: families, flatmates, small teams and close friends. Instead of juggling
-                                    WhatsApp chats, spreadsheets and random notes, you keep everything in one place: a group with sections
-                                    for different kinds of information.
+                                    Fryly is built for real everyday groups you keep coming back to: your flat, your family, your regular crew.
+                                    Instead of juggling WhatsApp chats, spreadsheets and random notes, you keep everything in one place: a group
+                                    with sections for different kinds of information.
                                 </p>
                             </section>
 
