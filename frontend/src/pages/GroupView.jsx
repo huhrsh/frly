@@ -18,7 +18,7 @@ import GroupManageModal from '../components/GroupManageModal';
 import UserInfoModal from '../components/UserInfoModal';
 import { useSectionPreviews } from '../hooks/useSectionPreviews';
 import { toast } from 'react-toastify';
-import { Copy, Trash2, LayoutPanelLeft, LayoutGrid, Users, ArrowLeft, Check, ChevronRight } from 'lucide-react';
+import { Copy, Trash2, LayoutPanelLeft, LayoutGrid, Users, ArrowLeft, Check, ChevronRight, Pencil, X } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 import { useAuth } from '../context/AuthContext';
 
@@ -48,6 +48,9 @@ const GroupView = () => {
     const [confirmConfig, setConfirmConfig] = useState(null);
     const [showManageModal, setShowManageModal] = useState(false);
     const [selectedMemberForInfo, setSelectedMemberForInfo] = useState(null);
+
+    const [renamingSectionId, setRenamingSectionId] = useState(null);
+    const [renameTitle, setRenameTitle] = useState('');
 
     const [inviteCodeCopied, setInviteCodeCopied] = useState(false);
 
@@ -234,6 +237,39 @@ const GroupView = () => {
                 }
             }
         });
+    };
+
+    const handleStartRenameSection = () => {
+        if (!selectedSection) return;
+        setRenamingSectionId(selectedSection.id);
+        setRenameTitle(selectedSection.title || '');
+    };
+
+    const handleCancelRenameSection = () => {
+        setRenamingSectionId(null);
+        setRenameTitle('');
+    };
+
+    const handleSubmitRenameSection = async () => {
+        if (!selectedSection) return;
+        const trimmed = (renameTitle || '').trim();
+        if (!trimmed) {
+            toast.error('Title cannot be empty');
+            return;
+        }
+
+        try {
+            await axiosClient.patch(`/groups/sections/${selectedSection.id}/title`, { title: trimmed });
+            setSections(prev => prev.map(s => (s.id === selectedSection.id ? { ...s, title: trimmed } : s)));
+            setSelectedSection(prev => (prev && prev.id === selectedSection.id ? { ...prev, title: trimmed } : prev));
+            toast.success('Section renamed');
+            setRenamingSectionId(null);
+            setRenameTitle('');
+        } catch (error) {
+            console.error('Failed to rename section', error);
+            const msg = error.response?.data?.message || 'Failed to rename section';
+            toast.error(msg);
+        }
     };
 
     const handleDeleteSectionById = (section) => {
@@ -459,7 +495,7 @@ const GroupView = () => {
 
         switch (selectedSection.type) {
             case 'NOTE': return <NoteView sectionId={selectedSection.id} />;
-            case 'LIST': return <ListView sectionId={selectedSection.id} />;
+            case 'LIST': return <ListView sectionId={selectedSection.id} section={selectedSection} />;
             case 'GALLERY': return <GalleryView sectionId={selectedSection.id} />;
             case 'REMINDER': return <ReminderView sectionId={selectedSection.id} />;
             case 'PAYMENT': return <PaymentView sectionId={selectedSection.id} />;
@@ -503,27 +539,27 @@ const GroupView = () => {
         };
 
         return (
-            <div className="hidden sm:inline-flex items-center rounded-full border border-gray-200 bg-white p-0.5 text-[11px] shadow-sm">
+            <div className="hidden sm:inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white p-0.5 text-xs shadow-sm">
                 <button
                     type="button"
                     onClick={handleWorkspaceClick}
-                    className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full font-medium transition ${viewMode === 'WORKSPACE'
+                    className={`inline-flex items-center gap-1 px-3.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full font-medium transition ${viewMode === 'WORKSPACE'
                         ? 'bg-blue-600 text-white shadow'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                         }`}
                 >
-                    <LayoutPanelLeft size={12} />
+                    <LayoutPanelLeft size={14} />
                     Workspace
                 </button>
                 <button
                     type="button"
                     onClick={handleOverviewClick}
-                    className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full font-medium transition ${viewMode === 'BENTO'
+                    className={`inline-flex items-center gap-1 px-3.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full font-medium transition ${viewMode === 'BENTO'
                         ? 'bg-blue-600 text-white shadow'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                         }`}
                 >
-                    <LayoutGrid size={12} />
+                    <LayoutGrid size={14} />
                     Overview
                 </button>
             </div>
@@ -797,9 +833,48 @@ const GroupView = () => {
                             {selectedSection ? (
                                 <>
                                     <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">Current section</p>
-                                    <h2 className="text-sm sm:text-base font-semibold text-gray-900 truncate">
-                                        {selectedSection.title}
-                                    </h2>
+                                    {renamingSectionId === selectedSection.id ? (
+                                        <div className="mt-0.5 flex items-center gap-2">
+                                            <input
+                                                type="text"
+                                                className="w-40 sm:w-64 lg:w-80 px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                                value={renameTitle}
+                                                onChange={(e) => setRenameTitle(e.target.value)}
+                                                maxLength={120}
+                                                autoFocus
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleSubmitRenameSection}
+                                                className="inline-flex items-center px-2.5 py-1 rounded-md bg-blue-600 text-white text-xs font-medium hover:bg-blue-700"
+                                            >
+                                                Save
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={handleCancelRenameSection}
+                                                className="inline-flex items-center px-2.5 py-1 rounded-md border border-gray-200 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-1.5">
+                                            <h2 className="text-sm sm:text-base font-semibold text-gray-900 truncate">
+                                                {selectedSection.title}
+                                            </h2>
+                                            {currentGroup?.currentUserRole === 'ADMIN' && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleStartRenameSection}
+                                                    className="inline-flex items-center justify-center p-1 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 flex-shrink-0"
+                                                    aria-label="Rename section"
+                                                >
+                                                    <Pencil size={14} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
                                 </>
                             ) : (
                                 <>
@@ -860,6 +935,10 @@ const GroupView = () => {
                             handleDeleteSectionById(section);
                         }}
                         onViewMember={(member) => setSelectedMemberForInfo(member)}
+                        onLeaveGroup={currentGroup.currentUserRole !== 'ADMIN' ? () => {
+                            setShowManageModal(false);
+                            handleLeaveGroup();
+                        } : undefined}
                         joinRequests={pendingRequests}
                         onApproveJoinRequest={handleApproveRequest}
                         onInviteByEmail={currentGroup.currentUserRole === 'ADMIN' ? async (email) => {

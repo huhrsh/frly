@@ -30,6 +30,20 @@ public class SectionController {
         return ResponseEntity.ok(sectionService.getSections());
     }
 
+    @PatchMapping("/{sectionId}/title")
+    public ResponseEntity<Void> updateSectionTitle(@PathVariable Long sectionId,
+                                                   @RequestBody UpdateSectionTitleRequestDto request) {
+        sectionService.updateSectionTitle(sectionId, request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/{sectionId}/display-mode")
+    public ResponseEntity<Void> updateSectionDisplayMode(@PathVariable Long sectionId,
+                                                         @RequestBody UpdateSectionDisplayModeRequestDto request) {
+        sectionService.updateSectionDisplayMode(sectionId, request);
+        return ResponseEntity.ok().build();
+    }
+
     @DeleteMapping("/{sectionId}")
     public ResponseEntity<Void> deleteSection(@PathVariable Long sectionId) {
         sectionService.deleteSection(sectionId);
@@ -52,6 +66,19 @@ public class SectionController {
     @PatchMapping("/items/{itemId}/toggle")
     public ResponseEntity<Void> toggleListItem(@PathVariable Long itemId) {
         sectionService.toggleListItem(itemId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/items/{itemId}")
+    public ResponseEntity<Void> updateListItem(@PathVariable Long itemId,
+                                               @RequestBody UpdateListItemRequestDto request) {
+        sectionService.updateListItem(itemId, request);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/items/{itemId}")
+    public ResponseEntity<Void> deleteListItem(@PathVariable Long itemId) {
+        sectionService.deleteListItem(itemId);
         return ResponseEntity.ok().build();
     }
 

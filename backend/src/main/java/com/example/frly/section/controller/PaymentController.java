@@ -5,6 +5,7 @@ import com.example.frly.section.dto.PaymentBalanceDto;
 import com.example.frly.section.dto.PaymentExpenseDto;
 import com.example.frly.section.service.PaymentService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,6 +30,13 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.getExpenses(sectionId));
     }
 
+    @GetMapping("/{sectionId}/payments/expenses/paged")
+    public ResponseEntity<Page<PaymentExpenseDto>> getExpensesPaged(@PathVariable Long sectionId,
+                                                                    @RequestParam(defaultValue = "0") int page,
+                                                                    @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(paymentService.getExpensesPaged(sectionId, page, size));
+    }
+
     @PutMapping("/{sectionId}/payments/expenses/{expenseId}")
     public ResponseEntity<Void> updateExpense(@PathVariable Long sectionId,
                                               @PathVariable Long expenseId,
@@ -47,5 +55,11 @@ public class PaymentController {
     @GetMapping("/{sectionId}/payments/balances")
     public ResponseEntity<List<PaymentBalanceDto>> getBalances(@PathVariable Long sectionId) {
         return ResponseEntity.ok(paymentService.getBalances(sectionId));
+    }
+
+    @PostMapping("/{sectionId}/payments/settle")
+    public ResponseEntity<Void> settleSection(@PathVariable Long sectionId) {
+        paymentService.settleSection(sectionId);
+        return ResponseEntity.ok().build();
     }
 }

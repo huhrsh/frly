@@ -95,6 +95,40 @@ public class SectionService {
     }
 
     @Transactional
+    public void updateSectionTitle(Long sectionId, UpdateSectionTitleRequestDto request) {
+        validateGroupAccess();
+
+        Section section = requireActiveSection(sectionId);
+        String title = request.getTitle();
+        if (title == null || title.trim().isEmpty()) {
+            throw new BadRequestException("Title cannot be empty");
+        }
+        section.setTitle(title.trim());
+        sectionRepository.save(section);
+    }
+
+    @Transactional
+    public void updateSectionDisplayMode(Long sectionId, UpdateSectionDisplayModeRequestDto request) {
+        validateGroupAccess();
+
+        Section section = requireActiveSection(sectionId);
+        validateSectionType(section, SectionType.LIST, "Display mode can only be set for LIST sections");
+
+        String mode = request.getListDisplayMode();
+        if (mode == null) {
+            throw new BadRequestException("Display mode is required");
+        }
+
+        // Only allow known modes to be saved
+        if (!mode.equals("CHECKBOX") && !mode.equals("ORDERED") && !mode.equals("UNORDERED")) {
+            throw new BadRequestException("Invalid display mode: " + mode);
+        }
+
+        section.setListDisplayMode(mode);
+        sectionRepository.save(section);
+    }
+
+    @Transactional
     public void deleteSection(Long sectionId) {
         validateGroupAccess();
         deleteSectionRecursively(sectionId);
@@ -147,6 +181,36 @@ public class SectionService {
         validateSectionNotDeleted(item.getSection());
 
         item.setCompleted(!item.isCompleted());
+        listItemRepository.save(item);
+    }
+
+    @Transactional
+    public void updateListItem(Long itemId, UpdateListItemRequestDto request) {
+        validateGroupAccess();
+
+        ListItem item = listItemRepository.findById(itemId)
+                .orElseThrow(() -> new BadRequestException("List item not found"));
+        validateSectionNotDeleted(item.getSection());
+
+        if (request.getText() != null) {
+            item.setText(request.getText());
+        }
+        if (request.getDueDate() != null) {
+            item.setDueDate(request.getDueDate());
+        }
+
+        listItemRepository.save(item);
+    }
+
+    @Transactional
+    public void deleteListItem(Long itemId) {
+        validateGroupAccess();
+
+        ListItem item = listItemRepository.findById(itemId)
+                .orElseThrow(() -> new BadRequestException("List item not found"));
+        validateSectionNotDeleted(item.getSection());
+
+        item.setStatus(RecordStatus.DELETED);
         listItemRepository.save(item);
     }
 

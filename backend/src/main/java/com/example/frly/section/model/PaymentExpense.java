@@ -40,6 +40,9 @@ public class PaymentExpense extends GroupAwareEntity {
     @Column(name = "expense_date")
     private OffsetDateTime expenseDate;
 
+    @Column(name = "expense_type", nullable = false)
+    private String expenseType = "NORMAL";
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private RecordStatus status = RecordStatus.ACTIVE;
