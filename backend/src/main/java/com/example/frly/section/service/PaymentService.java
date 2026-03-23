@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -160,6 +161,20 @@ public class PaymentService {
             dto.setShares(shareDtos);
             return dto;
         });
+    }
+
+    @Transactional(readOnly = true)
+    public BigDecimal getTotalNormalExpenses(Long sectionId) {
+        groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
+
+        Section section = sectionRepository.findById(sectionId)
+                .orElseThrow(() -> new BadRequestException("Section not found"));
+        if (section.getStatus() == RecordStatus.DELETED) {
+            return BigDecimal.ZERO;
+        }
+
+        return paymentExpenseRepository
+                .sumBySectionIdAndStatusNotAndExpenseTypeNot(sectionId, RecordStatus.DELETED, "SETTLEMENT");
     }
 
     @Transactional(readOnly = true)

@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -35,6 +36,11 @@ public class PaymentController {
                                                                     @RequestParam(defaultValue = "0") int page,
                                                                     @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(paymentService.getExpensesPaged(sectionId, page, size));
+    }
+
+    @GetMapping("/{sectionId}/payments/expenses/total")
+    public ResponseEntity<BigDecimal> getTotalExpenses(@PathVariable Long sectionId) {
+        return ResponseEntity.ok(paymentService.getTotalNormalExpenses(sectionId));
     }
 
     @PutMapping("/{sectionId}/payments/expenses/{expenseId}")

@@ -42,8 +42,8 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!password || password.length < 8) {
-            toast.error('Password must be at least 8 characters');
+        if (!password) {
+            toast.error('Please enter your password');
             return;
         }
         try {
@@ -113,7 +113,6 @@ const Login = () => {
                                     </button>
                                 </div>
                             </div>
-                            <p className="mt-0.5 text-[11px] text-slate-500">Minimum 8 characters.</p>
                             <div className="mt-2">
                                 <PasswordInput
                                     id="password"

@@ -69,20 +69,21 @@ export const useSectionPreviews = (sections) => {
                             totalCount
                         };
                     } else if (section.type === 'PAYMENT') {
-                        const [balancesRes, expensesRes] = await Promise.all([
+                        const [balancesRes, totalRes] = await Promise.all([
                             axiosClient.get(`/groups/sections/${section.id}/payments/balances`),
-                            axiosClient.get(`/groups/sections/${section.id}/payments/expenses`),
+                            axiosClient.get(`/groups/sections/${section.id}/payments/expenses/total`),
                         ]);
                         const balances = Array.isArray(balancesRes.data) ? balancesRes.data : [];
-                        const expenses = Array.isArray(expensesRes.data) ? expensesRes.data : [];
-                        // Find current user's balance, but also compute total volume so card isn't misleadingly 0
                         const myBalance = balances.find(b => b.userId === user?.userId);
-                        const totalSpent = expenses.reduce((sum, e) => sum + (e.totalAmount || 0), 0);
+                        const totalSpentRaw = totalRes?.data ?? 0;
+                        const totalSpent = typeof totalSpentRaw === 'number'
+                            ? totalSpentRaw
+                            : parseFloat(totalSpentRaw || '0');
                         newPreviews[section.id] = {
                             kind: 'PAYMENT',
                             balance: myBalance ? myBalance.balance : 0,
                             totalSpent,
-                            hasActivity: balances.length > 0 || expenses.length > 0,
+                            hasActivity: balances.length > 0 || totalSpent > 0,
                         };
                     } else if (section.type === 'CALENDAR') {
                         const res = await axiosClient.get(`/groups/sections/${section.id}/calendar-events`);

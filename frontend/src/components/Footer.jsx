@@ -22,6 +22,7 @@ const Footer = () => {
                                 <li><Link to="/integrations" className="hover:text-blue-600 transition">Integrations</Link></li>
                                 <li><Link to="/pricing" className="hover:text-blue-600 transition">Pricing</Link></li>
                                 <li><Link to="/changelog" className="hover:text-blue-600 transition">Changelog</Link></li>
+                                <li><Link to="/faq" className="hover:text-blue-600 transition">FAQ</Link></li>
                             </ul>
                         </div>
 
@@ -36,6 +37,28 @@ const Footer = () => {
                                 <li><Link to="/review" className="hover:text-blue-600 transition">Reviews</Link></li>
                             </ul>
                         </div>
+
+                        {/* <div className="col-span-2 sm:col-span-1">
+                            <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">FAQ</h4>
+                            <ul className="space-y-2 text-xs text-gray-500 max-w-sm">
+                                <li>
+                                    <p className="font-medium text-gray-700">What is fryly for?</p>
+                                    <p>Ongoing groups like flats, families and close crews who share everyday life together.</p>
+                                </li>
+                                <li>
+                                    <p className="font-medium text-gray-700">Is fryly free?</p>
+                                    <p>You can start using fryly for free. If we introduce paid plans later, we&apos;ll share details on the pricing page.</p>
+                                </li>
+                                <li>
+                                    <p className="font-medium text-gray-700">Do you have a mobile app?</p>
+                                    <p>fryly works great on mobile browsers and can be installed to your home screen as a lightweight app (PWA).</p>
+                                </li>
+                                <li>
+                                    <p className="font-medium text-gray-700">Is my data private?</p>
+                                    <p>Groups are invite-only and only members can see the content in their shared spaces.</p>
+                                </li>
+                            </ul>
+                        </div> */}
                 </div>
 
                 <div className="pt-4 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-3 text-xs text-gray-400">
