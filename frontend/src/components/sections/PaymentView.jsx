@@ -20,6 +20,37 @@ const PaymentView = ({ sectionId }) => {
     const [expensesPage, setExpensesPage] = useState({ page: 0, totalPages: 0, totalElements: 0 });
     const [isLoadingExpenses, setIsLoadingExpenses] = useState(false);
 
+    const isWholeAmount = (num) => {
+        if (typeof num !== 'number' || !Number.isFinite(num)) return false;
+        return Math.floor(num) === num;
+    };
+
+    const distributeIntegerShares = (totalInt, userIds) => {
+        const n = userIds.length;
+        if (!n || totalInt <= 0) return {};
+
+        const shuffled = [...userIds];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+
+        const base = Math.floor(totalInt / n);
+        const remainder = totalInt % n;
+
+        const allocations = {};
+        shuffled.forEach(id => {
+            allocations[id] = base;
+        });
+
+        for (let i = 0; i < remainder; i++) {
+            const id = shuffled[i];
+            allocations[id] = (allocations[id] || 0) + 1;
+        }
+
+        return allocations;
+    };
+
     useEffect(() => {
         fetchMembers();
         fetchData();
@@ -116,7 +147,9 @@ const PaymentView = ({ sectionId }) => {
             setShares(initialShares);
             setSelectedUserIds(members.map(m => m.userId));
         }
-    }, [members, paidByUserId]);
+        // Only initialise when members list changes; changing payer shouldn't reset shares
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [members]);
 
     // Auto-calc equal split when mode is EVERYONE
     useEffect(() => {
@@ -124,14 +157,22 @@ const PaymentView = ({ sectionId }) => {
         if (!members.length) return;
         const amountNum = parseFloat(totalAmount || '0');
         if (!amountNum || amountNum <= 0) return;
+        if (!isWholeAmount(amountNum)) {
+            // For non-whole amounts in Everyone mode, don't auto-override shares.
+            // User should use Custom split for decimal amounts.
+            return;
+        }
 
-        const per = +(amountNum / members.length).toFixed(2);
+        const userIds = members.map(m => m.userId);
+        const intTotal = Math.trunc(amountNum);
+        const allocations = distributeIntegerShares(intTotal, userIds);
         const next = {};
-        members.forEach(m => {
-            next[m.userId] = per.toString();
+        userIds.forEach(id => {
+            const share = allocations[id];
+            next[id] = share != null ? share.toString() : '';
         });
         setShares(next);
-        setSelectedUserIds(members.map(m => m.userId));
+        setSelectedUserIds(userIds);
     }, [splitMode, members, totalAmount]);
 
     const totalShares = useMemo(() => {
@@ -169,15 +210,27 @@ const PaymentView = ({ sectionId }) => {
             });
             return;
         }
-
-        const per = +(amountNum / selectedIds.length).toFixed(2);
-        setShares(prev => {
-            const next = { ...prev };
-            selectedIds.forEach(id => {
-                next[id] = per.toString();
+        if (isWholeAmount(amountNum)) {
+            const intTotal = Math.trunc(amountNum);
+            const allocations = distributeIntegerShares(intTotal, selectedIds);
+            setShares(prev => {
+                const next = { ...prev };
+                selectedIds.forEach(id => {
+                    const share = allocations[id];
+                    next[id] = share != null ? share.toString() : '';
+                });
+                return next;
             });
-            return next;
-        });
+        } else {
+            const per = +(amountNum / selectedIds.length).toFixed(2);
+            setShares(prev => {
+                const next = { ...prev };
+                selectedIds.forEach(id => {
+                    next[id] = per.toString();
+                });
+                return next;
+            });
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -204,10 +257,16 @@ const PaymentView = ({ sectionId }) => {
             ];
         } else if (splitMode === 'EVERYONE') {
             if (!members.length) return;
-            const per = +(amountNum / members.length).toFixed(2);
-            shareInputs = members.map(m => ({
-                userId: m.userId,
-                shareAmount: per,
+            if (!isWholeAmount(amountNum)) {
+                toast.error('For equal split between everyone, use a whole amount (no decimals). Use Custom split for decimals.');
+                return;
+            }
+            const userIds = members.map(m => m.userId);
+            const intTotal = Math.trunc(amountNum);
+            const allocations = distributeIntegerShares(intTotal, userIds);
+            shareInputs = userIds.map(id => ({
+                userId: id,
+                shareAmount: allocations[id] ?? 0,
             }));
         } else {
             // CUSTOM: use manual shares for selected users
@@ -225,7 +284,9 @@ const PaymentView = ({ sectionId }) => {
         }
 
         const sumShares = shareInputs.reduce((acc, s) => acc + (s.shareAmount || 0), 0);
-        if (Math.abs(sumShares - amountNum) > 0.01) {
+        const roundedTotal = Math.round(amountNum * 100) / 100;
+        const roundedShares = Math.round(sumShares * 100) / 100;
+        if (Math.abs(roundedShares - roundedTotal) > 0.01) {
             toast.error('Sum of shares must equal total amount');
             return;
         }
@@ -338,6 +399,8 @@ const PaymentView = ({ sectionId }) => {
 
     const totalExpenses = useMemo(() => {
         return expenses.reduce((sum, e) => {
+            const isSettlement = (e.expenseType === 'SETTLEMENT') || ((e.description || '').toLowerCase() === 'settlement');
+            if (isSettlement) return sum;
             const amt = typeof e.totalAmount === 'number' ? e.totalAmount : parseFloat(e.totalAmount || '0');
             return sum + (isNaN(amt) ? 0 : amt);
         }, 0);

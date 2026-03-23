@@ -31,6 +31,7 @@ import Blog from './pages/Blog';
 import Contact from './pages/Contact';
 import Feedback from './pages/Feedback';
 import Review from './pages/Review';
+import FAQ from './pages/FAQ';
 
 function App() {
   return (
@@ -75,6 +76,7 @@ function App() {
           <Route path="/integrations" element={<Integrations />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/changelog" element={<Changelog />} />
+          <Route path="/faq" element={<FAQ />} />
           <Route path="/about" element={<About />} />
           <Route path="/careers" element={<Careers />} />
           <Route path="/blog" element={<Blog />} />

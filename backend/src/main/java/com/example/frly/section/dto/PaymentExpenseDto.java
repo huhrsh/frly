@@ -17,5 +17,6 @@ public class PaymentExpenseDto {
     private BigDecimal totalAmount;
     private String currency;
     private OffsetDateTime expenseDate;
+    private String expenseType;
     private List<PaymentShareDto> shares;
 }
