@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronRight } from 'lucide-react';
 
-const SidebarSection = ({ section, allSections, selectedSection, onSelect, depth = 0 }) => {
+const SidebarSection = ({ section, allSections, selectedSection, onSelect, depth = 0, dragHandleProps, draggableProps, innerRef, isDragging = false, snapshot }) => {
     // Find children of this section
     const children = allSections.filter(s => s.parentId === section.id);
     const hasChildren = children.length > 0;
@@ -100,6 +100,9 @@ const SidebarSection = ({ section, allSections, selectedSection, onSelect, depth
     }, [selectedSection, allSections, isFolder, isSelected]);
 
     const handleClick = () => {
+        // Prevent selection if currently dragging
+        if (isDragging) return;
+        
         onSelect(section);
         if (isFolder) {
             setIsExpanded(prev => !prev);
@@ -107,11 +110,16 @@ const SidebarSection = ({ section, allSections, selectedSection, onSelect, depth
     };
 
     return (
-        <div className="my-1">
+        <div className="my-1" ref={innerRef} {...draggableProps}>
             <div
-                className={`group flex items-center justify-between px-2 py-2 cursor-pointer text-sm font-medium transition-all duration-200 rounded-r-md border-l-4 ${indicatorClasses} ${typeClasses}`}
-                style={{ marginLeft: depth * 12 }}
+                className={`group flex items-center justify-between px-2 py-2 cursor-pointer text-sm font-medium rounded-r-md border-l-4 touch-none ${indicatorClasses} ${typeClasses} ${snapshot?.isDragging ? 'scale-[1.02] shadow-lg opacity-70' : 'transition-all duration-200'}`}
+                style={{ 
+                    marginLeft: depth * 12,
+                    cursor: snapshot?.isDragging ? 'grabbing' : 'grab',
+                    willChange: 'transform',
+                }}
                 onClick={handleClick}
+                {...dragHandleProps}
             >
 
                 <div className="flex items-center gap-1 min-w-0">
@@ -142,10 +150,10 @@ const SidebarSection = ({ section, allSections, selectedSection, onSelect, depth
                 )}
             </div>
 
-            {/* Recursive Children */}
+            {/* Recursive Children without drag-and-drop inside this folder */}
             {isExpanded && hasChildren && (
-                <div>
-                    {children.map(child => (
+                <div className="ml-3 pl-1 space-y-1 border-l-2 border-transparent">
+                    {children.map((child) => (
                         <SidebarSection
                             key={child.id}
                             section={child}

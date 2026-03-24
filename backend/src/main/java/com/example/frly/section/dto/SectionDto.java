@@ -1,5 +1,6 @@
 package com.example.frly.section.dto;
 
+import com.example.frly.section.model.ListDisplayMode;
 import com.example.frly.section.model.SectionType;
 import lombok.Data;
 
@@ -10,6 +11,6 @@ public class SectionDto {
     private SectionType type;
     private Integer position;
     private Long parentId;
-    private String listDisplayMode;
+    private ListDisplayMode listDisplayMode;
     // Section-level passwords removed; this flag is deprecated and no longer sent.
 }

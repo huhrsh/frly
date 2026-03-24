@@ -3,12 +3,14 @@ package com.example.frly.section.service;
 import com.example.frly.common.enums.RecordStatus;
 import com.example.frly.section.dto.*;
 import com.example.frly.section.model.ListItem;
+import com.example.frly.section.model.ListDisplayMode;
 import com.example.frly.section.model.LinkItem;
 import com.example.frly.section.model.Note;
 import com.example.frly.section.model.Reminder;
 import com.example.frly.section.model.CalendarEvent;
 import com.example.frly.section.model.CalendarEventMember;
 import com.example.frly.section.model.Section;
+import com.example.frly.section.model.UserSectionOrder;
 import com.example.frly.section.repository.*;
 import static com.example.frly.constants.LogConstants.*;
 import com.example.frly.section.model.SectionType;
@@ -24,6 +26,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -38,6 +42,7 @@ public class SectionService {
     private final ReminderRepository reminderRepository;
     private final CalendarEventRepository calendarEventRepository;
     private final CalendarEventMemberRepository calendarEventMemberRepository;
+    private final UserSectionOrderRepository userSectionOrderRepository;
     private final GroupService groupService;
     private final SectionMapper sectionMapper;
     private final UserRepository userRepository;
@@ -88,10 +93,107 @@ public class SectionService {
 
     public List<SectionDto> getSections() {
         validateGroupAccess();
+        List<Section> sections = sectionRepository.findByStatusNotOrderByPositionAsc(RecordStatus.DELETED);
 
-        return sectionRepository.findByStatusNotOrderByPositionAsc(RecordStatus.DELETED).stream()
+        Long userId = AuthUtil.getCurrentUserId();
+
+        if (userId != null && !sections.isEmpty()) {
+            List<Long> sectionIds = sections.stream()
+                    .map(Section::getId)
+                    .collect(Collectors.toList());
+
+            List<UserSectionOrder> orders = userSectionOrderRepository
+                    .findByUserIdAndSectionIdInAndStatusNot(userId, sectionIds, RecordStatus.DELETED);
+
+            Map<Long, Integer> positionBySectionId = orders.stream()
+                    .filter(o -> o.getSection() != null && o.getPosition() != null)
+                    .collect(Collectors.toMap(o -> o.getSection().getId(), UserSectionOrder::getPosition));
+
+            sections.sort((a, b) -> {
+                Integer pa = positionBySectionId.get(a.getId());
+                Integer pb = positionBySectionId.get(b.getId());
+
+                if (pa == null && pb == null) {
+                    Integer da = a.getPosition();
+                    Integer db = b.getPosition();
+                    if (da == null && db == null) {
+                        return a.getId().compareTo(b.getId());
+                    }
+                    if (da == null) return 1;
+                    if (db == null) return -1;
+                    return da.compareTo(db);
+                }
+
+                if (pa == null) return 1;
+                if (pb == null) return -1;
+                return pa.compareTo(pb);
+            });
+        }
+
+        return sections.stream()
                 .map(sectionMapper::toSectionDto)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void reorderSectionsForCurrentUser(List<Long> orderedIds) {
+        validateGroupAccess();
+
+        if (orderedIds == null || orderedIds.isEmpty()) {
+            return;
+        }
+
+        Long userId = AuthUtil.getCurrentUserId();
+        if (userId == null) {
+            throw new BadRequestException("User not authenticated");
+        }
+
+        List<Section> allSections = sectionRepository.findByStatusNotOrderByPositionAsc(RecordStatus.DELETED);
+        if (allSections.isEmpty()) {
+            return;
+        }
+
+        Map<Long, Section> sectionById = allSections.stream()
+                .collect(Collectors.toMap(Section::getId, s -> s));
+
+        // Only consider valid section ids for this group
+        List<Long> filteredIds = orderedIds.stream()
+                .filter(sectionById::containsKey)
+                .distinct()
+                .collect(Collectors.toList());
+
+        if (filteredIds.isEmpty()) {
+            return;
+        }
+
+        List<UserSectionOrder> existing = userSectionOrderRepository
+                .findByUserIdAndSectionIdInAndStatusNot(userId, filteredIds, RecordStatus.DELETED);
+
+        Map<Long, UserSectionOrder> orderBySectionId = existing.stream()
+            .filter(o -> o.getSection() != null)
+            .collect(Collectors.toMap(o -> o.getSection().getId(), o -> o));
+
+        int position = 1;
+        for (Long sectionId : filteredIds) {
+            Section section = sectionById.get(sectionId);
+            if (section == null) {
+                continue;
+            }
+
+            UserSectionOrder order = orderBySectionId.get(sectionId);
+            if (order == null) {
+                order = new UserSectionOrder();
+                order.setSection(section);
+                order.setUserId(userId);
+                order.setStatus(RecordStatus.ACTIVE);
+                orderBySectionId.put(sectionId, order);
+            }
+
+            order.setPosition(position++);
+            // groupId comes from GroupContext via GroupAwareEntity tenant setup
+        }
+
+        userSectionOrderRepository.saveAll(orderBySectionId.values());
     }
 
     @Transactional
@@ -108,6 +210,24 @@ public class SectionService {
     }
 
     @Transactional
+    public void updateSectionParent(Long sectionId, UpdateSectionParentRequestDto request) {
+        validateGroupAccess();
+
+        Section section = requireActiveSection(sectionId);
+
+        Long parentId = request.getParentId();
+        if (parentId != null) {
+            Section parent = requireActiveSection(parentId);
+            validateSectionType(parent, SectionType.FOLDER, "Parent section must be a FOLDER");
+            section.setParentSection(parent);
+        } else {
+            section.setParentSection(null);
+        }
+
+        sectionRepository.save(section);
+    }
+
+    @Transactional
     public void updateSectionDisplayMode(Long sectionId, UpdateSectionDisplayModeRequestDto request) {
         validateGroupAccess();
 
@@ -119,12 +239,17 @@ public class SectionService {
             throw new BadRequestException("Display mode is required");
         }
 
-        // Only allow known modes to be saved
-        if (!mode.equals("CHECKBOX") && !mode.equals("ORDERED") && !mode.equals("UNORDERED")) {
+        // Convert string to enum, validate
+        ListDisplayMode displayMode;
+        try {
+            // Support both CHECKBOX_STATIC and CHECKBOX-STATIC from frontend
+            String normalizedMode = mode.replace("-", "_");
+            displayMode = ListDisplayMode.valueOf(normalizedMode);
+        } catch (IllegalArgumentException e) {
             throw new BadRequestException("Invalid display mode: " + mode);
         }
 
-        section.setListDisplayMode(mode);
+        section.setListDisplayMode(displayMode);
         sectionRepository.save(section);
     }
 

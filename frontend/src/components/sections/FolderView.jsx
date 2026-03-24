@@ -40,8 +40,8 @@ const FolderView = ({ sectionId, allSections, onOpenCreateModal, onSelectSection
                     </button>
                 )}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {childSections.map(child => {
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 min-h-[120px]">
+                {childSections.map((child) => {
                     const preview = previews[child.id];
 
                     const typeLabel = child.type === 'NOTE' ? 'Note'
@@ -69,11 +69,10 @@ const FolderView = ({ sectionId, allSections, onOpenCreateModal, onSelectSection
                     };
 
                     return (
-                        <button
+                        <div
                             key={child.id}
-                            type="button"
                             onClick={handleClick}
-                            className="text-left bg-white rounded-xl shadow-sm border border-gray-100 hover:border-blue-200 hover:shadow-md transition p-4 flex flex-col justify-between min-h-[120px] group"
+                            className="text-left bg-white rounded-xl shadow-sm border border-gray-100 hover:border-blue-200 hover:shadow-md p-4 flex flex-col justify-between min-h-[120px] group cursor-pointer transition-all duration-200"
                         >
                             <div className="flex items-start justify-between mb-2 w-full">
                                 <h3 className="text-sm font-semibold text-gray-900 truncate mr-2 w-full">
@@ -130,7 +129,7 @@ const FolderView = ({ sectionId, allSections, onOpenCreateModal, onSelectSection
                                     </div>
                                 )}
                             </div>
-                        </button>
+                        </div>
                     );
                 })}
             </div>
@@ -139,3 +138,4 @@ const FolderView = ({ sectionId, allSections, onOpenCreateModal, onSelectSection
 };
 
 export default FolderView;
+

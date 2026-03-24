@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchGroupDetails, setGroupId } from '../redux/slices/groupSlice';
@@ -18,9 +18,11 @@ import GroupManageModal from '../components/GroupManageModal';
 import UserInfoModal from '../components/UserInfoModal';
 import { useSectionPreviews } from '../hooks/useSectionPreviews';
 import { toast } from 'react-toastify';
-import { Copy, Trash2, LayoutPanelLeft, LayoutGrid, Users, ArrowLeft, Check, ChevronRight, Pencil, X } from 'lucide-react';
+import { Copy, Trash2, LayoutPanelLeft, LayoutGrid, Users, ArrowLeft, Check, ChevronRight, Pencil, X, ArrowUpDown } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 import { useAuth } from '../context/AuthContext';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import ReorderSectionsModal from '../components/ReorderSectionsModal';
 
 const GroupView = () => {
     const { groupId } = useParams();
@@ -59,6 +61,12 @@ const GroupView = () => {
     const [showSections, setShowSections] = useState(true);
     const [showMembers, setShowMembers] = useState(false);
     const [showPendingInvites, setShowPendingInvites] = useState(false);
+
+    const [isDragging, setIsDragging] = useState(false);
+    const dragTimeoutRef = useRef(null);
+
+    const [showReorderModal, setShowReorderModal] = useState(false);
+    const [reorderParentId, setReorderParentId] = useState(null); // null = root sections
 
     // We only fetch previews for root sections in the main view
     const rootSections = sections.filter(s => !s.parentId);
@@ -217,6 +225,124 @@ const GroupView = () => {
         } finally {
             setMembersLoading(false);
         }
+    };
+
+    const normalizeParentId = (parentId) => (parentId == null ? null : parentId);
+
+    const getParentIdFromDroppableId = (droppableId) => {
+        if (!droppableId) return null;
+        if (droppableId.startsWith('children-')) {
+            const idPart = droppableId.substring('children-'.length);
+            const parsed = parseInt(idPart, 10);
+            return Number.isNaN(parsed) ? null : parsed;
+        }
+        // Anything else (e.g. root lists in sidebar or bento) is root scope
+        return null;
+    };
+
+    const handleSectionsDragEnd = async (result) => {
+        const { source, destination, draggableId } = result || {};
+        
+        // Clear dragging state after a short delay to prevent accidental clicks
+        if (dragTimeoutRef.current) {
+            clearTimeout(dragTimeoutRef.current);
+        }
+        dragTimeoutRef.current = setTimeout(() => {
+            setIsDragging(false);
+        }, 200);
+        
+        if (!destination || !source) return;
+
+        if (
+            source.droppableId === destination.droppableId &&
+            source.index === destination.index
+        ) {
+            return;
+        }
+
+        const sectionId = parseInt(draggableId, 10);
+        if (!sectionId || Number.isNaN(sectionId)) return;
+
+        const sourceParentId = getParentIdFromDroppableId(source.droppableId);
+        const destParentId = getParentIdFromDroppableId(destination.droppableId);
+
+        const sameParent = normalizeParentId(sourceParentId) === normalizeParentId(destParentId);
+        if (!sameParent) {
+            // For now, only support reordering within the same parent (root or folder).
+            // Cross-parent drags (e.g. moving between folders or root <-> folder) simply do nothing.
+            toast.info('Items can only be reordered within their current section');
+            return;
+        }
+
+        // Build sibling lists from current state
+        const currentSections = sections;
+        const getSiblings = (parentId) =>
+            currentSections.filter((s) => normalizeParentId(s.parentId) === normalizeParentId(parentId));
+
+        {
+            const siblings = getSiblings(sourceParentId);
+            if (!siblings.length) return;
+
+            const reordered = Array.from(siblings);
+            const [moved] = reordered.splice(source.index, 1);
+            if (!moved) return;
+            reordered.splice(destination.index, 0, moved);
+
+            const others = currentSections.filter(
+                (s) => normalizeParentId(s.parentId) !== normalizeParentId(sourceParentId)
+            );
+
+            setSections([...reordered, ...others]);
+
+            const orderedIds = reordered.map((s) => s.id);
+            try {
+                await axiosClient.patch('/groups/sections/reorder', orderedIds);
+            } catch (error) {
+                console.error('Failed to reorder sections', error);
+                fetchSections();
+            }
+        }
+    };
+
+    const openRootReorderModal = () => {
+        setReorderParentId(null);
+        setShowReorderModal(true);
+    };
+
+    const openFolderReorderModal = (parentId) => {
+        setReorderParentId(parentId);
+        setShowReorderModal(true);
+    };
+
+    const handleApplyReorder = async (orderedIds) => {
+        const parentId = reorderParentId;
+        const normalizedParent = normalizeParentId(parentId);
+
+        const siblings = sections.filter(
+            (s) => normalizeParentId(s.parentId) === normalizedParent
+        );
+        if (!siblings.length) return;
+
+        const reordered = orderedIds
+            .map((id) => siblings.find((s) => s.id === id))
+            .filter(Boolean);
+
+        const others = sections.filter(
+            (s) => normalizeParentId(s.parentId) !== normalizedParent
+        );
+
+        setSections([...reordered, ...others]);
+
+        try {
+            await axiosClient.patch('/groups/sections/reorder', orderedIds);
+        } catch (error) {
+            console.error('Failed to reorder sections', error);
+            fetchSections();
+        }
+    };
+
+    const handleDragStart = () => {
+        setIsDragging(true);
     };
 
     const handleDeleteSection = () => {
@@ -569,6 +695,7 @@ const GroupView = () => {
     // WORKSPACE VIEW: sidebar + focused section workspace
     if (viewMode === 'WORKSPACE') {
         return (
+            <DragDropContext onDragEnd={handleSectionsDragEnd} onDragStart={handleDragStart}>
             <div className="flex h-[calc(100vh-7rem)] bg-gray-50 overflow-hidden shadow-sm rounded">
                 {/* Sidebar */}
                 <aside className="w-80 bg-white border-r flex flex-col shadow-sm z-10">
@@ -667,21 +794,47 @@ const GroupView = () => {
                             />
                         </button>
                         {showSections && (
-                            <nav className="mt-1 space-y-2">
-                                {sectionsLoading ? (
-                                    <div className="text-center text-gray-400 text-sm py-4">Loading sections...</div>
-                                ) : (
-                                    rootSections.map(section => (
-                                        <SidebarSection
-                                            key={section.id}
-                                            section={section}
-                                            allSections={sections}
-                                            selectedSection={selectedSection}
-                                            onSelect={handleSelectSection}
-                                        />
-                                    ))
-                                )}
-                            </nav>
+                                <Droppable droppableId="root-sidebar">
+                                    {(provided) => (
+                                        <nav
+                                            ref={provided.innerRef}
+                                            {...provided.droppableProps}
+                                            className="mt-1 space-y-2"
+                                        >
+                                            {sectionsLoading ? (
+                                                <div className="text-center text-gray-400 text-sm py-4">Loading sections...</div>
+                                            ) : (
+                                                rootSections.map((section, index) => (
+                                                    <Draggable
+                                                        key={section.id}
+                                                        draggableId={String(section.id)}
+                                                        index={index}
+                                                    >
+                                                        {(dragProvided, dragSnapshot) => (
+                                                                <SidebarSection
+                                                                    section={section}
+                                                                    allSections={sections}
+                                                                    selectedSection={selectedSection}
+                                                                    onSelect={handleSelectSection}
+                                                                    dragHandleProps={dragProvided.dragHandleProps}
+                                                                    draggableProps={dragProvided.draggableProps}
+                                                                    innerRef={dragProvided.innerRef}
+                                                                    isDragging={isDragging}
+                                                                    snapshot={dragSnapshot}
+                                                                />
+                                                        )}
+                                                    </Draggable>
+                                                ))
+                                            )}
+                                            {provided.placeholder}
+                                        </nav>
+                                    )}
+                                </Droppable>
+                        )}
+                        {showSections && !sectionsLoading && rootSections.length > 0 && (
+                            <p className="mt-1 text-[10px] text-gray-400">
+                                Tip: drag sections to change their order.
+                            </p>
                         )}
                     </div>
 
@@ -894,6 +1047,16 @@ const GroupView = () => {
                                     <span>Delete section</span>
                                 </button>
                             )}
+                            {selectedSection && selectedSection.type === 'FOLDER' && currentGroup?.currentUserRole === 'ADMIN' && (
+                                <button
+                                    type="button"
+                                    onClick={() => openFolderReorderModal(selectedSection.id)}
+                                    className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                                >
+                                    <ArrowUpDown size={14} />
+                                    <span>Reorder items</span>
+                                </button>
+                            )}
                             {renderViewToggle()}
                         </div>
                     </div>
@@ -974,7 +1137,17 @@ const GroupView = () => {
                         }}
                     />
                 )}
+                {showReorderModal && (
+                    <ReorderSectionsModal
+                        open={showReorderModal}
+                        title={reorderParentId == null ? 'Reorder sections' : 'Reorder items in folder'}
+                        items={sections.filter((s) => normalizeParentId(s.parentId) === normalizeParentId(reorderParentId))}
+                        onClose={() => setShowReorderModal(false)}
+                        onSave={handleApplyReorder}
+                    />
+                )}
             </div>
+            </DragDropContext>
         );
     }
 
@@ -1035,37 +1208,49 @@ const GroupView = () => {
                         </div>
                     </div>
                         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                        {currentGroup?.currentUserRole === 'ADMIN' ? (
-                            <>
-                                <button
-                                    onClick={() => handleOpenCreateModal(null)}
-                                    className="px-3 py-1.5 rounded-lg border border-blue-200 text-blue-700 bg-white hover:bg-blue-50 font-medium text-xs"
-                                >
-                                    + New Section
-                                </button>
+                            {currentGroup?.currentUserRole === 'ADMIN' ? (
+                                <>
+                                    <button
+                                        onClick={() => handleOpenCreateModal(null)}
+                                        className="px-3 py-1.5 rounded-lg border border-blue-200 text-blue-700 bg-white hover:bg-blue-50 font-medium text-xs"
+                                    >
+                                        + New Section
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleOpenManageModal}
+                                        className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 bg-white hover:bg-gray-50"
+                                    >
+                                        Manage group
+                                    </button>
+                                </>
+                            ) : (
                                 <button
                                     type="button"
                                     onClick={handleOpenManageModal}
                                     className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 bg-white hover:bg-gray-50"
                                 >
-                                    Manage group
+                                    View group
                                 </button>
-                            </>
-                        ) : (
-                            <button
-                                type="button"
-                                onClick={handleOpenManageModal}
-                                className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 bg-white hover:bg-gray-50"
-                            >
-                                View group
-                            </button>
-                        )}
-                        {renderViewToggle()}
-                    </div>
+                            )}
+                            {currentGroup?.currentUserRole === 'ADMIN' && sections.length > 1 && (
+                                <button
+                                    type="button"
+                                    onClick={openRootReorderModal}
+                                    className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                                >
+                                    <ArrowUpDown size={12} />
+                                    <span>Reorder items</span>
+                                </button>
+                            )}
+                            {renderViewToggle()}
+                        </div>
                 </div>
 
                 <div>
-                        <h2 className="text-sm font-semibold text-gray-700 mb-3">Sections</h2>
+                    <div className="flex items-center justify-between mb-1">
+                        <h2 className="text-sm font-semibold text-gray-700">Sections</h2>
+                    </div>
                     {sectionsLoading ? (
                         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center text-sm text-gray-400">
                             Loading sections...
@@ -1158,6 +1343,15 @@ const GroupView = () => {
                             await fn();
                         }
                     }}
+                />
+            )}
+            {showReorderModal && (
+                <ReorderSectionsModal
+                    open={showReorderModal}
+                    title={reorderParentId == null ? 'Reorder sections' : 'Reorder items in folder'}
+                    items={sections.filter((s) => normalizeParentId(s.parentId) === normalizeParentId(reorderParentId))}
+                    onClose={() => setShowReorderModal(false)}
+                    onSave={handleApplyReorder}
                 />
             )}
         </div>

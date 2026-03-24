@@ -32,6 +32,21 @@ const Dashboard = () => {
         fetchAll();
     }, [dispatch]);
 
+    useEffect(() => {
+        if (loading) return;
+        if (!groups || groups.length === 0) return;
+
+        const storedGroupId = localStorage.getItem('currentGroupId');
+        if (!storedGroupId) return;
+
+        const visible = groups.filter(g => g.membershipStatus !== 'REMOVED');
+        const match = visible.find(g => String(g.id) === String(storedGroupId) && g.membershipStatus === 'APPROVED');
+        if (!match) return;
+
+        dispatch(selectGroup(match));
+        navigate(`/groups/${match.id}`);
+    }, [loading, groups, dispatch, navigate]);
+
     const handleGroupClick = (group) => {
         if (group.membershipStatus && group.membershipStatus !== 'APPROVED') {
             toast.info('Your join request is pending approval for this group.');
