@@ -33,7 +33,6 @@ const groupSlice = createSlice({
         },
         clearGroup: (state) => {
             state.currentGroup = null;
-            localStorage.removeItem('currentGroupId');
         },
         // Useful if we need to set the group ID before we have the full object
         // to handle the race condition where we know the ID but haven't fetched details yet

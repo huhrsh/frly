@@ -14,20 +14,28 @@ const Changelog = () => {
       </p>
       <ul className="space-y-4 text-sm text-gray-700">
         <li>
-          <p className="font-semibold">Links Section</p>
-          <p>A new Links section is added for quick access to important links.</p>
+          <p className="font-semibold">Version 1.3 – Section reordering for everyone</p>
+          <ul className="mt-1 list-disc list-inside space-y-1">
+            <li>Now you can reorder your sections and folders! Each user’s workspace order is personal and saved just for them.</li>
+            <li>In workspace view, simply drag and drop sections from the left sidebar to arrange them as you like.</li>
+            <li>In Overview (Bento) and inside folders, use the new “Reorder items” button to open a dedicated modal for easy reordering.</li>
+            <li>Sidebar folder contents are no longer draggable—use the modal for folder reordering for a smoother experience.</li>
+            <li>Reorder modal tiles now show type-based badges for a clearer, more colorful look.</li>
+          </ul>
         </li>
         <li>
-          <p className="font-semibold">Workspace & sections</p>
-          <p>New workspace layout with focused section views, better mobile navigation, and clearer delete permissions for admins.</p>
+          <p className="font-semibold">Version 1.2 – Links, PWA & more</p>
+          <ul className="mt-1 list-disc list-inside space-y-1">
+            <li>Added the Links section for quick access to important links.</li>
+            <li>Enhanced checklists and payment sections for better usability.</li>
+            <li>fryly is now a Progressive Web App (PWA) – install it to your home screen!</li>
+          </ul>
         </li>
         <li>
-          <p className="font-semibold">Payments</p>
-          <p>Balances now sit at the top of the expenses view with a cleaner layout on phones and rupee amounts throughout.</p>
-        </li>
-        <li>
-          <p className="font-semibold">Reminders & lists</p>
-          <p>Reminder creation is simpler, and checklist headers adapt better to smaller screens.</p>
+          <p className="font-semibold">Version 1.1 – Reminders & events</p>
+          <ul className="mt-1 list-disc list-inside space-y-1">
+            <li>Initial release with reminders and events sections to help you stay organised.</li>
+          </ul>
         </li>
       </ul>
     </div>

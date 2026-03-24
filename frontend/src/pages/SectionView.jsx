@@ -12,9 +12,10 @@ import FolderView from '../components/sections/FolderView';
 import PaymentView from '../components/sections/PaymentView';
 import CreateSectionModal from '../components/CreateSectionModal';
 import { toast } from 'react-toastify';
-import { Trash2, ArrowLeft, Home, LayoutPanelLeft, LayoutGrid, Users, Pencil, Check, X } from 'lucide-react';
+import { Trash2, ArrowLeft, Home, LayoutPanelLeft, LayoutGrid, Users, Pencil, Check, X, ArrowUpDown } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 import LinksSection from '../components/sections/LinksSection';
+import ReorderSectionsModal from '../components/ReorderSectionsModal';
 
 const SectionView = () => {
     const { groupId, sectionId } = useParams();
@@ -30,6 +31,7 @@ const SectionView = () => {
     const [createModalParentId, setCreateModalParentId] = useState(null);
     const [renamingSectionId, setRenamingSectionId] = useState(null);
     const [renameTitle, setRenameTitle] = useState('');
+    const [showReorderModal, setShowReorderModal] = useState(false);
 
     // Ensure group context is set and details loaded
     useEffect(() => {
@@ -179,6 +181,35 @@ const SectionView = () => {
         }
     };
 
+    const handleApplyFolderReorder = async (orderedIds) => {
+        if (!section) return;
+
+        const parentId = section.id;
+        const childSections = sections.filter((s) => s.parentId === parentId);
+        if (!childSections.length) return;
+
+        const reordered = orderedIds
+            .map((id) => childSections.find((s) => s.id === id))
+            .filter(Boolean);
+
+        const otherSections = sections.filter((s) => s.parentId !== parentId);
+        setSections([...reordered, ...otherSections]);
+
+        try {
+            await axiosClient.patch('/groups/sections/reorder', orderedIds);
+        } catch (error) {
+            console.error('Failed to reorder sections', error);
+            toast.error('Failed to reorder sections');
+            try {
+                const res = await axiosClient.get('/groups/sections');
+                const list = Array.isArray(res.data) ? res.data : [];
+                setSections(list);
+            } catch (err) {
+                console.error('Failed to refresh sections', err);
+            }
+        }
+    };
+
     const renderContent = () => {
         if (!section) {
             return (
@@ -282,6 +313,16 @@ const SectionView = () => {
                                     <Trash2 size={14} />
                                     Delete section
                                 </button>
+                                {section?.type === 'FOLDER' && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowReorderModal(true)}
+                                        className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs sm:text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                                    >
+                                        <ArrowUpDown size={14} />
+                                        Reorder items
+                                    </button>
+                                )}
                                 <div className="hidden sm:inline-flex gap-1 items-center rounded-full border border-gray-200 bg-white p-0.5 text-xs shadow-sm">
                                     <button
                                         type="button"
@@ -426,6 +467,15 @@ const SectionView = () => {
                             await fn();
                         }
                     }}
+                />
+            )}
+            {section && section.type === 'FOLDER' && (
+                <ReorderSectionsModal
+                    open={showReorderModal}
+                    title="Reorder items in folder"
+                    items={sections.filter((s) => s.parentId === section.id)}
+                    onClose={() => setShowReorderModal(false)}
+                    onSave={handleApplyFolderReorder}
                 />
             )}
         </div>

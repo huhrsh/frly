@@ -4,9 +4,13 @@ import { useNavigate } from 'react-router-dom';
 const BentoGrid = ({ sections, previews, allSections, groupId, onOpenCreateModal }) => {
     const navigate = useNavigate();
 
+    const handleCardClick = (sectionId) => {
+        navigate(`/groups/${groupId}/sections/${sectionId}?from=BENTO`);
+    };
+
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
-            {sections.map(section => {
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4 min-h-[120px]">
+            {sections.map((section) => {
                 // For Folders, calculate children from the *full* list if available
                 const childrenCount = allSections
                     ? allSections.filter(s => s.parentId === section.id).length
@@ -35,11 +39,10 @@ const BentoGrid = ({ sections, previews, allSections, groupId, onOpenCreateModal
                 const isFolder = section.type === 'FOLDER';
 
                 return (
-                    <button
+                    <div
                         key={section.id}
-                        type="button"
-                        onClick={() => navigate(`/groups/${groupId}/sections/${section.id}?from=BENTO`)}
-                        className="text-left bg-white rounded-xl shadow-sm border border-gray-100 hover:border-blue-200 hover:shadow-md transition p-4 flex flex-col justify-between min-h-[120px] group"
+                        onClick={() => handleCardClick(section.id)}
+                        className="bg-white rounded-xl shadow-sm border border-gray-100 hover:border-blue-200 hover:shadow-md flex flex-col justify-between min-h-[120px] group cursor-pointer p-4 transition-all duration-200"
                     >
                         <div className="flex items-start justify-between mb-2 w-full">
                             <h3 className="text-sm font-semibold text-gray-900 truncate mr-2 w-full">
@@ -210,7 +213,8 @@ const BentoGrid = ({ sections, previews, allSections, groupId, onOpenCreateModal
                                 </div>
                             )}
                         </div>
-                    </button>
+
+                    </div>
                 );
             })}
         </div>
@@ -218,3 +222,4 @@ const BentoGrid = ({ sections, previews, allSections, groupId, onOpenCreateModal
 };
 
 export default BentoGrid;
+

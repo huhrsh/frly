@@ -30,10 +30,23 @@ public class SectionController {
         return ResponseEntity.ok(sectionService.getSections());
     }
 
+    @PatchMapping("/reorder")
+    public ResponseEntity<Void> reorderSections(@RequestBody java.util.List<Long> orderedIds) {
+        sectionService.reorderSectionsForCurrentUser(orderedIds);
+        return ResponseEntity.ok().build();
+    }
+
     @PatchMapping("/{sectionId}/title")
     public ResponseEntity<Void> updateSectionTitle(@PathVariable Long sectionId,
                                                    @RequestBody UpdateSectionTitleRequestDto request) {
         sectionService.updateSectionTitle(sectionId, request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/{sectionId}/parent")
+    public ResponseEntity<Void> updateSectionParent(@PathVariable Long sectionId,
+                                                    @RequestBody UpdateSectionParentRequestDto request) {
+        sectionService.updateSectionParent(sectionId, request);
         return ResponseEntity.ok().build();
     }
 

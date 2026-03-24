@@ -9,14 +9,21 @@ const ListView = ({ sectionId, section }) => {
     const [editingItemId, setEditingItemId] = useState(null);
     const [editingText, setEditingText] = useState('');
     const [deleteItemId, setDeleteItemId] = useState(null);
-    const [displayMode, setDisplayMode] = useState(section?.listDisplayMode || 'CHECKBOX');
+    const [displayMode, setDisplayMode] = useState(() => {
+        const mode = section?.listDisplayMode || 'CHECKBOX';
+        // Normalize enum format from backend (CHECKBOX_STATIC) to frontend (CHECKBOX-STATIC)
+        return typeof mode === 'string' ? mode.replace(/_/g, '-') : mode;
+    });
 
     useEffect(() => {
         fetchItems();
     }, [sectionId]);
 
     useEffect(() => {
-        setDisplayMode(section?.listDisplayMode || 'CHECKBOX');
+        const mode = section?.listDisplayMode || 'CHECKBOX';
+        // Normalize enum format from backend (CHECKBOX_STATIC) to frontend (CHECKBOX-STATIC)
+        const normalizedMode = typeof mode === 'string' ? mode.replace(/_/g, '-') : mode;
+        setDisplayMode(normalizedMode);
     }, [section?.id, section?.listDisplayMode]);
 
     const fetchItems = async () => {
@@ -115,6 +122,9 @@ const ListView = ({ sectionId, section }) => {
     const completedItems = items.filter(i => i.completed);
     const totalCount = items.length;
 
+    // For CHECKBOX-STATIC mode, keep original order
+    const staticItems = items;
+
     return (
         <div className="h-full flex flex-col p-0 sm:p-4">
             <div className="w-full h-full flex flex-col">
@@ -132,7 +142,17 @@ const ListView = ({ sectionId, section }) => {
                                     : 'bg-white border-gray-200 text-gray-600'
                                     }`}
                             >
-                                Checklist
+                                Checklist (auto-sort)
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleDisplayModeChange('CHECKBOX-STATIC')}
+                                className={`px-2 py-1 rounded-full border ${displayMode === 'CHECKBOX-STATIC'
+                                    ? 'bg-blue-50 border-blue-400 text-blue-700'
+                                    : 'bg-white border-gray-200 text-gray-600'
+                                    }`}
+                            >
+                                Checklist (keep order)
                             </button>
                             <button
                                 type="button"
@@ -208,10 +228,8 @@ const ListView = ({ sectionId, section }) => {
                                                 <input
                                                     type="checkbox"
                                                     checked={item.completed}
-                                                    onChange={(e) => {
-                                                        e.stopPropagation();
-                                                        toggleItem(item);
-                                                    }}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    onChange={() => toggleItem(item)}
                                                     className="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 cursor-pointer"
                                                     disabled={editingItemId === item.id}
                                                 />
@@ -236,7 +254,13 @@ const ListView = ({ sectionId, section }) => {
                                                         />
                                                     </div>
                                                 ) : (
-                                                    <span className="text-sm text-gray-800 whitespace-normal break-words md:truncate md:whitespace-nowrap flex-1">
+                                                    <span
+                                                        className="text-sm text-gray-800 whitespace-normal break-words md:truncate md:whitespace-nowrap flex-1"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            startEdit(item);
+                                                        }}
+                                                    >
                                                         {item.text}
                                                     </span>
                                                 )}
@@ -280,6 +304,94 @@ const ListView = ({ sectionId, section }) => {
                         </div>
                     ) : null}
 
+                    {displayMode === 'CHECKBOX-STATIC' && (
+                        <ul className="space-y-2">
+                            {staticItems.length === 0 && (
+                                <li className="text-xs text-gray-400">No items yet. Add your first task above.</li>
+                            )}
+                            {staticItems.map(item => (
+                                <li
+                                    key={item.id}
+                                    onClick={() => startEdit(item)}
+                                    className={`px-3 py-2.5 rounded-lg border border-gray-100 ${item.completed ? 'bg-white/60' : 'bg-gray-50'} hover:bg-white hover:border-blue-100 hover:shadow-sm transition group cursor-text`}
+                                >
+                                    <div className="flex items-center justify-between gap-3 min-w-0">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <input
+                                                type="checkbox"
+                                                checked={item.completed}
+                                                onClick={(e) => e.stopPropagation()}
+                                                onChange={() => toggleItem(item)}
+                                                className="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 cursor-pointer"
+                                                disabled={editingItemId === item.id}
+                                            />
+                                            {editingItemId === item.id ? (
+                                                <div className="flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+                                                    <input
+                                                        type="text"
+                                                        value={editingText}
+                                                        onChange={(e) => setEditingText(e.target.value)}
+                                                        className="w-full bg-transparent text-sm outline-none focus:ring-0 focus:outline-none"
+                                                        autoFocus
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                e.preventDefault();
+                                                                saveEdit(item.id);
+                                                            }
+                                                            if (e.key === 'Escape') {
+                                                                e.preventDefault();
+                                                                cancelEdit();
+                                                            }
+                                                        }}
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <span
+                                                    className={`text-sm ${item.completed ? 'line-through text-gray-400' : 'text-gray-800'} whitespace-normal break-words md:truncate md:whitespace-nowrap flex-1`}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        startEdit(item);
+                                                    }}
+                                                >
+                                                    {item.text}
+                                                </span>
+                                            )}
+                                        </div>
+                                        {editingItemId === item.id ? (
+                                            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => saveEdit(item.id)}
+                                                    className="px-2 py-1 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700"
+                                                >
+                                                    Save
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={cancelEdit}
+                                                    className="px-2 py-1 text-xs font-medium rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setDeleteItemId(item.id);
+                                                }}
+                                                className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition text-sm"
+                                                type="button"
+                                            >
+                                                ×
+                                            </button>
+                                        )}
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+
                     {displayMode === 'CHECKBOX' && completedItems.length > 0 && (
                         <div>
                             <p className="mt-2 text-[11px] font-semibold text-gray-500 mb-1 uppercase tracking-wide">Completed</p>
@@ -295,10 +407,8 @@ const ListView = ({ sectionId, section }) => {
                                                 <input
                                                     type="checkbox"
                                                     checked={item.completed}
-                                                    onChange={(e) => {
-                                                        e.stopPropagation();
-                                                        toggleItem(item);
-                                                    }}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    onChange={() => toggleItem(item)}
                                                     className="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 cursor-pointer"
                                                     disabled={editingItemId === item.id}
                                                 />
@@ -323,7 +433,13 @@ const ListView = ({ sectionId, section }) => {
                                                         />
                                                     </div>
                                                 ) : (
-                                                    <span className="text-sm line-through text-gray-400 whitespace-normal break-words md:truncate md:whitespace-nowrap flex-1">
+                                                    <span
+                                                        className="text-sm line-through text-gray-400 whitespace-normal break-words md:truncate md:whitespace-nowrap flex-1"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            startEdit(item);
+                                                        }}
+                                                    >
                                                         {item.text}
                                                     </span>
                                                 )}
@@ -364,7 +480,7 @@ const ListView = ({ sectionId, section }) => {
                         </div>
                     )}
 
-                    {displayMode !== 'CHECKBOX' && items.length > 0 && (
+                    {displayMode !== 'CHECKBOX' && displayMode !== 'CHECKBOX-STATIC' && items.length > 0 && (
                         <div>
                             <p className="text-[11px] font-semibold text-gray-500 mb-1 uppercase tracking-wide">Items</p>
                             {displayMode === 'ORDERED' ? (
