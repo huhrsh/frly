@@ -742,7 +742,10 @@ const GroupView = () => {
                             <div className="flex items-center gap-2">
                                 <button
                                     type="button"
-                                    onClick={() => navigate('/dashboard')}
+                                    onClick={() => {
+                                        localStorage.removeItem('currentGroupId');
+                                        navigate('/dashboard');
+                                    }}
                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 bg-white text-[11px] font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300"
                                 >
                                     <ArrowLeft size={12} />
@@ -1199,7 +1202,10 @@ const GroupView = () => {
                     <div className="flex-1 min-w-0">
                         <button
                             type="button"
-                            onClick={() => navigate('/dashboard')}
+                            onClick={() => {
+                                localStorage.removeItem('currentGroupId');
+                                navigate('/dashboard');
+                            }}
                             className="mb-1 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 bg-white text-[11px] font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300"
                         >
                             <ArrowLeft size={12} />
