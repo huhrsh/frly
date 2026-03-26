@@ -15,6 +15,11 @@ import com.example.frly.section.model.Section;
 import com.example.frly.section.model.SectionType;
 import com.example.frly.section.repository.GalleryItemRepository;
 import com.example.frly.section.repository.SectionRepository;
+import com.example.frly.notification.NotificationService;
+import com.example.frly.notification.NotificationType;
+import com.example.frly.notification.NotificationRequest;
+import com.example.frly.user.User;
+import com.example.frly.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -39,6 +44,8 @@ public class GalleryService {
     private final FileStorageService fileStorageService;
     private final SectionService sectionService; // Inject SectionService for password validation
     private final SectionMapper sectionMapper;
+    private final NotificationService notificationService;
+    private final UserRepository userRepository;
 
     @Transactional
     public GalleryItemDto uploadItem(Long sectionId, MultipartFile file) throws IOException {
@@ -90,6 +97,22 @@ public class GalleryService {
         groupRepository.save(group);
 
         log.info("Uploaded gallery item {} ({}) for group {}", item.getId(), fileSize, groupId);
+
+        // 7. Notify group members
+        Long currentUserId = AuthUtil.getCurrentUserId();
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new BadRequestException("User not found"));
+        String actorName = String.format("%s %s", currentUser.getFirstName(), currentUser.getLastName()).trim();
+        
+        notificationService.notifyGroupMembers(
+            groupId,
+            sectionId,
+            NotificationType.FILE_UPLOADED,
+            "File uploaded",
+            String.format("%s uploaded '%s' to %s", actorName, item.getOriginalFilename(), section.getTitle()),
+            actorName,
+            "GALLERY"
+        );
 
         GalleryItemDto dto = sectionMapper.toGalleryItemDto(item);
         dto.setUrl(fileStorageService.generateAccessUrl(item.getPublicId()));
@@ -147,6 +170,22 @@ public class GalleryService {
         groupRepository.save(group);
 
         log.info("Deleted gallery item {} and freed {} bytes", itemId, fileSize);
+
+        // 4. Notify group members
+        Long currentUserId = AuthUtil.getCurrentUserId();
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new BadRequestException("User not found"));
+        String actorName = String.format("%s %s", currentUser.getFirstName(), currentUser.getLastName()).trim();
+        
+        notificationService.notifyGroupMembers(
+            groupId,
+            item.getSection().getId(),
+            NotificationType.FILE_DELETED,
+            "File deleted",
+            String.format("%s deleted '%s' from %s", actorName, item.getOriginalFilename(), item.getSection().getTitle()),
+            actorName,
+            "GALLERY"
+        );
     }
 
     @Transactional

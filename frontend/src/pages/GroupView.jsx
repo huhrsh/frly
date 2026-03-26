@@ -14,11 +14,11 @@ import LinksSection from '../components/sections/LinksSection';
 import CreateSectionModal from '../components/CreateSectionModal';
 import SidebarSection from '../components/SidebarSection';
 import BentoGrid from '../components/BentoGrid';
-import GroupManageModal from '../components/GroupManageModal';
+import SettingsModal from '../components/SettingsModal';
 import UserInfoModal from '../components/UserInfoModal';
 import { useSectionPreviews } from '../hooks/useSectionPreviews';
 import { toast } from 'react-toastify';
-import { Copy, Trash2, LayoutPanelLeft, LayoutGrid, Users, ArrowLeft, Check, ChevronRight, Pencil, X, ArrowUpDown } from 'lucide-react';
+import { Copy, Trash2, LayoutPanelLeft, LayoutGrid, Users, ArrowLeft, Check, ChevronRight, Pencil, X, ArrowUpDown, Settings } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 import { useAuth } from '../context/AuthContext';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
@@ -48,7 +48,7 @@ const GroupView = () => {
     const [membersLoading, setMembersLoading] = useState(false);
 
     const [confirmConfig, setConfirmConfig] = useState(null);
-    const [showManageModal, setShowManageModal] = useState(false);
+    const [showSettingsModal, setShowSettingsModal] = useState(false);
     const [selectedMemberForInfo, setSelectedMemberForInfo] = useState(null);
 
     const [renamingSectionId, setRenamingSectionId] = useState(null);
@@ -120,20 +120,6 @@ const GroupView = () => {
         // Ensure currentGroup is loaded and matches the URL groupId before fetching sections
         if (currentGroup && currentGroup.id === id) {
             fetchSections();
-        }
-    }, [currentGroup, groupId]);
-
-    useEffect(() => {
-        const id = parseInt(groupId);
-        if (currentGroup && currentGroup.id === id && currentGroup.currentUserRole === 'ADMIN') {
-            fetchPendingRequests();
-        }
-    }, [currentGroup, groupId]);
-
-    useEffect(() => {
-        const id = parseInt(groupId);
-        if (currentGroup && currentGroup.id === id) {
-            fetchMembers();
         }
     }, [currentGroup, groupId]);
 
@@ -215,6 +201,7 @@ const GroupView = () => {
     };
 
     const fetchMembers = async () => {
+        if (!groupId) return;
         setMembersLoading(true);
         try {
             const response = await axiosClient.get(`/groups/${groupId}/members`);
@@ -312,6 +299,25 @@ const GroupView = () => {
     const openFolderReorderModal = (parentId) => {
         setReorderParentId(parentId);
         setShowReorderModal(true);
+    };
+
+    const handleReorderSections = async (orderedIds) => {
+        // Reorder root-level sections (for SettingsModal)
+        const rootSections = sections.filter((s) => !s.parentId || s.parentId === 'null');
+        const reordered = orderedIds
+            .map((id) => rootSections.find((s) => s.id === id))
+            .filter(Boolean);
+        
+        const nonRootSections = sections.filter((s) => s.parentId && s.parentId !== 'null');
+        setSections([...reordered, ...nonRootSections]);
+
+        try {
+            await axiosClient.patch('/groups/sections/reorder', orderedIds);
+        } catch (error) {
+            console.error('Failed to reorder sections', error);
+            toast.error('Failed to reorder sections');
+            fetchSections();
+        }
     };
 
     const handleApplyReorder = async (orderedIds) => {
@@ -518,7 +524,7 @@ const GroupView = () => {
         if (currentGroup.currentUserRole === 'ADMIN') {
             fetchPendingRequests();
         }
-        setShowManageModal(true);
+        setShowSettingsModal(true);
     };
 
     const handleApproveRequest = async (memberId) => {
@@ -531,6 +537,17 @@ const GroupView = () => {
         } catch (error) {
             console.error('Failed to approve member', error);
             toast.error('Failed to approve member.');
+        }
+    };
+
+    const handleRejectRequest = async (userId) => {
+        try {
+            await axiosClient.delete(`/groups/${groupId}/members/${userId}`);
+            setPendingRequests(prev => prev.filter(r => r.userId !== userId));
+            toast.success('Request rejected.');
+        } catch (error) {
+            console.error('Failed to reject member', error);
+            toast.error('Failed to reject member.');
         }
     };
 
@@ -665,30 +682,51 @@ const GroupView = () => {
         };
 
         return (
-            <div className="hidden sm:inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white p-0.5 text-xs shadow-sm">
+            <>
+                <div className="hidden sm:inline-flex items-center gap-2">
+                    <div className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white p-0.5 text-xs shadow-sm">
+                        <button
+                            type="button"
+                            onClick={handleWorkspaceClick}
+                            className={`inline-flex items-center gap-1 px-3.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full font-medium transition ${viewMode === 'WORKSPACE'
+                                ? 'bg-blue-600 text-white shadow'
+                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                }`}
+                        >
+                            <LayoutPanelLeft size={14} />
+                            Workspace
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleOverviewClick}
+                            className={`inline-flex items-center gap-1 px-3.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full font-medium transition ${viewMode === 'BENTO'
+                                ? 'bg-blue-600 text-white shadow'
+                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                }`}
+                        >
+                            <LayoutGrid size={14} />
+                            Overview
+                        </button>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={handleOpenManageModal}
+                        className="inline-flex items-center gap-1 px-3 py-2 rounded-full border border-gray-200 bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-50 text-xs font-medium shadow-sm transition"
+                        title="Group Settings"
+                    >
+                        <Settings size={14} />
+                    </button>
+                </div>
+                {/* Mobile-only settings button */}
                 <button
                     type="button"
-                    onClick={handleWorkspaceClick}
-                    className={`inline-flex items-center gap-1 px-3.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full font-medium transition ${viewMode === 'WORKSPACE'
-                        ? 'bg-blue-600 text-white shadow'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                        }`}
+                    onClick={handleOpenManageModal}
+                    className="sm:hidden inline-flex items-center gap-1 px-3 py-2 rounded-full border border-gray-200 bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-50 text-xs font-medium shadow-sm transition"
+                    title="Group Settings"
                 >
-                    <LayoutPanelLeft size={14} />
-                    Workspace
+                    <Settings size={14} />
                 </button>
-                <button
-                    type="button"
-                    onClick={handleOverviewClick}
-                    className={`inline-flex items-center gap-1 px-3.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full font-medium transition ${viewMode === 'BENTO'
-                        ? 'bg-blue-600 text-white shadow'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                        }`}
-                >
-                    <LayoutGrid size={14} />
-                    Overview
-                </button>
-            </div>
+            </>
         );
     };
 
@@ -1074,36 +1112,37 @@ const GroupView = () => {
                         onCreated={handleSectionCreated}
                     />
                 )}
-                {showManageModal && currentGroup && (
-                    <GroupManageModal
+                {showSettingsModal && currentGroup && (
+                    <SettingsModal
                         group={currentGroup}
                         sections={sections}
                         members={members}
-                        onClose={() => setShowManageModal(false)}
+                        onClose={() => setShowSettingsModal(false)}
                         onUpdateGroupName={handleUpdateGroupName}
                         onDeleteGroup={() => {
-                            setShowManageModal(false);
+                            setShowSettingsModal(false);
                             handleDeleteGroup();
                         }}
                         onAddSection={() => {
-                            setShowManageModal(false);
+                            setShowSettingsModal(false);
                             handleOpenCreateModal(null);
                         }}
                         onRemoveMember={(member) => {
-                            setShowManageModal(false);
+                            setShowSettingsModal(false);
                             handleRemoveMember(member);
                         }}
                         onDeleteSection={(section) => {
-                            setShowManageModal(false);
+                            setShowSettingsModal(false);
                             handleDeleteSectionById(section);
                         }}
                         onViewMember={(member) => setSelectedMemberForInfo(member)}
                         onLeaveGroup={currentGroup.currentUserRole !== 'ADMIN' ? () => {
-                            setShowManageModal(false);
+                            setShowSettingsModal(false);
                             handleLeaveGroup();
                         } : undefined}
                         joinRequests={pendingRequests}
                         onApproveJoinRequest={handleApproveRequest}
+                        onRejectJoinRequest={handleRejectRequest}
                         onInviteByEmail={currentGroup.currentUserRole === 'ADMIN' ? async (email) => {
                             try {
                                 await axiosClient.post(`/groups/${groupId}/invites`, { email });
@@ -1114,6 +1153,7 @@ const GroupView = () => {
                                 toast.error(msg);
                             }
                         } : undefined}
+                        onReorderSections={handleReorderSections}
                     />
                 )}
                 {selectedMemberForInfo && (
@@ -1208,39 +1248,12 @@ const GroupView = () => {
                         </div>
                     </div>
                         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                            {currentGroup?.currentUserRole === 'ADMIN' ? (
-                                <>
-                                    <button
-                                        onClick={() => handleOpenCreateModal(null)}
-                                        className="px-3 py-1.5 rounded-lg border border-blue-200 text-blue-700 bg-white hover:bg-blue-50 font-medium text-xs"
-                                    >
-                                        + New Section
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={handleOpenManageModal}
-                                        className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 bg-white hover:bg-gray-50"
-                                    >
-                                        Manage group
-                                    </button>
-                                </>
-                            ) : (
+                            {currentGroup?.currentUserRole === 'ADMIN' && (
                                 <button
-                                    type="button"
-                                    onClick={handleOpenManageModal}
-                                    className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 bg-white hover:bg-gray-50"
+                                    onClick={() => handleOpenCreateModal(null)}
+                                    className="px-3 py-1.5 rounded-lg border border-blue-200 text-blue-700 bg-white hover:bg-blue-50 font-medium text-xs"
                                 >
-                                    View group
-                                </button>
-                            )}
-                            {currentGroup?.currentUserRole === 'ADMIN' && sections.length > 1 && (
-                                <button
-                                    type="button"
-                                    onClick={openRootReorderModal}
-                                    className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                                >
-                                    <ArrowUpDown size={12} />
-                                    <span>Reorder items</span>
+                                    + New Section
                                 </button>
                             )}
                             {renderViewToggle()}
@@ -1282,32 +1295,33 @@ const GroupView = () => {
                     onCreated={handleSectionCreated}
                 />
             )}
-            {showManageModal && currentGroup && (
-                <GroupManageModal
+            {showSettingsModal && currentGroup && (
+                <SettingsModal
                     group={currentGroup}
                     sections={sections}
                     members={members}
-                    onClose={() => setShowManageModal(false)}
+                    onClose={() => setShowSettingsModal(false)}
                     onUpdateGroupName={handleUpdateGroupName}
                     onDeleteGroup={() => {
-                        setShowManageModal(false);
+                        setShowSettingsModal(false);
                         handleDeleteGroup();
                     }}
                     onAddSection={() => {
-                        setShowManageModal(false);
+                        setShowSettingsModal(false);
                         handleOpenCreateModal(null);
                     }}
                     onRemoveMember={(member) => {
-                        setShowManageModal(false);
+                        setShowSettingsModal(false);
                         handleRemoveMember(member);
                     }}
                     onDeleteSection={(section) => {
-                        setShowManageModal(false);
+                        setShowSettingsModal(false);
                         handleDeleteSectionById(section);
                     }}
                     onViewMember={(member) => setSelectedMemberForInfo(member)}
                     joinRequests={pendingRequests}
                     onApproveJoinRequest={handleApproveRequest}
+                    onRejectJoinRequest={handleRejectRequest}
                     onInviteByEmail={currentGroup.currentUserRole === 'ADMIN' ? async (email) => {
                         try {
                             await axiosClient.post(`/groups/${groupId}/invites`, { email });
@@ -1318,10 +1332,7 @@ const GroupView = () => {
                             toast.error(msg);
                         }
                     } : undefined}
-                    onLeaveGroup={currentGroup.currentUserRole !== 'ADMIN' ? () => {
-                        setShowManageModal(false);
-                        handleLeaveGroup();
-                    } : undefined}
+                    onReorderSections={handleReorderSections}
                 />
             )}
             {selectedMemberForInfo && (

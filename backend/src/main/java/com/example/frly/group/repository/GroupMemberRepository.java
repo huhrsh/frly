@@ -1,6 +1,8 @@
 package com.example.frly.group.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import com.example.frly.group.model.GroupMember;
 import com.example.frly.group.enums.GroupMemberStatus;
 
@@ -15,6 +17,9 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
     List<GroupMember> findByUserIdAndStatusNot(Long userId, GroupMemberStatus status);
 
     List<GroupMember> findByGroupIdAndStatus(Long groupId, GroupMemberStatus status);
+    
+    @Query("SELECT gm FROM GroupMember gm JOIN FETCH gm.user WHERE gm.group.id = :groupId AND gm.status = :status")
+    List<GroupMember> findByGroupIdAndStatusWithUser(@Param("groupId") Long groupId, @Param("status") GroupMemberStatus status);
 
     long countByGroupIdAndStatus(Long groupId, GroupMemberStatus status);
 

@@ -20,6 +20,8 @@ import com.example.frly.section.repository.PaymentExpenseRepository;
 import com.example.frly.section.repository.PaymentShareRepository;
 import com.example.frly.section.repository.SectionRepository;
 import com.example.frly.section.mapper.PaymentMapper;
+import com.example.frly.notification.NotificationService;
+import com.example.frly.notification.NotificationType;
 import com.example.frly.user.User;
 import com.example.frly.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +48,17 @@ public class PaymentService {
     private final PaymentShareRepository paymentShareRepository;
     private final PaymentMapper paymentMapper;
     private final GroupMemberRepository groupMemberRepository;
+    private final NotificationService notificationService;
+
+    private String getFullName(User user) {
+        if (user == null) {
+            return "Unknown User";
+        }
+        String firstName = user.getFirstName() != null ? user.getFirstName() : "";
+        String lastName = user.getLastName() != null ? " " + user.getLastName() : "";
+        String fullName = (firstName + lastName).trim();
+        return fullName.isEmpty() ? user.getEmail() : fullName;
+    }
 
     @Transactional
     public Long addExpense(Long sectionId, CreatePaymentExpenseRequestDto request) {
@@ -59,6 +72,21 @@ public class PaymentService {
         expense = paymentExpenseRepository.save(expense);
 
         createShares(expense, request.getShares());
+        
+        // Notify group members
+        User currentUser = userRepository.findById(AuthUtil.getCurrentUserId()).orElse(null);
+        String actorName = currentUser != null ? getFullName(currentUser) : "Someone";
+        String amountStr = String.format("₹%.2f", expense.getTotalAmount());
+        Long groupId = Long.valueOf(section.getGroupId());
+        notificationService.notifyGroupMembers(
+            groupId,
+            section.getId(),
+            NotificationType.PAYMENT_ADDED,
+            "New expense in " + section.getTitle(),
+            actorName + " added " + amountStr + (expense.getDescription() != null ? " for " + expense.getDescription() : ""),
+            actorName,
+            "PAYMENT"
+        );
 
         return expense.getId();
     }
@@ -78,6 +106,22 @@ public class PaymentService {
 
         updateExpenseFromRequest(expense, request, null);
         paymentExpenseRepository.save(expense);
+        
+        // Notify group members
+        Section section = expense.getSection();
+        User currentUser = userRepository.findById(AuthUtil.getCurrentUserId()).orElse(null);
+        String actorName = currentUser != null ? getFullName(currentUser) : "Someone";
+        String amountStr = String.format("₹%.2f", expense.getTotalAmount());
+        Long groupId = Long.valueOf(section.getGroupId());
+        notificationService.notifyGroupMembers(
+            groupId,
+            section.getId(),
+            NotificationType.PAYMENT_UPDATED,
+            "Expense updated in " + section.getTitle(),
+            actorName + " updated expense: " + amountStr + (expense.getDescription() != null ? " - " + expense.getDescription() : ""),
+            actorName,
+            "PAYMENT"
+        );
 
         // Replace all existing shares for this expense
         List<PaymentShare> existing = paymentShareRepository.findByExpenseIdAndStatusNot(expenseId, RecordStatus.DELETED);
@@ -99,6 +143,21 @@ public class PaymentService {
 
         expense.setStatus(RecordStatus.DELETED);
         paymentExpenseRepository.save(expense);
+        
+        // Notify group members
+        Section section = expense.getSection();
+        User currentUser = userRepository.findById(AuthUtil.getCurrentUserId()).orElse(null);
+        String actorName = currentUser != null ? getFullName(currentUser) : "Someone";
+        String amountStr = String.format("₹%.2f", expense.getTotalAmount());
+        Long groupId = Long.valueOf(section.getGroupId());
+        notificationService.notifyGroupMembers(
+            groupId,
+            section.getId(),
+            NotificationType.PAYMENT_DELETED,
+            "Expense deleted in " + section.getTitle(),
+            actorName + " deleted expense: " + amountStr + (expense.getDescription() != null ? " - " + expense.getDescription() : ""),
+            actorName
+        );
     }
 
     @Transactional(readOnly = true)

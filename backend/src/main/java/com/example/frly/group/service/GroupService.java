@@ -19,6 +19,8 @@ import com.example.frly.group.model.Group;
 import com.example.frly.group.model.GroupMember;
 import com.example.frly.group.GroupContext;
 import com.example.frly.notification.NotificationService;
+import com.example.frly.notification.NotificationType;
+import com.example.frly.notification.NotificationRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -190,13 +192,46 @@ public class GroupService {
         groupMemberRepository.save(memberToApprove);
         log.info("Member {} approved for Group {}", memberId, currentGroupId);
 
+        // Get the admin who approved the request
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new BadRequestException("Current user not found"));
+        String actorName = String.format("%s %s", currentUser.getFirstName(), currentUser.getLastName()).trim();
+
         // Notify the user that their request was approved
         notificationService.notifyUser(
-            memberToApprove.getUser().getId(),
-            "GROUP_JOIN_APPROVED",
-            String.format("Your request to join group '%s' has been approved.",
-                memberToApprove.getGroup().getDisplayName())
+            new NotificationRequest(
+                memberToApprove.getUser().getId(),
+                NotificationType.GROUP_JOIN_APPROVED,
+                "Group join approved",
+                String.format("Your request to join group '%s' has been approved.",
+                    memberToApprove.getGroup().getDisplayName()),
+                currentGroupId,
+                null,
+                actorName
+            )
         );
+
+        // Notify other group members that someone joined
+        String newMemberName = String.format("%s %s", 
+            memberToApprove.getUser().getFirstName(), 
+            memberToApprove.getUser().getLastName()).trim();
+        
+        groupMemberRepository.findByGroupIdAndStatus(currentGroupId, GroupMemberStatus.APPROVED)
+            .stream()
+            .filter(gm -> !gm.getUser().getId().equals(memberToApprove.getUser().getId()))
+            .forEach(gm -> {
+                notificationService.notifyUser(
+                    new NotificationRequest(
+                        gm.getUser().getId(),
+                        NotificationType.MEMBER_JOINED,
+                        "New member joined",
+                        String.format("%s joined group '%s'", newMemberName, memberToApprove.getGroup().getDisplayName()),
+                        currentGroupId,
+                        null,
+                        newMemberName
+                    )
+                );
+            });
     }
     
     public GroupResponseDto getGroupDetails(Long groupId) {
@@ -407,11 +442,19 @@ public class GroupService {
 
             Group group = member.getGroup();
 
+            String actorName = String.format("%s %s", member.getUser().getFirstName(), member.getUser().getLastName()).trim();
+
             // Notify the member that they left
             notificationService.notifyUser(
-                currentUserId,
-                "GROUP_LEFT",
-                String.format("You left group '%s'.", group.getDisplayName())
+                new NotificationRequest(
+                    currentUserId,
+                    NotificationType.GROUP_LEFT,
+                    "Left group",
+                    String.format("You left group '%s'.", group.getDisplayName()),
+                    groupId,
+                    null,
+                    null
+                )
             );
 
             // Notify all admins (except the leaving member) that someone left
@@ -420,12 +463,15 @@ public class GroupService {
                 Long adminUserId = adminMember.getUser().getId();
                 if (!adminUserId.equals(currentUserId)) {
                     notificationService.notifyUser(
-                        adminUserId,
-                        "GROUP_MEMBER_LEFT",
-                        String.format("%s %s left group '%s'",
-                            member.getUser().getFirstName(),
-                            member.getUser().getLastName(),
-                            group.getDisplayName())
+                        new NotificationRequest(
+                            adminUserId,
+                            NotificationType.GROUP_MEMBER_LEFT,
+                            "Member left",
+                            String.format("%s left group '%s'", actorName, group.getDisplayName()),
+                            groupId,
+                            null,
+                            actorName
+                        )
                     );
                 }
                 });
@@ -438,17 +484,46 @@ public class GroupService {
         GroupMember member = groupMemberRepository.findByUserIdAndGroupId(userIdToRemove, groupId)
             .orElseThrow(() -> new BadRequestException("Member not found in this group"));
 
+        GroupMemberStatus originalStatus = member.getStatus();
         member.setStatus(GroupMemberStatus.REMOVED);
         groupMemberRepository.save(member);
 
         Group group = member.getGroup();
 
-        // Notify the removed user
-        notificationService.notifyUser(
-            userIdToRemove,
-            "GROUP_MEMBER_REMOVED",
-            String.format("You have been removed from group '%s' by an admin.", group.getDisplayName())
-        );
+        // Get the admin who removed/rejected the member
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new BadRequestException("Current user not found"));
+        String actorName = String.format("%s %s", currentUser.getFirstName(), currentUser.getLastName()).trim();
+
+        // Send different notifications based on original status
+        if (originalStatus == GroupMemberStatus.PENDING) {
+            // This was a join request rejection - notify the user their request was declined
+            notificationService.notifyUser(
+                new NotificationRequest(
+                    userIdToRemove,
+                    NotificationType.GROUP_JOIN_REJECTED,
+                    "Join request declined",
+                    String.format("Your request to join group '%s' was declined.", group.getDisplayName()),
+                    groupId,
+                    null,
+                    actorName
+                )
+            );
+        } else if (originalStatus == GroupMemberStatus.APPROVED) {
+            // This was an actual member removal - notify them they were removed
+            notificationService.notifyUser(
+                new NotificationRequest(
+                    userIdToRemove,
+                    NotificationType.GROUP_MEMBER_REMOVED,
+                    "Removed from group",
+                    String.format("You have been removed from group '%s' by %s.", group.getDisplayName(), actorName),
+                    groupId,
+                    null,
+                    actorName
+                )
+            );
+        }
+        // If status was REMOVED, no notification needed
     }
 
     @Transactional(readOnly = true)

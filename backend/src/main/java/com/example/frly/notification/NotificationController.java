@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 public class NotificationController {
 
     private final NotificationService notificationService;
+    private final WebPushService webPushService;
 
     @GetMapping
     public ResponseEntity<Page<NotificationDto>> getMyNotifications(
@@ -36,6 +37,37 @@ public class NotificationController {
     @PostMapping("/mark-all-read")
     public ResponseEntity<Void> markAllAsRead() {
         notificationService.markAllAsReadForCurrentUser();
+        return ResponseEntity.ok().build();
+    }
+    
+    @GetMapping("/push/public-key")
+    public ResponseEntity<String> getPushPublicKey() {
+        return ResponseEntity.ok(webPushService.getPublicKey());
+    }
+    
+    @PostMapping("/push/subscribe")
+    public ResponseEntity<Void> subscribeToPush(@RequestBody PushSubscriptionDto subscription) {
+        notificationService.subscribeToPush(subscription);
+        return ResponseEntity.ok().build();
+    }
+    
+    @DeleteMapping("/push/unsubscribe")
+    public ResponseEntity<Void> unsubscribeFromPush(@RequestParam String endpoint) {
+        notificationService.unsubscribeFromPush(endpoint);
+        return ResponseEntity.ok().build();
+    }
+    
+    @GetMapping("/preferences/{groupId}")
+    public ResponseEntity<NotificationPreferenceDto> getNotificationPreferences(@PathVariable Long groupId) {
+        return ResponseEntity.ok(notificationService.getPreferencesForGroup(groupId));
+    }
+    
+    @PutMapping("/preferences/{groupId}")
+    public ResponseEntity<Void> updateNotificationPreferences(
+            @PathVariable Long groupId,
+            @RequestBody NotificationPreferenceDto preferences
+    ) {
+        notificationService.updatePreferencesForGroup(groupId, preferences);
         return ResponseEntity.ok().build();
     }
 }

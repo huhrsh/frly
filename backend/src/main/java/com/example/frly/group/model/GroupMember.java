@@ -44,4 +44,10 @@ public class GroupMember {
     @Enumerated(EnumType.STRING)
     private GroupViewPreference viewPreference = GroupViewPreference.WORKSPACE;
 
+    @Column(name = "in_app_notifications_enabled", nullable = false)
+    private boolean inAppNotificationsEnabled = true;
+
+    @Column(name = "push_notifications_enabled", nullable = false)
+    private boolean pushNotificationsEnabled = true;
+
 }

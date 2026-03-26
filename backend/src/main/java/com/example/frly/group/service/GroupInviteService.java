@@ -16,6 +16,9 @@ import com.example.frly.group.model.GroupMember;
 import com.example.frly.group.repository.GroupInviteTokenRepository;
 import com.example.frly.group.repository.GroupMemberRepository;
 import com.example.frly.group.repository.GroupRepository;
+import com.example.frly.notification.NotificationRequest;
+import com.example.frly.notification.NotificationService;
+import com.example.frly.notification.NotificationType;
 import com.example.frly.user.User;
 import com.example.frly.user.UserRepository;
 import com.example.frly.common.exception.BadRequestException;
@@ -44,6 +47,7 @@ public class GroupInviteService {
     private final RoleRepository roleRepository;
     private final EmailService emailService;
     private final GroupInviteMapper groupInviteMapper;
+    private final NotificationService notificationService;
 
     private final SecureRandom random = new SecureRandom();
 
@@ -122,6 +126,19 @@ public class GroupInviteService {
 
         emailService.sendHtml(invitee.getEmail(), subject, html);
         log.info("Sent group invite for group {} to {}", groupId, email);
+
+        // Notify the invited user in-app
+        notificationService.notifyUser(
+            new NotificationRequest(
+                invitee.getId(),
+                NotificationType.GROUP_INVITE_RECEIVED,
+                "Group invite",
+                String.format("%s invited you to join group '%s'", inviterName.isEmpty() ? "An admin" : inviterName, group.getDisplayName()),
+                groupId,
+                null,
+                inviterName.isEmpty() ? "Admin" : inviterName
+            )
+        );
     }
 
     @Transactional
