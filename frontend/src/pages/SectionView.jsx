@@ -78,6 +78,7 @@ const SectionView = () => {
     const handleGoHome = () => {
         localStorage.removeItem('currentGroupId');
         navigate('/');
+        localStorage.removeItem('currentGroupId');
     };
 
     const handleGoToGroup = () => {
