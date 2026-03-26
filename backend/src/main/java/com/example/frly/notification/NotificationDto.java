@@ -8,7 +8,11 @@ import java.time.LocalDateTime;
 public class NotificationDto {
     private Long id;
     private String type;
+    private String title;
     private String message;
+    private String actorName;
+    private Long groupId;
+    private Long sectionId;
     private boolean read;
     private LocalDateTime createdAt;
 }

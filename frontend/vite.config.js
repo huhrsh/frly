@@ -25,37 +25,36 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       VitePWA({
+        strategies: 'injectManifest',
+        srcDir: 'src',
+        filename: 'sw-custom.js',
         registerType: 'autoUpdate',
         injectRegister: 'auto',
         includeAssets: ['teamwork.png', 'vite.svg', 'robots.txt', 'sitemap.xml'],
-        workbox: {
-          globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-          runtimeCaching: [
-            // Network-first for API requests hitting the Spring Boot backend
-            apiOriginPattern && {
-              urlPattern: apiOriginPattern,
-              handler: 'NetworkFirst',
-              options: {
-                cacheName: 'api-cache',
-                networkTimeoutSeconds: 10,
-                cacheableResponse: {
-                  statuses: [0, 200],
-                },
-              },
-            },
-            // Stale-while-revalidate for images/avatars
+        manifest: {
+          name: 'fryly',
+          short_name: 'fryly',
+          description: 'Organise your shared spaces, notes, and reminders',
+          theme_color: '#2563eb',
+          background_color: '#ffffff',
+          display: 'standalone',
+          icons: [
             {
-              urlPattern: ({ request }) => request.destination === 'image',
-              handler: 'StaleWhileRevalidate',
-              options: {
-                cacheName: 'image-cache',
-                cacheableResponse: {
-                  statuses: [0, 200],
-                },
-              },
-            },
-          ].filter(Boolean),
+              src: '/teamwork.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'any maskable'
+            }
+          ]
         },
+        injectManifest: {
+          globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+          maximumFileSizeToCacheInBytes: 5000000
+        },
+        devOptions: {
+          enabled: true,
+          type: 'module'
+        }
       }),
     ],
     server: {

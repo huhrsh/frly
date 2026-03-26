@@ -17,7 +17,10 @@ import com.example.frly.section.model.SectionType;
 import com.example.frly.auth.AuthUtil;
 import com.example.frly.group.GroupContext;
 import com.example.frly.group.service.GroupService;
+import com.example.frly.notification.NotificationService;
+import com.example.frly.notification.NotificationType;
 import com.example.frly.section.SectionMapper;
+import com.example.frly.user.User;
 import com.example.frly.user.UserRepository;
 import com.example.frly.common.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +41,7 @@ public class SectionService {
     private final SectionRepository sectionRepository;
     private final ListItemRepository listItemRepository;
     private final LinkItemRepository linkItemRepository;
+    private final NotificationService notificationService;
     private final NoteRepository noteRepository;
     private final ReminderRepository reminderRepository;
     private final CalendarEventRepository calendarEventRepository;
@@ -46,6 +50,16 @@ public class SectionService {
     private final GroupService groupService;
     private final SectionMapper sectionMapper;
     private final UserRepository userRepository;
+
+    private String getFullName(User user) {
+        if (user == null) {
+            return "Unknown User";
+        }
+        String firstName = user.getFirstName() != null ? user.getFirstName() : "";
+        String lastName = user.getLastName() != null ? " " + user.getLastName() : "";
+        String fullName = (firstName + lastName).trim();
+        return fullName.isEmpty() ? user.getEmail() : fullName;
+    }
 
     private Section requireActiveSection(Long sectionId) {
         Section section = sectionRepository.findById(sectionId)
@@ -78,6 +92,19 @@ public class SectionService {
         
         section = sectionRepository.save(section);
         log.info("Section created: id={} type={}", section.getId(), section.getType());
+
+        // Notify group members
+        User currentUser = userRepository.findById(AuthUtil.getCurrentUserId()).orElse(null);
+        String actorName = currentUser != null ? getFullName(currentUser) : "Someone";
+        String sectionTypeLabel = getSectionTypeLabel(section.getType());
+        notificationService.notifyGroupMembers(Long.valueOf(section.getGroupId()),
+            section.getId(),
+            NotificationType.SECTION_CREATED,
+            "New " + sectionTypeLabel + " created",
+            actorName + " created " + sectionTypeLabel + ": " + section.getTitle(),
+            actorName,
+            getSectionTypeString(section)
+        );
 
         // Initialize Note if type is NOTE
         if (section.getType() == SectionType.NOTE) {
@@ -201,12 +228,27 @@ public class SectionService {
         validateGroupAccess();
 
         Section section = requireActiveSection(sectionId);
+        String oldTitle = section.getTitle();
         String title = request.getTitle();
         if (title == null || title.trim().isEmpty()) {
             throw new BadRequestException("Title cannot be empty");
         }
         section.setTitle(title.trim());
         sectionRepository.save(section);
+        
+        // Notify group members
+        User currentUser = userRepository.findById(AuthUtil.getCurrentUserId()).orElse(null);
+        String actorName = currentUser != null ? getFullName(currentUser) : "Someone";
+        String sectionTypeLabel = getSectionTypeLabel(section.getType());
+        notificationService.notifyGroupMembers(
+            parseGroupIdAsLong(section.getGroupId()),
+            section.getId(),
+            NotificationType.SECTION_UPDATED,
+            sectionTypeLabel + " renamed",
+            actorName + " renamed " + sectionTypeLabel + " from '" + oldTitle + "' to '" + title.trim() + "'",
+            actorName,
+            getSectionTypeString(section)
+        );
     }
 
     @Transactional
@@ -256,7 +298,29 @@ public class SectionService {
     @Transactional
     public void deleteSection(Long sectionId) {
         validateGroupAccess();
+        
+        // Get section info before deletion for notification
+        Section section = sectionRepository.findById(sectionId).orElse(null);
+        String sectionTitle = section != null ? section.getTitle() : "Section";
+        String sectionTypeLabel = section != null ? getSectionTypeLabel(section.getType()) : "Section";
+        String  groupId = section != null ? section.getGroupId() : null;
+        
         deleteSectionRecursively(sectionId);
+        
+        // Notify group members
+        if (groupId != null) {
+            User currentUser = userRepository.findById(AuthUtil.getCurrentUserId()).orElse(null);
+            String actorName = currentUser != null ? getFullName(currentUser) : "Someone";
+            notificationService.notifyGroupMembers(
+                parseGroupIdAsLong(groupId),
+                null,
+                NotificationType.SECTION_DELETED,
+                sectionTypeLabel + " deleted",
+                actorName + " deleted " + sectionTypeLabel + ": " + sectionTitle,
+                actorName,
+                section.getType() != null ? section.getType().name() : null
+            );
+        }
     }
 
     private void deleteSectionRecursively(Long sectionId) {
@@ -286,6 +350,20 @@ public class SectionService {
         item.setPosition(999); // Naive position
 
         item = listItemRepository.save(item);
+        
+        // Notify group members
+        User currentUser = userRepository.findById(AuthUtil.getCurrentUserId()).orElse(null);
+        String actorName = currentUser != null ? getFullName(currentUser) : "Someone";
+        notificationService.notifyGroupMembers(
+            parseGroupIdAsLong(section.getGroupId()),
+            section.getId(),
+            NotificationType.ITEM_ADDED,
+            "New item in " + section.getTitle(),
+            actorName + " added: " + item.getText(),
+            actorName,
+            "LIST"
+        );
+        
         return item.getId();
     }
 
@@ -305,8 +383,25 @@ public class SectionService {
                 .orElseThrow(() -> new BadRequestException("List item not found"));
         validateSectionNotDeleted(item.getSection());
 
+        boolean wasCompleted = item.isCompleted();
         item.setCompleted(!item.isCompleted());
         listItemRepository.save(item);
+        
+        // Notify group members when item is completed
+        if (!wasCompleted && item.isCompleted()) {
+            Section section = item.getSection();
+            User currentUser = userRepository.findById(AuthUtil.getCurrentUserId()).orElse(null);
+            String actorName = currentUser != null ? getFullName(currentUser) : "Someone";
+            notificationService.notifyGroupMembers(
+                parseGroupIdAsLong(section.getGroupId()),
+                section.getId(),
+                NotificationType.ITEM_COMPLETED,
+                "Item completed in " + section.getTitle(),
+                actorName + " completed: " + item.getText(),
+                actorName,
+                "LIST"
+            );
+        }
     }
 
     @Transactional
@@ -325,6 +420,20 @@ public class SectionService {
         }
 
         listItemRepository.save(item);
+        
+        // Notify group members
+        Section section = item.getSection();
+        User currentUser = userRepository.findById(AuthUtil.getCurrentUserId()).orElse(null);
+        String actorName = currentUser != null ? getFullName(currentUser) : "Someone";
+        notificationService.notifyGroupMembers(
+            parseGroupIdAsLong(section.getGroupId()),
+            section.getId(),
+            NotificationType.ITEM_UPDATED,
+            "Item updated in " + section.getTitle(),
+            actorName + " updated: " + item.getText(),
+            actorName,
+            "LIST"
+        );
     }
 
     @Transactional
@@ -335,8 +444,24 @@ public class SectionService {
                 .orElseThrow(() -> new BadRequestException("List item not found"));
         validateSectionNotDeleted(item.getSection());
 
+        String itemText = item.getText();
+        Section section = item.getSection();
+        
         item.setStatus(RecordStatus.DELETED);
         listItemRepository.save(item);
+        
+        // Notify group members
+        User currentUser = userRepository.findById(AuthUtil.getCurrentUserId()).orElse(null);
+        String actorName = currentUser != null ? getFullName(currentUser) : "Someone";
+        notificationService.notifyGroupMembers(
+            parseGroupIdAsLong(section.getGroupId()),
+            section.getId(),
+            NotificationType.ITEM_DELETED,
+            "Item deleted from " + section.getTitle(),
+            actorName + " deleted: " + itemText,
+            actorName,
+            "LIST"
+        );
     }
 
     // --- LINK ITEMS ---
@@ -355,6 +480,20 @@ public class SectionService {
         link.setPosition(999); // naive default; can be updated via reorder
 
         link = linkItemRepository.save(link);
+        
+        // Notify group members
+        User currentUser = userRepository.findById(AuthUtil.getCurrentUserId()).orElse(null);
+        String actorName = currentUser != null ? getFullName(currentUser) : "Someone";
+        notificationService.notifyGroupMembers(
+            parseGroupIdAsLong(section.getGroupId()),
+            section.getId(),
+            NotificationType.LINK_ADDED,
+            "New link in " + section.getTitle(),
+            actorName + " added link: " + link.getKey(),
+            actorName,
+            "LINKS"
+        );
+        
         return link.getId();
     }
 
@@ -384,6 +523,20 @@ public class SectionService {
         }
 
         linkItemRepository.save(link);
+        
+        // Notify group members
+        Section section = link.getSection();
+        User currentUser = userRepository.findById(AuthUtil.getCurrentUserId()).orElse(null);
+        String actorName = currentUser != null ? getFullName(currentUser) : "Someone";
+        notificationService.notifyGroupMembers(
+            parseGroupIdAsLong(section.getGroupId()),
+            section.getId(),
+            NotificationType.LINK_ADDED,
+            "Link updated in " + section.getTitle(),
+            actorName + " updated link: " + link.getKey(),
+            actorName,
+            "LINKS"
+        );
     }
 
     @Transactional
@@ -393,8 +546,24 @@ public class SectionService {
                 .orElseThrow(() -> new BadRequestException("Link not found"));
         validateSectionNotDeleted(link.getSection());
 
+        String linkKey = link.getKey();
+        Section section = link.getSection();
+        
         link.setStatus(RecordStatus.DELETED);
         linkItemRepository.save(link);
+        
+        // Notify group members
+        User currentUser = userRepository.findById(AuthUtil.getCurrentUserId()).orElse(null);
+        String actorName = currentUser != null ? getFullName(currentUser) : "Someone";
+        notificationService.notifyGroupMembers(
+            parseGroupIdAsLong(section.getGroupId()),
+            section.getId(),
+            NotificationType.LINK_DELETED,
+            "Link deleted from " + section.getTitle(),
+            actorName + " deleted link: " + linkKey,
+            actorName,
+            "LINKS"
+        );
     }
 
     @Transactional
@@ -455,6 +624,20 @@ public class SectionService {
         note.setContent(request.getContent());
         note = noteRepository.save(note);
         log.info(NOTE_UPDATED, sectionId);
+        
+        // Notify group members
+        Section section = note.getSection();
+        User currentUser = userRepository.findById(AuthUtil.getCurrentUserId()).orElse(null);
+        String actorName = currentUser != null ? getFullName(currentUser) : "Someone";
+        notificationService.notifyGroupMembers(
+            parseGroupIdAsLong(section.getGroupId()),
+            section.getId(),
+            NotificationType.NOTE_UPDATED,
+            "Note updated",
+            actorName + " updated note: " + section.getTitle(),
+            actorName,
+            "NOTE"
+        );
 
         // Build DTO from already-saved entity (no need to reload)
         NoteDto dto = sectionMapper.toNoteDto(note);
@@ -491,6 +674,20 @@ public class SectionService {
 
         reminder = reminderRepository.save(reminder);
         log.info(REMINDER_CREATED, reminder.getId());
+        
+        // Notify group members about new reminder
+        User currentUser = userRepository.findById(AuthUtil.getCurrentUserId()).orElse(null);
+        String actorName = currentUser != null ? getFullName(currentUser) : "Someone";
+        notificationService.notifyGroupMembers(
+            parseGroupIdAsLong(section.getGroupId()),
+            section.getId(),
+            NotificationType.REMINDER_COMPLETED,
+            "New reminder in " + section.getTitle(),
+            actorName + " created reminder: " + reminder.getTitle(),
+            actorName,
+            "REMINDER"
+        );
+        
         return reminder.getId();
     }
 
@@ -509,8 +706,24 @@ public class SectionService {
                 .orElseThrow(() -> new BadRequestException("Reminder not found"));
         validateSectionNotDeleted(reminder.getSection());
 
+        String reminderTitle = reminder.getTitle();
+        Section section = reminder.getSection();
+        
         reminder.setStatus(RecordStatus.DELETED);
         reminderRepository.save(reminder);
+        
+        // Notify group members
+        User currentUser = userRepository.findById(AuthUtil.getCurrentUserId()).orElse(null);
+        String actorName = currentUser != null ? getFullName(currentUser) : "Someone";
+        notificationService.notifyGroupMembers(
+            parseGroupIdAsLong(section.getGroupId()),
+            section.getId(),
+            NotificationType.REMINDER_COMPLETED,
+            "Reminder deleted from " + section.getTitle(),
+            actorName + " deleted reminder: " + reminderTitle,
+            actorName,
+            "REMINDER"
+        );
     }
 
     @Transactional
@@ -537,6 +750,20 @@ public class SectionService {
         }
 
         reminderRepository.save(reminder);
+        
+        // Notify group members
+        Section section = reminder.getSection();
+        User currentUser = userRepository.findById(AuthUtil.getCurrentUserId()).orElse(null);
+        String actorName = currentUser != null ? getFullName(currentUser) : "Someone";
+        notificationService.notifyGroupMembers(
+            parseGroupIdAsLong(section.getGroupId()),
+            section.getId(),
+            NotificationType.REMINDER_COMPLETED,
+            "Reminder updated in " + section.getTitle(),
+            actorName + " updated reminder: " + reminder.getTitle(),
+            actorName,
+            "REMINDER"
+        );
     }
 
     // --- CALENDAR EVENTS ---
@@ -561,6 +788,19 @@ public class SectionService {
         if (request.getMemberIds() != null && !request.getMemberIds().isEmpty()) {
             createCalendarEventMembers(event, request.getMemberIds());
         }
+        
+        // Notify group members
+        User currentUser = userRepository.findById(AuthUtil.getCurrentUserId()).orElse(null);
+        String actorName = currentUser != null ? getFullName(currentUser) : "Someone";
+        notificationService.notifyGroupMembers(
+            parseGroupIdAsLong(section.getGroupId()),
+            section.getId(),
+            NotificationType.EVENT_CREATED,
+            "New event in " + section.getTitle(),
+            actorName + " created event: " + event.getTitle(),
+            actorName,
+            "CALENDAR"
+        );
 
         return event.getId();
     }
@@ -621,8 +861,24 @@ public class SectionService {
                 .orElseThrow(() -> new BadRequestException("Calendar event not found"));
         validateSectionNotDeleted(event.getSection());
 
+        String eventTitle = event.getTitle();
+        Section section = event.getSection();
+        
         calendarEventMemberRepository.deleteByEventId(eventId);
         calendarEventRepository.deleteById(eventId);
+        
+        // Notify group members
+        User currentUser = userRepository.findById(AuthUtil.getCurrentUserId()).orElse(null);
+        String actorName = currentUser != null ? getFullName(currentUser) : "Someone";
+        notificationService.notifyGroupMembers(
+            parseGroupIdAsLong(section.getGroupId()),
+            section.getId(),
+            NotificationType.EVENT_DELETED,
+            "Event deleted from " + section.getTitle(),
+            actorName + " deleted event: " + eventTitle,
+            actorName,
+            "CALENDAR"
+        );
     }
 
     @Transactional
@@ -657,6 +913,20 @@ public class SectionService {
         if (request.getMemberIds() != null) {
             updateCalendarEventMembers(event, request.getMemberIds());
         }
+        
+        // Notify group members
+        Section section = event.getSection();
+        User currentUser = userRepository.findById(AuthUtil.getCurrentUserId()).orElse(null);
+        String actorName = currentUser != null ? getFullName(currentUser) : "Someone";
+        notificationService.notifyGroupMembers(
+            parseGroupIdAsLong(section.getGroupId()),
+            section.getId(),
+            NotificationType.EVENT_UPDATED,
+            "Event updated in " + section.getTitle(),
+            actorName + " updated event: " + event.getTitle(),
+            actorName,
+            "CALENDAR"
+        );
     }
 
     // ============== Private Helper Methods ==============
@@ -726,6 +996,42 @@ public class SectionService {
                 .collect(Collectors.toList());
 
         calendarEventMemberRepository.saveAll(members);
+    }
+
+    /**
+     * Converts SectionType enum to friendly label
+     */
+    private String getSectionTypeLabel(SectionType type) {
+        return switch (type) {
+            case NOTE -> "Note";
+            case LIST -> "Checklist";
+            case LINKS -> "Links";
+            case GALLERY -> "Files";
+            case REMINDER -> "Reminder";
+            case PAYMENT -> "Payment";
+            case CALENDAR -> "Calendar";
+            case FOLDER -> "Folder";
+            default -> "Section";
+        };
+    }
+
+    private Long parseGroupIdAsLong(String groupId) {
+        try {
+            return groupId != null ? Long.parseLong(groupId) : null;
+        } catch (NumberFormatException e) {
+            log.warn("Invalid groupId format: {}", groupId);
+            return null;
+        }
+    }
+    
+    /**
+     * Gets section type string for notification preferences
+     */
+    private String getSectionTypeString(Section section) {
+        if (section == null || section.getType() == null) {
+            return null;
+        }
+        return section.getType().name(); // Returns NOTE, LIST, LINKS, etc.
     }
 
 }

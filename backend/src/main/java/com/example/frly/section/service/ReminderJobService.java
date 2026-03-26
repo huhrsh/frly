@@ -3,11 +3,16 @@ package com.example.frly.section.service;
 import com.example.frly.common.enums.RecordStatus;
 import com.example.frly.email.EmailService;
 import com.example.frly.group.GroupContext;
+import com.example.frly.group.enums.GroupMemberStatus;
 import com.example.frly.group.model.Group;
+import com.example.frly.group.repository.GroupMemberRepository;
 import com.example.frly.group.repository.GroupRepository;
+import com.example.frly.notification.NotificationRequest;
 import com.example.frly.notification.NotificationService;
+import com.example.frly.notification.NotificationType;
 import com.example.frly.section.enums.ReminderFrequency;
 import com.example.frly.section.model.Reminder;
+import com.example.frly.section.model.Section;
 import com.example.frly.section.repository.ReminderRepository;
 import com.example.frly.user.User;
 import com.example.frly.user.UserRepository;
@@ -32,6 +37,7 @@ public class ReminderJobService {
     private final UserRepository userRepository;
     private final EmailService emailService;
     private final GroupRepository groupRepository;
+    private final GroupMemberRepository groupMemberRepository;
     private final NotificationService notificationService;
 
     // Cache the email template after first load
@@ -70,8 +76,9 @@ public class ReminderJobService {
     @Transactional
     protected int processDueRemindersForCurrentGroup() {
         LocalDateTime now = LocalDateTime.now();
+        // Use JOIN FETCH query to eagerly load Section to avoid LazyInitializationException
         List<Reminder> dueReminders = reminderRepository
-                .findByIsSentFalseAndNotifyTrueAndStatusAndTriggerTimeLessThanEqual(RecordStatus.ACTIVE, now);
+                .findDueRemindersWithSection(RecordStatus.ACTIVE, now);
 
         if (dueReminders.isEmpty()) {
             return 0;
@@ -111,7 +118,7 @@ public class ReminderJobService {
     }
 
     /**
-     * Process a single reminder: send email and notification, handle frequency
+     * Process a single reminder: send email and notification to all group members, handle frequency
      * @return true if processed successfully, false otherwise
      */
     private boolean processReminder(Reminder reminder, Map<Long, User> usersById) {
@@ -122,20 +129,53 @@ public class ReminderJobService {
             return false;
         }
 
-        User user = usersById.get(creatorId);
-        if (user == null) {
-            log.warn("User {} not found for reminder {}, marking as sent", creatorId, reminder.getId());
+        // Get section (should be eagerly loaded via JOIN FETCH)
+        Section section = reminder.getSection();
+        if (section == null) {
+            log.warn("Reminder {} has no section, marking as sent", reminder.getId());
+            reminder.setSent(true);
+            return false;
+        }
+        
+        // Get groupId from section
+        String groupIdStr = section.getGroupId();
+        if (groupIdStr == null) {
+            log.warn("Reminder {} section has no groupId, marking as sent", reminder.getId());
+            reminder.setSent(true);
+            return false;
+        }
+        
+        Long groupId;
+        try {
+            groupId = Long.valueOf(groupIdStr);
+        } catch (NumberFormatException e) {
+            log.warn("Reminder {} has invalid groupId format: {}, marking as sent", reminder.getId(), groupIdStr);
+            reminder.setSent(true);
+            return false;
+        }
+        
+        List<User> groupMembers = groupMemberRepository
+                .findByGroupIdAndStatusWithUser(groupId, GroupMemberStatus.APPROVED)
+                .stream()
+                .map(gm -> gm.getUser())
+                .toList();
+                
+        if (groupMembers.isEmpty()) {
+            log.warn("No approved members found for group {} of reminder {}, marking as sent", groupId, reminder.getId());
             reminder.setSent(true);
             return false;
         }
 
-        // Send email notification if user has email reminders enabled
-        if (user.isReminderEmailEnabled()) {
-            sendReminderEmail(user, reminder);
-        }
+        // Send emails and notifications to all approved group members
+        for (User member : groupMembers) {
+            // Send email notification if reminder has notify=true AND user has email reminders enabled
+            if (reminder.isNotify() && member.isReminderEmailEnabled()) {
+                sendReminderEmail(member, reminder);
+            }
 
-        // Always create an in-app notification
-        createInAppNotification(user, reminder);
+            // Always create an in-app notification (regardless of notify flag)
+            createInAppNotification(member, reminder);
+        }
 
         // Handle recurring reminders based on frequency
         handleReminderFrequency(reminder);
@@ -174,7 +214,49 @@ public class ReminderJobService {
         try {
             String notifTitle = reminder.getTitle() != null ? reminder.getTitle() : "Reminder due";
             String notifMessage = "Reminder due: " + notifTitle;
-            notificationService.notifyUser(user.getId(), "REMINDER_DUE", notifMessage);
+            
+            // Get creator name for the notification
+            User creator = null;
+            String actorName = "Someone";
+            if (reminder.getCreatedBy() != null) {
+                creator = userRepository.findById(reminder.getCreatedBy()).orElse(null);
+                if (creator != null) {
+                    String firstName = creator.getFirstName() != null ? creator.getFirstName() : "";
+                    String lastName = creator.getLastName() != null ? " " + creator.getLastName() : "";
+                    String fullName = (firstName + lastName).trim();
+                    actorName = fullName.isEmpty() ? creator.getEmail() : fullName;
+                }
+            }
+            
+            // Get section info (should be eagerly loaded)
+            Section section = reminder.getSection();
+            Long groupId = null;
+            Long sectionId = null;
+            
+            if (section != null) {
+                sectionId = section.getId();
+                String groupIdStr = section.getGroupId();
+                if (groupIdStr != null) {
+                    try {
+                        groupId = Long.valueOf(groupIdStr);
+                    } catch (NumberFormatException e) {
+                        log.warn("Invalid groupId format for reminder {}: {}", reminder.getId(), groupIdStr);
+                    }
+                }
+            }
+            
+            // Use full NotificationRequest with all fields for push to work
+            NotificationRequest request = new NotificationRequest();
+            request.setUserId(user.getId());
+            request.setType(NotificationType.REMINDER_DUE);
+            request.setTitle(notifTitle);
+            request.setMessage(notifMessage);
+            request.setGroupId(groupId);
+            request.setSectionId(sectionId);
+            request.setActorName(actorName);
+            request.setSectionType("REMINDER");
+            
+            notificationService.notifyUser(request);
             log.debug("Created in-app notification for reminder {} to user {}", reminder.getId(), user.getId());
         } catch (Exception ex) {
             log.error("Failed to create notification for reminder {} to user {}",

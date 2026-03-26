@@ -1,15 +1,38 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bell } from 'lucide-react';
+import { Bell, BellRing } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 
 const formatNotificationType = (type) => {
     if (!type) return '';
     const preset = {
-        GROUP_JOIN_REQUEST: 'Join request',
-        GROUP_JOIN_APPROVED: 'Join request approved',
-        GROUP_MEMBER_REMOVED: 'Member removed from group',
-        GROUP_MEMBER_LEFT: 'Member left group',
-        GROUP_LEFT: 'You left a group',
+        ITEM_ADDED: 'Item added',
+        ITEM_UPDATED: 'Item updated',
+        ITEM_DELETED: 'Item deleted',
+        ITEM_COMPLETED: 'Item completed',
+        PAYMENT_ADDED: 'Payment added',
+        PAYMENT_UPDATED: 'Payment updated',
+        PAYMENT_DELETED: 'Payment deleted',
+        SECTION_CREATED: 'Section created',
+        SECTION_DELETED: 'Section deleted',
+        FILE_UPLOADED: 'File uploaded',
+        FILE_DELETED: 'File deleted',
+        NOTE_CREATED: 'Note created',
+        NOTE_UPDATED: 'Note updated',
+        REMINDER_CREATED: 'Reminder added',
+        REMINDER_UPDATED: 'Reminder updated',
+        REMINDER_DELETED: 'Reminder removed',
+        REMINDER_DUE: 'Reminder due',
+        REMINDER_OVERDUE: 'Reminder overdue',
+        GROUP_INVITE_RECEIVED: 'Group invite',
+        GROUP_JOIN_APPROVED: 'Join approved',
+        GROUP_JOIN_REJECTED: 'Join request declined',
+        MEMBER_JOINED: 'Member joined',
+        MEMBER_LEFT: 'Member left',
+        GROUP_LEFT: 'Left group',
+        GROUP_MEMBER_LEFT: 'Member left',
+        GROUP_MEMBER_REMOVED: 'Removed from group',
     };
     if (preset[type]) return preset[type];
     // Fallback: transform SNAKE_CASE into Title Case
@@ -20,7 +43,24 @@ const formatNotificationType = (type) => {
         .join(' ');
 };
 
+const formatTimeAgo = (timestamp) => {
+    if (!timestamp) return '';
+    const now = new Date();
+    const then = new Date(timestamp);
+    const seconds = Math.floor((now - then) / 1000);
+    
+    if (seconds < 60) return 'just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return then.toLocaleDateString();
+};
+
 const NotificationBell = () => {
+    const navigate = useNavigate();
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [notifications, setNotifications] = useState([]);
@@ -29,6 +69,8 @@ const NotificationBell = () => {
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
     const pollingRef = useRef(null);
+    const { isSupported, isSubscribed, permission, subscribe, unsubscribe } = usePushNotifications();
+    const [pushLoading, setPushLoading] = useState(false);
 
     const fetchUnreadCount = async () => {
         try {
@@ -68,14 +110,20 @@ const NotificationBell = () => {
         }
     };
 
-    // NOTE: We previously polled the unread-count every 10 seconds.
-    // To reduce load in the early stages, this polling is disabled.
-    // We now fetch counts only when the user opens the notification panel.
-    //
-
-    // Fetch unread count once on mount (no polling)
+    // Polling for unread count every 30 seconds
     useEffect(() => {
         fetchUnreadCount();
+        
+        // Start polling
+        pollingRef.current = setInterval(() => {
+            fetchUnreadCount();
+        }, 30000); // 30 seconds
+        
+        return () => {
+            if (pollingRef.current) {
+                clearInterval(pollingRef.current);
+            }
+        };
     }, []);
 
     useEffect(() => {
@@ -118,10 +166,38 @@ const NotificationBell = () => {
         }
     };
 
+    const handleNotificationClick = async (notification) => {
+        // Mark as read
+        if (!notification.read) {
+            await markAsRead(notification.id);
+        }
+        
+        // Navigate to section if available
+        if (notification.groupId && notification.sectionId) {
+            navigate(`/groups/${notification.groupId}/sections/${notification.sectionId}`);
+            setOpen(false);
+        }
+    };
+
     const handleScroll = (event) => {
         const target = event.currentTarget;
         if (!loading && hasMore && target.scrollTop + target.clientHeight >= target.scrollHeight - 16) {
             fetchNotificationsPage(page + 1);
+        }
+    };
+
+    const handlePushToggle = async () => {
+        setPushLoading(true);
+        try {
+            if (isSubscribed) {
+                await unsubscribe();
+            } else {
+                await subscribe();
+            }
+        } catch (error) {
+            console.error('Error toggling push notifications:', error);
+        } finally {
+            setPushLoading(false);
         }
     };
 
@@ -134,8 +210,8 @@ const NotificationBell = () => {
             >
                 <Bell size={18} />
                 {unreadCount > 0 && (
-                    <span className="absolute top-1 right-1 h-2 w-2 inline-flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">
-                        
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] inline-flex items-center justify-center px-1 rounded-full bg-red-500 text-white text-[10px] font-bold">
+                        {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
                 )}
             </button>
@@ -165,6 +241,39 @@ const NotificationBell = () => {
                             {loading && <span className="text-[10px] text-gray-400">Loading...</span>}
                         </div>
                     </div>
+                    
+                    {/* Push notification settings */}
+                    {isSupported && permission !== 'denied' && (
+                        <div className="px-3 py-2 border-b bg-gray-50">
+                            <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                    <BellRing size={14} className="text-gray-600" />
+                                    <span className="text-[11px] text-gray-700">Push notifications</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handlePushToggle}
+                                    disabled={pushLoading}
+                                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                                        isSubscribed ? 'bg-blue-600' : 'bg-gray-300'
+                                    } ${pushLoading ? 'opacity-50' : ''}`}
+                                >
+                                    <span
+                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                            isSubscribed ? 'translate-x-5' : 'translate-x-0.5'
+                                        }`}
+                                    />
+                                </button>
+                            </div>
+                            <p className="text-[10px] text-gray-500 mt-1">
+                                {isSubscribed 
+                                    ? 'Get alerts for expenses, reminders & groups' 
+                                    : 'Enable to get important updates'
+                                }
+                            </p>
+                        </div>
+                    )}
+                    
                     <div className="max-h-80 overflow-y-auto" onScroll={handleScroll}>
                         {notifications.length === 0 && !loading ? (
                             <div className="px-3 py-4 text-xs text-gray-400 text-center">
@@ -174,20 +283,25 @@ const NotificationBell = () => {
                             notifications.map(n => (
                                 <div
                                     key={n.id}
-                                    className={`px-3 py-2 text-xs border-b last:border-b-0 ${n.read ? 'bg-white text-gray-500' : 'bg-blue-50 text-gray-800'}`}
+                                    onClick={() => handleNotificationClick(n)}
+                                    className={`px-3 py-2 text-xs border-b last:border-b-0 cursor-pointer hover:bg-gray-50 ${n.read ? 'bg-white' : 'bg-blue-50'}`}
                                 >
                                     <div className="flex justify-between items-start gap-2">
-                                        <div>
-                                            <p className="font-medium text-[11px] text-gray-700 mb-0.5">{formatNotificationType(n.type)}</p>
-                                            <p className="text-[11px] leading-snug">{n.message}</p>
+                                        <div className="flex-1 min-w-0">
+                                            {n.title && (
+                                                <p className="font-semibold text-[11px] text-gray-900 mb-0.5 truncate">{n.title}</p>
+                                            )}
+                                            <p className="text-[11px] text-gray-700 leading-snug line-clamp-2">{n.message}</p>
+                                            <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-500">
+                                                {n.actorName ? <span>{n.actorName}</span> : <span>System</span>}
+                                                {n.createdAt && <span>·</span>}
+                                                {n.createdAt && <span>{formatTimeAgo(n.createdAt)}</span>}
+                                            </div>
                                         </div>
                                         {!n.read && (
-                                            <button
-                                                onClick={() => markAsRead(n.id)}
-                                                className="text-[10px] text-blue-600 hover:text-blue-800"
-                                            >
-                                                Mark read
-                                            </button>
+                                            <div className="flex-shrink-0">
+                                                <span className="inline-block w-2 h-2 bg-blue-500 rounded-full"></span>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
