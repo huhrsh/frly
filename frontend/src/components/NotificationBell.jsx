@@ -3,6 +3,7 @@ import { Bell, BellRing } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import { usePushNotifications } from '../hooks/usePushNotifications';
+import { formatTimeAgo } from '../utils/dateUtils';
 
 const formatNotificationType = (type) => {
     if (!type) return '';
@@ -41,22 +42,6 @@ const formatNotificationType = (type) => {
         .split('_')
         .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
         .join(' ');
-};
-
-const formatTimeAgo = (timestamp) => {
-    if (!timestamp) return '';
-    const now = new Date();
-    const then = new Date(timestamp);
-    const seconds = Math.floor((now - then) / 1000);
-    
-    if (seconds < 60) return 'just now';
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d ago`;
-    return then.toLocaleDateString();
 };
 
 const NotificationBell = () => {
@@ -190,12 +175,21 @@ const NotificationBell = () => {
         setPushLoading(true);
         try {
             if (isSubscribed) {
+                console.log('[NotificationBell] Unsubscribing from push notifications...');
                 await unsubscribe();
+                toast.success('Push notifications disabled');
             } else {
-                await subscribe();
+                console.log('[NotificationBell] Subscribing to push notifications...');
+                const success = await subscribe();
+                if (success) {
+                    toast.success('Push notifications enabled');
+                } else {
+                    toast.error('Failed to enable push notifications');
+                }
             }
         } catch (error) {
-            console.error('Error toggling push notifications:', error);
+            console.error('[NotificationBell] Error toggling push notifications:', error);
+            toast.error('Error toggling push notifications');
         } finally {
             setPushLoading(false);
         }

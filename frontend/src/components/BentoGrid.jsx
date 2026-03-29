@@ -113,7 +113,7 @@ const BentoGrid = ({ sections, previews, allSections, groupId, onOpenCreateModal
                                             </div>
                                             {r.triggerTime && !r.isSent && (
                                                 <span className="text-gray-400 text-[10px] whitespace-nowrap ml-1">
-                                                    {new Date(r.triggerTime).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                    {parseUTCDate(r.triggerTime).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                                                 </span>
                                             )}
                                         </li>
@@ -146,7 +146,7 @@ const BentoGrid = ({ sections, previews, allSections, groupId, onOpenCreateModal
                                                     <span className="truncate text-gray-700">{ev.title}</span>
                                                     {ev.startTime && (
                                                         <span className="text-[10px] text-gray-400 whitespace-nowrap ml-1">
-                                                            {new Date(ev.startTime).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                                                            {parseUTCDate(ev.startTime).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                                                         </span>
                                                     )}
                                                 </li>

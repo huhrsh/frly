@@ -94,7 +94,7 @@ const NoteView = ({ sectionId }) => {
                         <p className="text-[10px] text-gray-400">Last edited by {lastEditedInfo.by}</p>
                         {lastEditedInfo.at && (
                             <p className="text-[10px] text-gray-400">
-                                at {new Date(lastEditedInfo.at).toLocaleString()}
+                                at {parseUTCDate(lastEditedInfo.at).toLocaleString()}
                             </p>
                         )}
                     </div>

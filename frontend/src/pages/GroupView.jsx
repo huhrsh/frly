@@ -123,6 +123,14 @@ const GroupView = () => {
         }
     }, [currentGroup, groupId]);
 
+    // Fetch members when group is ready (needed for workspace view sidebar)
+    useEffect(() => {
+        const id = parseInt(groupId);
+        if (currentGroup && currentGroup.id === id) {
+            fetchMembers();
+        }
+    }, [currentGroup, groupId]);
+
     // Keep selected section in sync with the URL (?section=ID).
     // When no section is specified, leave the workspace empty by default.
     useEffect(() => {
@@ -913,10 +921,10 @@ const GroupView = () => {
                                                 title={`${member.firstName || ''} ${member.lastName || ''} \n${member.email || ''}`}
                                             >
                                                 <div className="flex items-center gap-2 min-w-0">
-                                                    {member.pfpUrl || member.avatarUrl ? (
+                                                    {member.pfpUrl ? (
                                                         <div className="h-7 w-7 rounded-full overflow-hidden bg-gray-100 border border-gray-200 shrink-0 flex items-center justify-center">
                                                             <img
-                                                                src={member.pfpUrl || member.avatarUrl}
+                                                                src={member.pfpUrl}
                                                                 alt={member.firstName || member.email}
                                                                 className="h-full w-full object-cover"
                                                             />

@@ -313,7 +313,7 @@ const ReminderView = ({ sectionId }) => {
                                     <div className="min-w-0 flex-1">
                                         <h3 className="text-sm font-medium text-gray-800 truncate">{reminder.title}</h3>
                                         <p className="text-[11px] text-gray-500 mt-0.5">
-                                            {reminder.triggerTime && new Date(reminder.triggerTime).toLocaleString()}
+                                            {reminder.triggerTime && parseUTCDate(reminder.triggerTime).toLocaleString()}
                                         </p>
                                         {reminder.description && (
                                             <p className="text-xs text-gray-600 mt-1 whitespace-pre-line">{reminder.description}</p>

@@ -365,7 +365,11 @@ const SettingsModal = ({
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       {/* Avatar with initials */}
                       <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-medium text-blue-700">{initials}</span>
+                        {   m.pfpUrl ? 
+                            <img src={m.pfpUrl} alt={`${m.firstName} ${m.lastName}`} className="w-full h-full rounded-full object-cover" />:
+                            <span className="text-xs font-medium text-blue-700">{initials}</span>
+
+                        }
                       </div>
                       
                       {/* Name and email */}
