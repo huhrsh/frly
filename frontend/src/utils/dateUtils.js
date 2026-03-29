@@ -11,14 +11,22 @@
  * @returns {Date|null} - Date object or null if invalid
  */
 export const parseUTCDate = (timestamp) => {
-  if (!timestamp) return null;
-  try {
-    // Append 'Z' to treat as UTC
-    return new Date(timestamp + 'Z');
-  } catch (error) {
-    console.error('Error parsing date:', timestamp, error);
-    return null;
-  }
+    if (!timestamp) return null;
+    try {
+        // Append 'Z' to treat as UTC
+        const hasTimezone = timestamp.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(timestamp);
+        const dateString = hasTimezone ? timestamp : timestamp + 'Z';
+        const date = new Date(dateString);
+        // Check if date is valid (Invalid Date has NaN time)
+        if (isNaN(date.getTime())) {
+            console.warn('Invalid date:', timestamp);
+            return null;
+        }
+        return date;
+    } catch (error) {
+        console.error('Error parsing date:', timestamp, error);
+        return null;
+    }
 };
 
 /**
@@ -27,18 +35,18 @@ export const parseUTCDate = (timestamp) => {
  * @returns {string} - Formatted relative time string
  */
 export const formatTimeAgo = (timestamp) => {
-  const date = parseUTCDate(timestamp);
-  if (!date) return '';
-  
-  const now = new Date();
-  const seconds = Math.floor((now - date) / 1000);
-  
-  if (seconds < 60) return 'just now';
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return date.toLocaleDateString();
+    const date = parseUTCDate(timestamp);
+    if (!date) return '';
+
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+
+    if (seconds < 60) return 'just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString();
 };

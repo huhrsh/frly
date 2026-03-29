@@ -250,8 +250,8 @@ const CalendarView = ({ sectionId }) => {
             </button>
           </div>
           <div className="grid grid-cols-7 text-[11px] text-gray-400 mb-1">
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d) => (
-              <div key={d} className="text-center py-1">
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, idx) => (
+              <div key={idx} className="text-center py-1">
                 {d}
               </div>
             ))}
