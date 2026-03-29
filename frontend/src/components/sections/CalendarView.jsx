@@ -147,8 +147,8 @@ const CalendarView = ({ sectionId }) => {
 
   const startEdit = (ev) => {
     setEditingId(ev.id);
-    const start = ev.startTime ? new Date(ev.startTime) : null;
-    const end = ev.endTime ? new Date(ev.endTime) : null;
+    const start = ev.startTime ? parseUTCDate(ev.startTime) : null;
+    const end = ev.endTime ? parseUTCDate(ev.endTime) : null;
     const toLocalInput = (dt) => {
       if (!dt) return '';
       const d = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000);
@@ -185,10 +185,10 @@ const CalendarView = ({ sectionId }) => {
 
   const formatTimeRange = (ev) => {
     if (!ev.startTime) return '';
-    const start = new Date(ev.startTime);
+    const start = parseUTCDate(ev.startTime);
     const startStr = start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     if (!ev.endTime) return startStr;
-    const end = new Date(ev.endTime);
+    const end = parseUTCDate(ev.endTime);
     const endStr = end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     return `${startStr} – ${endStr}`;
   };
@@ -199,8 +199,8 @@ const CalendarView = ({ sectionId }) => {
   const upcomingEvents = events
     .filter((ev) => {
       if (!ev.startTime) return false;
-      const start = new Date(ev.startTime);
-      const end = ev.endTime ? new Date(ev.endTime) : null;
+      const start = parseUTCDate(ev.startTime);
+      const end = ev.endTime ? parseUTCDate(ev.endTime) : null;
       // If we have an end time, treat events as upcoming/current until they finish.
       if (end) {
         return end >= now;
@@ -208,19 +208,19 @@ const CalendarView = ({ sectionId }) => {
       // Otherwise fall back to start time.
       return start >= now;
     })
-    .sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+    .sort((a, b) => parseUTCDate(a.startTime) - parseUTCDate(b.startTime));
 
   const pastEvents = events
     .filter((ev) => {
       if (!ev.startTime) return false;
-      const start = new Date(ev.startTime);
-      const end = ev.endTime ? new Date(ev.endTime) : null;
+      const start = parseUTCDate(ev.startTime);
+      const end = ev.endTime ? parseUTCDate(ev.endTime) : null;
       if (end) {
         return end < now;
       }
       return start < now;
     })
-    .sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+    .sort((a, b) => parseUTCDate(b.startTime) - parseUTCDate(a.startTime));
 
   return (
     <div className="h-full flex flex-col sm:p-4">
@@ -546,8 +546,8 @@ const CalendarView = ({ sectionId }) => {
                     <div className="min-w-0">
                       <p className="truncate font-medium">{ev.title}</p>
                       <p className="text-[11px] text-gray-500">
-                        {new Date(ev.startTime).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}{' '}
-                        · {new Date(ev.startTime).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                        {parseUTCDate(ev.startTime).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}{' '}
+                        · {parseUTCDate(ev.startTime).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                       </p>
                       {ev.location && (
                         <p className="text-[11px] text-gray-500 truncate">
@@ -577,8 +577,8 @@ const CalendarView = ({ sectionId }) => {
                     <div className="min-w-0">
                       <p className="truncate font-medium">{ev.title}</p>
                       <p className="text-[11px] text-gray-500">
-                        {new Date(ev.startTime).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}{' '}
-                        · {new Date(ev.startTime).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                        {parseUTCDate(ev.startTime).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}{' '}
+                        · {parseUTCDate(ev.startTime).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                       </p>
                       {ev.location && (
                         <p className="text-[11px] text-gray-500 truncate">

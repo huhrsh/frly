@@ -96,23 +96,23 @@ export const useSectionPreviews = (sections) => {
                         tomorrow.setDate(tomorrow.getDate() + 1);
 
                         const isSameDay = (a, b) => {
-                            const da = new Date(a);
-                            const db = new Date(b);
+                            const da = parseUTCDate(a);
+                            const db = parseUTCDate(b);
                             return da.getFullYear() === db.getFullYear()
                                 && da.getMonth() === db.getMonth()
                                 && da.getDate() === db.getDate();
                         };
 
                         const todayEvents = events.filter(ev => ev.startTime && isSameDay(ev.startTime, today))
-                            .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
+                            .sort((a, b) => parseUTCDate(a.startTime) - parseUTCDate(b.startTime))
                             .slice(0, 3)
                             .map(ev => ({
                                 title: ev.title,
                                 startTime: ev.startTime,
                             }));
 
-                        const pastCount = events.filter(ev => ev.startTime && new Date(ev.startTime) < today).length;
-                        const upcomingCount = events.filter(ev => ev.startTime && new Date(ev.startTime) >= tomorrow).length;
+                        const pastCount = events.filter(ev => ev.startTime && parseUTCDate(ev.startTime) < today).length;
+                        const upcomingCount = events.filter(ev => ev.startTime && parseUTCDate(ev.startTime) >= tomorrow).length;
                         const todayCount = todayEvents.length;
 
                         newPreviews[section.id] = {

@@ -3,6 +3,7 @@ import { Bell, BellRing } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import { usePushNotifications } from '../hooks/usePushNotifications';
+import { formatTimeAgo } from '../utils/dateUtils';
 
 const formatNotificationType = (type) => {
     if (!type) return '';
@@ -41,24 +42,6 @@ const formatNotificationType = (type) => {
         .split('_')
         .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
         .join(' ');
-};
-
-const formatTimeAgo = (timestamp) => {
-    if (!timestamp) return '';
-    const now = new Date();
-    // Backend sends LocalDateTime from Germany server (UTC+1/+2)
-    // Append 'Z' to treat timestamp as UTC for correct time calculation
-    const then = new Date(timestamp + 'Z');
-    const seconds = Math.floor((now - then) / 1000);
-    
-    if (seconds < 60) return 'just now';
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d ago`;
-    return then.toLocaleDateString();
 };
 
 const NotificationBell = () => {
