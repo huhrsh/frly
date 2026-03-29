@@ -51,6 +51,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Don't intercept navigation requests
+  if (event.request.mode === 'navigate') {
+    return;
+  }
+
   // For non-API requests, use cache-first strategy
   event.respondWith(
     caches.match(event.request)
@@ -62,23 +67,12 @@ self.addEventListener('fetch', (event) => {
         // Not in cache - fetch from network
         return fetch(event.request);
       })
-      .catch((error) => {
-        console.error('Fetch failed:', error);
-        // Return a basic response if fetch fails completely
-        return new Response('Network error', {
-          status: 408,
-          headers: { 'Content-Type': 'text/plain' }
-        });
-      })
   );
 });
 
 // Push notification event handler
 self.addEventListener('push', (event) => {
-  console.log('Push notification received:', event);
-  
   if (!event.data) {
-    console.log('Push event but no data');
     return;
   }
 
@@ -99,7 +93,7 @@ self.addEventListener('push', (event) => {
       self.registration.showNotification(title, options)
     );
   } catch (error) {
-    console.error('Error showing notification:', error);
+    // Silently handle parse error
   }
 });
 
