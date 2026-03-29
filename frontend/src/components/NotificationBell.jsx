@@ -175,11 +175,9 @@ const NotificationBell = () => {
         setPushLoading(true);
         try {
             if (isSubscribed) {
-                console.log('[NotificationBell] Unsubscribing from push notifications...');
                 await unsubscribe();
                 toast.success('Push notifications disabled');
             } else {
-                console.log('[NotificationBell] Subscribing to push notifications...');
                 const success = await subscribe();
                 if (success) {
                     toast.success('Push notifications enabled');
@@ -188,7 +186,6 @@ const NotificationBell = () => {
                 }
             }
         } catch (error) {
-            console.error('[NotificationBell] Error toggling push notifications:', error);
             toast.error('Error toggling push notifications');
         } finally {
             setPushLoading(false);
