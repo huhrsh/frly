@@ -4,6 +4,7 @@ import axiosClient from '../../api/axiosClient';
 import { toast } from 'react-toastify';
 import { ChevronLeft, ChevronRight, Clock, MapPin, User, Trash2, Edit2, CalendarDays } from 'lucide-react';
 import ConfirmModal from '../ConfirmModal';
+import { parseUTCDate } from '../../utils/dateUtils';
 
 const startOfDay = (date) => {
   const d = new Date(date);
