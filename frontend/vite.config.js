@@ -29,7 +29,7 @@ export default defineConfig(({ mode }) => {
         srcDir: 'src',
         filename: 'sw-custom.js',
         registerType: 'autoUpdate',
-        injectRegister: 'auto',
+        injectRegister: 'inline', // Changed from 'auto' - injects SW registration directly in HTML
         includeAssets: ['teamwork.png', 'vite.svg', 'robots.txt', 'sitemap.xml'],
         manifest: {
           name: 'fryly',

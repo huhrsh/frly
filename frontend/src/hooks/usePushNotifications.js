@@ -24,9 +24,16 @@ export const usePushNotifications = () => {
         try {
             const registration = await navigator.serviceWorker.ready;
             const subscription = await registration.pushManager.getSubscription();
-            setIsSubscribed(!!subscription);
+            const subscribed = !!subscription;
+            console.log('[Push] Subscription check:', subscribed ? 'subscribed' : 'not subscribed');
+            if (subscription) {
+                console.log('[Push] Subscription endpoint:', subscription.endpoint);
+            }
+            setIsSubscribed(subscribed);
+            return subscribed;
         } catch (error) {
-            console.error('Error checking push subscription:', error);
+            console.error('[Push] Error checking push subscription:', error);
+            return false;
         }
     };
 
@@ -47,27 +54,38 @@ export const usePushNotifications = () => {
 
     const subscribe = async () => {
         try {
+            console.log('[Push] Starting subscription process...');
+            
             // Request notification permission
+            console.log('[Push] Requesting notification permission...');
             const perm = await Notification.requestPermission();
             setPermission(perm);
+            console.log('[Push] Permission status:', perm);
 
             if (perm !== 'granted') {
-                console.log('Notification permission denied');
+                console.log('[Push] Notification permission denied');
                 return false;
             }
 
             // Get VAPID public key from backend
+            console.log('[Push] Fetching VAPID public key from backend...');
             const keyResponse = await axiosClient.get('/notifications/push/public-key');
             const publicKey = keyResponse.data;
+            console.log('[Push] Received public key:', publicKey?.substring(0, 20) + '...');
 
             // Get service worker registration
+            console.log('[Push] Waiting for service worker registration...');
             const registration = await navigator.serviceWorker.ready;
+            console.log('[Push] Service worker ready');
 
             // Subscribe to push notifications
+            console.log('[Push] Subscribing to push manager...');
             const subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: urlBase64ToUint8Array(publicKey)
             });
+            console.log('[Push] Push manager subscription created');
+            console.log('[Push] Subscription endpoint:', subscription.endpoint);
 
             // Send subscription to backend
             const subscriptionData = {
@@ -79,32 +97,40 @@ export const usePushNotifications = () => {
                 deviceInfo: navigator.userAgent
             };
 
+            console.log('[Push] Sending subscription to backend...');
             await axiosClient.post('/notifications/push/subscribe', subscriptionData);
+            console.log('[Push] Backend confirmed subscription');
 
             setIsSubscribed(true);
-            console.log('Successfully subscribed to push notifications');
+            console.log('[Push] Successfully subscribed to push notifications');
             return true;
         } catch (error) {
-            console.error('Error subscribing to push notifications:', error);
+            console.error('[Push] Error subscribing to push notifications:', error);
+            console.error('[Push] Error details:', error.response?.data || error.message);
             return false;
         }
     };
 
     const unsubscribe = async () => {
         try {
+            console.log('[Push] Starting unsubscribe process...');
             const registration = await navigator.serviceWorker.ready;
             const subscription = await registration.pushManager.getSubscription();
 
             if (subscription) {
+                console.log('[Push] Unsubscribing from push manager...');
                 await subscription.unsubscribe();
+                console.log('[Push] Notifying backend...');
                 await axiosClient.delete('/notifications/push/unsubscribe', {
                     params: { endpoint: subscription.endpoint }
                 });
                 setIsSubscribed(false);
-                console.log('Successfully unsubscribed from push notifications');
+                console.log('[Push] Successfully unsubscribed from push notifications');
+            } else {
+                console.log('[Push] No active subscription found');
             }
         } catch (error) {
-            console.error('Error unsubscribing from push notifications:', error);
+            console.error('[Push] Error unsubscribing from push notifications:', error);
         }
     };
 

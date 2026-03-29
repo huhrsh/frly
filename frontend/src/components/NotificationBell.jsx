@@ -46,7 +46,9 @@ const formatNotificationType = (type) => {
 const formatTimeAgo = (timestamp) => {
     if (!timestamp) return '';
     const now = new Date();
-    const then = new Date(timestamp);
+    // Backend sends LocalDateTime from Germany server (UTC+1/+2)
+    // Append 'Z' to treat timestamp as UTC for correct time calculation
+    const then = new Date(timestamp + 'Z');
     const seconds = Math.floor((now - then) / 1000);
     
     if (seconds < 60) return 'just now';
@@ -190,12 +192,21 @@ const NotificationBell = () => {
         setPushLoading(true);
         try {
             if (isSubscribed) {
+                console.log('[NotificationBell] Unsubscribing from push notifications...');
                 await unsubscribe();
+                toast.success('Push notifications disabled');
             } else {
-                await subscribe();
+                console.log('[NotificationBell] Subscribing to push notifications...');
+                const success = await subscribe();
+                if (success) {
+                    toast.success('Push notifications enabled');
+                } else {
+                    toast.error('Failed to enable push notifications');
+                }
             }
         } catch (error) {
-            console.error('Error toggling push notifications:', error);
+            console.error('[NotificationBell] Error toggling push notifications:', error);
+            toast.error('Error toggling push notifications');
         } finally {
             setPushLoading(false);
         }
