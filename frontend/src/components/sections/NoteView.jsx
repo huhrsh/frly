@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axiosClient from '../../api/axiosClient';
 import { toast } from 'react-toastify';
+import { parseUTCDate } from '../../utils/dateUtils';
 
 const NoteView = ({ sectionId }) => {
     const [content, setContent] = useState('');
@@ -92,11 +93,14 @@ const NoteView = ({ sectionId }) => {
                 {lastEditedInfo && (
                     <div className="text-right mr-3 hidden sm:block">
                         <p className="text-[10px] text-gray-400">Last edited by {lastEditedInfo.by}</p>
-                        {lastEditedInfo.at && (
-                            <p className="text-[10px] text-gray-400">
-                                at {parseUTCDate(lastEditedInfo.at).toLocaleString()}
-                            </p>
-                        )}
+                        {lastEditedInfo.at && (() => {
+                            const date = parseUTCDate(lastEditedInfo.at);
+                            return date ? (
+                                <p className="text-[10px] text-gray-400">
+                                    at {date.toLocaleString()}
+                                </p>
+                            ) : null;
+                        })()}
                     </div>
                 )}
                 <button

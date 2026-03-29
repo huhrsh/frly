@@ -4,6 +4,7 @@ import axiosClient from '../../api/axiosClient';
 import { toast } from 'react-toastify';
 import { ChevronLeft, ChevronRight, Clock, MapPin, User, Trash2, Edit2, CalendarDays } from 'lucide-react';
 import ConfirmModal from '../ConfirmModal';
+import { parseUTCDate } from '../../utils/dateUtils';
 
 const startOfDay = (date) => {
   const d = new Date(date);
@@ -249,8 +250,8 @@ const CalendarView = ({ sectionId }) => {
             </button>
           </div>
           <div className="grid grid-cols-7 text-[11px] text-gray-400 mb-1">
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d) => (
-              <div key={d} className="text-center py-1">
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, idx) => (
+              <div key={idx} className="text-center py-1">
                 {d}
               </div>
             ))}
