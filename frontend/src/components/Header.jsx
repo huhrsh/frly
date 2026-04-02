@@ -1,15 +1,32 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Info } from 'lucide-react';
+import { Info, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchGroupDetails } from '../redux/slices/groupSlice';
 import NotificationBell from './NotificationBell';
 
 const Header = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+    const dispatch = useDispatch();
+    const { currentGroup } = useSelector((state) => state.group);
     const [menuOpen, setMenuOpen] = useState(false);
     const [showInfo, setShowInfo] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
     const menuRef = useRef(null);
+
+    const handleRefresh = async () => {
+        if (refreshing) return;
+        setRefreshing(true);
+        try {
+            if (currentGroup?.id) {
+                await dispatch(fetchGroupDetails(currentGroup.id));
+            }
+        } finally {
+            setRefreshing(false);
+        }
+    };
 
     const handleLogout = () => {
         logout();
@@ -62,6 +79,17 @@ const Header = () => {
                                 >
                                     <Info size={16} />
                                 </button>
+                                {currentGroup && (
+                                    <button
+                                        type="button"
+                                        onClick={handleRefresh}
+                                        disabled={refreshing}
+                                        className="p-1.5 rounded-full border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-800 disabled:opacity-50"
+                                        aria-label="Refresh"
+                                    >
+                                        <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+                                    </button>
+                                )}
                                 <NotificationBell />
                                 <button
                                     type="button"

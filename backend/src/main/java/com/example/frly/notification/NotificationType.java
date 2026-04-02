@@ -45,6 +45,7 @@ public class NotificationType {
     
     // Group notifications
     public static final String GROUP_INVITE_RECEIVED = "GROUP_INVITE_RECEIVED";
+    public static final String GROUP_JOIN_REQUEST = "GROUP_JOIN_REQUEST";
     public static final String GROUP_JOIN_APPROVED = "GROUP_JOIN_APPROVED";
     public static final String GROUP_JOIN_REJECTED = "GROUP_JOIN_REJECTED";
     public static final String MEMBER_JOINED = "MEMBER_JOINED";

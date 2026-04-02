@@ -12,7 +12,7 @@ import FolderView from '../components/sections/FolderView';
 import PaymentView from '../components/sections/PaymentView';
 import CreateSectionModal from '../components/CreateSectionModal';
 import { toast } from 'react-toastify';
-import { Trash2, ArrowLeft, Home, LayoutPanelLeft, LayoutGrid, Users, Pencil, Check, X, ArrowUpDown } from 'lucide-react';
+import { Trash2, ArrowLeft, Home, LayoutPanelLeft, LayoutGrid, Users, Pencil, Check, X, ArrowUpDown, RefreshCw } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 import LinksSection from '../components/sections/LinksSection';
 import ReorderSectionsModal from '../components/ReorderSectionsModal';
@@ -50,25 +50,25 @@ const SectionView = () => {
     }, [groupId, sectionId]);
 
     // Fetch sections and resolve the one we care about
+    const loadSection = async () => {
+        setLoading(true);
+        try {
+            const res = await axiosClient.get('/groups/sections');
+            const list = Array.isArray(res.data) ? res.data : [];
+            setSections(list);
+            const found = list.find((s) => String(s.id) === String(sectionId));
+            if (!found) toast.error('Section not found');
+            setSection(found || null);
+        } catch (err) {
+            console.error('Failed to load section', err);
+            toast.error('Failed to load section');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const load = async () => {
-            try {
-                const res = await axiosClient.get('/groups/sections');
-                const list = Array.isArray(res.data) ? res.data : [];
-                setSections(list);
-                const found = list.find((s) => String(s.id) === String(sectionId));
-                if (!found) {
-                    toast.error('Section not found');
-                }
-                setSection(found || null);
-            } catch (err) {
-                console.error('Failed to load section', err);
-                toast.error('Failed to load section');
-            } finally {
-                setLoading(false);
-            }
-        };
-        load();
+        loadSection();
     }, [sectionId]);
 
     const handleBackPrevious = () => {
@@ -266,7 +266,7 @@ const SectionView = () => {
                                 ? 'Links'
                             : 'Folder';
 
-    if (groupLoading && loading) {
+    if (groupLoading || loading) {
         return (
             <div className="flex items-center justify-center h-[60vh]">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
@@ -303,6 +303,16 @@ const SectionView = () => {
                             >
                                 <Users size={14} />
                                 Back to groups
+                            </button>
+                            <button
+                                type="button"
+                                onClick={loadSection}
+                                disabled={loading}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs sm:text-sm text-gray-500 bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-40"
+                                aria-label="Refresh section"
+                                title="Refresh section"
+                            >
+                                <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
                             </button>
                         </div>
                         {section && currentGroup?.currentUserRole === 'ADMIN' && (

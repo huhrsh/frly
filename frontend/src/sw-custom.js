@@ -99,25 +99,28 @@ self.addEventListener('push', (event) => {
 
 // Notification click handler
 self.addEventListener('notificationclick', (event) => {
-  console.log('Notification clicked:', event);
   event.notification.close();
+
+  const targetUrl = (event.notification.data && event.notification.data.url) ? event.notification.data.url : '/';
 
   // Navigate to the app or specific page
   event.waitUntil(
-    clients.matchAll({ 
-      type: 'window', 
-      includeUncontrolled: true 
+    clients.matchAll({
+      type: 'window',
+      includeUncontrolled: true
     }).then((clientList) => {
-      // If a window is already open, focus it
+      // If a window is already open, navigate it to the target URL
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
+          if ('navigate' in client) {
+            return client.navigate(targetUrl).then(c => c && c.focus());
+          }
           return client.focus();
         }
       }
-      // Only open a new window if no existing window found
-      // This prevents opening Edge when the app is already open
+      // Open a new window at the target URL
       if (clients.openWindow) {
-        return clients.openWindow('/');
+        return clients.openWindow(targetUrl);
       }
     })
   );

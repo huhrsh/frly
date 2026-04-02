@@ -224,7 +224,7 @@ const ListView = ({ sectionId, section }) => {
                                         className="px-3 py-2.5 rounded-lg border border-gray-100 bg-gray-50 hover:bg-white hover:border-blue-100 hover:shadow-sm transition group cursor-text"
                                     >
                                         <div className="flex items-center justify-between gap-3 min-w-0">
-                                            <div className="flex items-center gap-3 min-w-0">
+                                            <div className="flex items-center gap-3 min-w-0 flex-1">
                                                 <input
                                                     type="checkbox"
                                                     checked={item.completed}
@@ -255,7 +255,7 @@ const ListView = ({ sectionId, section }) => {
                                                     </div>
                                                 ) : (
                                                     <span
-                                                        className="text-sm text-gray-800 whitespace-normal break-words md:truncate md:whitespace-nowrap flex-1"
+                                                        className="text-sm text-gray-800 whitespace-normal break-words flex-1"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             startEdit(item);
@@ -316,7 +316,7 @@ const ListView = ({ sectionId, section }) => {
                                     className={`px-3 py-2.5 rounded-lg border border-gray-100 ${item.completed ? 'bg-white/60' : 'bg-gray-50'} hover:bg-white hover:border-blue-100 hover:shadow-sm transition group cursor-text`}
                                 >
                                     <div className="flex items-center justify-between gap-3 min-w-0">
-                                        <div className="flex items-center gap-3 min-w-0">
+                                        <div className="flex items-center gap-3 min-w-0 flex-1">
                                             <input
                                                 type="checkbox"
                                                 checked={item.completed}
@@ -403,7 +403,7 @@ const ListView = ({ sectionId, section }) => {
                                         className="px-3 py-2.5 rounded-lg border border-gray-100 bg-white/60 group hover:bg-white cursor-text"
                                     >
                                         <div className="flex items-center justify-between gap-3 min-w-0">
-                                            <div className="flex items-center gap-3 min-w-0">
+                                            <div className="flex items-center gap-3 min-w-0 flex-1">
                                                 <input
                                                     type="checkbox"
                                                     checked={item.completed}

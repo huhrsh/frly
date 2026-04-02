@@ -18,7 +18,7 @@ import SettingsModal from '../components/SettingsModal';
 import UserInfoModal from '../components/UserInfoModal';
 import { useSectionPreviews } from '../hooks/useSectionPreviews';
 import { toast } from 'react-toastify';
-import { Copy, Trash2, LayoutPanelLeft, LayoutGrid, Users, ArrowLeft, Check, ChevronRight, Pencil, X, ArrowUpDown, Settings } from 'lucide-react';
+import { Copy, Trash2, LayoutPanelLeft, LayoutGrid, Users, ArrowLeft, Check, ChevronRight, Pencil, X, ArrowUpDown, Settings, RefreshCw } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 import { useAuth } from '../context/AuthContext';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
@@ -1277,6 +1277,16 @@ const GroupView = () => {
                 <div>
                     <div className="flex items-center justify-between mb-1">
                         <h2 className="text-sm font-semibold text-gray-700">Sections</h2>
+                        <button
+                            type="button"
+                            onClick={fetchSections}
+                            disabled={sectionsLoading}
+                            className="p-1 rounded text-gray-400 hover:text-gray-600 disabled:opacity-40"
+                            aria-label="Refresh sections"
+                            title="Refresh sections"
+                        >
+                            <RefreshCw size={14} className={sectionsLoading ? 'animate-spin' : ''} />
+                        </button>
                     </div>
                     {sectionsLoading ? (
                         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center text-sm text-gray-400">

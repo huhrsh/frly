@@ -116,14 +116,19 @@ public class GroupService {
                 log.info("User {} re-requested to join Group {} (reusing removed membership)", userId, group.getId());
 
                 // Notify admins about the new join request
+                String rejoinMsg = String.format("%s %s requested to rejoin group '%s'",
+                    user.getFirstName(), user.getLastName(), group.getDisplayName());
                 groupMemberRepository.findByGroupIdAndRole_Name(group.getId(), "ADMIN")
                     .forEach(adminMember -> notificationService.notifyUser(
-                        adminMember.getUser().getId(),
-                        "GROUP_JOIN_REQUEST",
-                        String.format("%s %s requested to rejoin group '%s'",
-                            user.getFirstName(),
-                            user.getLastName(),
-                            group.getDisplayName())
+                        new NotificationRequest(
+                            adminMember.getUser().getId(),
+                            NotificationType.GROUP_JOIN_REQUEST,
+                            "Join request",
+                            rejoinMsg,
+                            group.getId(),
+                            null,
+                            user.getFirstName() + " " + user.getLastName()
+                        )
                     ));
 
                 return group.getId();
@@ -145,14 +150,19 @@ public class GroupService {
         log.info("User {} requested to join Group {}", userId, group.getId());
 
         // Notify all admins of this group about the join request
+        String joinMsg = String.format("%s %s requested to join group '%s'",
+            user.getFirstName(), user.getLastName(), group.getDisplayName());
         groupMemberRepository.findByGroupIdAndRole_Name(group.getId(), "ADMIN")
             .forEach(adminMember -> notificationService.notifyUser(
-                adminMember.getUser().getId(),
-                "GROUP_JOIN_REQUEST",
-                String.format("%s %s requested to join group '%s'",
-                    user.getFirstName(),
-                    user.getLastName(),
-                    group.getDisplayName())
+                new NotificationRequest(
+                    adminMember.getUser().getId(),
+                    NotificationType.GROUP_JOIN_REQUEST,
+                    "Join request",
+                    joinMsg,
+                    group.getId(),
+                    null,
+                    user.getFirstName() + " " + user.getLastName()
+                )
             ));
 
         return group.getId();

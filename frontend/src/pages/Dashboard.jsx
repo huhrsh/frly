@@ -4,25 +4,189 @@ import { useDispatch } from 'react-redux';
 import { selectGroup, clearGroup } from '../redux/slices/groupSlice';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { Copy, Users } from 'lucide-react';
+import { Copy, Users, ChevronDown, ChevronUp, X, Check } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+
+// ─── Onboarding checklist ────────────────────────────────────────────────────
+
+const STEPS = [
+    {
+        key: 'hasGroup',
+        label: 'Create or join a group',
+        description: 'Your shared workspace for a flat, family, or crew.',
+        actions: (navigate) => (
+            <div className="flex flex-wrap gap-2 mt-2">
+                <button
+                    type="button"
+                    onClick={() => navigate('/groups/create')}
+                    className="px-3 py-1 rounded-md bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition"
+                >
+                    Create a group →
+                </button>
+                <button
+                    type="button"
+                    onClick={() => navigate('/groups/join')}
+                    className="px-3 py-1 rounded-md border border-gray-300 text-gray-700 text-xs font-medium hover:bg-gray-50 transition"
+                >
+                    Join one
+                </button>
+            </div>
+        ),
+    },
+    {
+        key: 'hasSection',
+        label: 'Add your first section',
+        description: 'Notes, checklists, files, reminders, expenses — pick what your group needs.',
+        actions: (navigate, firstGroupId) => (
+            <button
+                type="button"
+                onClick={() => firstGroupId && navigate(`/groups/${firstGroupId}`)}
+                disabled={!firstGroupId}
+                className="mt-2 px-3 py-1 rounded-md bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition disabled:opacity-40"
+            >
+                Open workspace →
+            </button>
+        ),
+    },
+    {
+        key: 'hasMember',
+        label: 'Invite someone or have a member join',
+        description: 'Collaboration is better with others. Share your invite code or link.',
+        actions: (navigate, firstGroupId) => (
+            <button
+                type="button"
+                onClick={() => firstGroupId && navigate(`/groups/${firstGroupId}?manage=1`)}
+                disabled={!firstGroupId}
+                className="mt-2 px-3 py-1 rounded-md bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition disabled:opacity-40"
+            >
+                Invite someone →
+            </button>
+        ),
+    },
+];
+
+const OnboardingChecklist = ({ onboarding, firstGroupId, userId, navigate }) => {
+    const dismissedKey = `fryly_onboarding_dismissed_${userId}`;
+    const collapsedKey = `fryly_onboarding_collapsed_${userId}`;
+
+    const [dismissed, setDismissed] = useState(() =>
+        localStorage.getItem(dismissedKey) === 'true'
+    );
+    const [collapsed, setCollapsed] = useState(() =>
+        localStorage.getItem(collapsedKey) === 'true'
+    );
+
+    const allComplete = onboarding.hasGroup && onboarding.hasSection && onboarding.hasMember;
+    const completedCount = [onboarding.hasGroup, onboarding.hasSection, onboarding.hasMember].filter(Boolean).length;
+
+    // Auto-dismiss when all steps done
+    useEffect(() => {
+        if (allComplete && !dismissed) {
+            localStorage.setItem(dismissedKey, 'true');
+            setDismissed(true);
+        }
+    }, [allComplete, dismissed, dismissedKey]);
+
+    if (dismissed) return null;
+
+    const handleDismiss = () => {
+        localStorage.setItem(dismissedKey, 'true');
+        setDismissed(true);
+    };
+
+    const handleToggleCollapse = () => {
+        const next = !collapsed;
+        setCollapsed(next);
+        localStorage.setItem(collapsedKey, String(next));
+    };
+
+    return (
+        <div className="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden">
+            {/* Header row */}
+            <div className="flex items-center justify-between px-4 py-3 bg-blue-50 border-b border-blue-100">
+                <button
+                    type="button"
+                    onClick={handleToggleCollapse}
+                    className="flex items-center gap-2 text-left flex-1 min-w-0"
+                >
+                    <span className="text-sm font-semibold text-blue-800">Getting started</span>
+                    <span className="text-[11px] font-medium text-blue-600 bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-full">
+                        {completedCount}/3
+                    </span>
+                    {collapsed
+                        ? <ChevronDown size={15} className="text-blue-500 ml-auto" />
+                        : <ChevronUp size={15} className="text-blue-500 ml-auto" />
+                    }
+                </button>
+                <button
+                    type="button"
+                    onClick={handleDismiss}
+                    className="ml-3 p-1 rounded text-blue-400 hover:text-blue-700 hover:bg-blue-100 transition"
+                    aria-label="Dismiss onboarding"
+                    title="Dismiss"
+                >
+                    <X size={14} />
+                </button>
+            </div>
+
+            {/* Steps */}
+            {!collapsed && (
+                <ul className="divide-y divide-gray-100">
+                    {STEPS.map((step) => {
+                        const done = onboarding[step.key];
+                        return (
+                            <li key={step.key} className={`px-4 py-3 ${done ? 'opacity-60' : ''}`}>
+                                <div className="flex items-start gap-3">
+                                    <span className={`mt-0.5 flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full border ${done
+                                        ? 'bg-emerald-500 border-emerald-500'
+                                        : 'border-gray-300 bg-white'}`}
+                                    >
+                                        {done && <Check size={11} className="text-white" strokeWidth={3} />}
+                                    </span>
+                                    <div className="flex-1 min-w-0">
+                                        <p className={`text-sm font-medium ${done ? 'line-through text-gray-400' : 'text-gray-800'}`}>
+                                            {step.label}
+                                        </p>
+                                        {!done && (
+                                            <>
+                                                <p className="text-xs text-gray-500 mt-0.5">{step.description}</p>
+                                                {step.actions(navigate, firstGroupId)}
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            </li>
+                        );
+                    })}
+                </ul>
+            )}
+        </div>
+    );
+};
+
+// ─── Dashboard ───────────────────────────────────────────────────────────────
 
 const Dashboard = () => {
     const [groups, setGroups] = useState([]);
     const [invites, setInvites] = useState([]);
+    const [onboarding, setOnboarding] = useState(null);
     const [loading, setLoading] = useState(true);
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const { user } = useAuth();
 
     useEffect(() => {
         dispatch(clearGroup());
         const fetchAll = async () => {
             try {
-                const [groupsRes, invitesRes] = await Promise.all([
+                const [groupsRes, invitesRes, onboardingRes] = await Promise.all([
                     axiosClient.get('/users/me/groups'),
-                    axiosClient.get('/invites/mine').catch(() => ({ data: [] }))
+                    axiosClient.get('/invites/mine').catch(() => ({ data: [] })),
+                    axiosClient.get('/users/me/onboarding-status').catch(() => ({ data: null })),
                 ]);
                 setGroups(groupsRes.data || []);
                 setInvites(invitesRes.data || []);
+                setOnboarding(onboardingRes.data);
             } catch (error) {
                 console.error("Failed to fetch dashboard data", error);
             } finally {
@@ -72,6 +236,13 @@ const Dashboard = () => {
     const adminGroups = visibleGroups.filter(g => g.currentUserRole === 'ADMIN').length;
     const pendingGroups = visibleGroups.filter(g => g.membershipStatus === 'PENDING').length;
     const pendingInvites = invites.length;
+
+    const approvedGroups = visibleGroups.filter(g => g.membershipStatus === 'APPROVED');
+    const firstGroupId = approvedGroups.length > 0 ? approvedGroups[0].id : null;
+
+    // Show onboarding if: status loaded, not all steps done, and user hasn't dismissed
+    const showOnboarding = onboarding !== null
+        && !(onboarding.hasGroup && onboarding.hasSection && onboarding.hasMember);
 
     return (
         <div className="min-h-full">
@@ -161,16 +332,20 @@ const Dashboard = () => {
                         </div>
                     </>
 
+                {/* Onboarding checklist — shown above the groups grid for users with incomplete steps */}
+                {showOnboarding && user && (
+                    <OnboardingChecklist
+                        onboarding={onboarding}
+                        firstGroupId={firstGroupId}
+                        userId={user.id}
+                        navigate={navigate}
+                    />
+                )}
 
                 {visibleGroups.length === 0 ? (
-                    <div className="text-center py-20 bg-white rounded-xl shadow-sm border border-dashed border-gray-300">
-                        <p className="text-gray-500 text-lg mb-4">You are not in any groups yet.</p>
-                        <button
-                            onClick={() => navigate('/groups/create')}
-                            className="text-blue-600 font-medium hover:underline"
-                        >
-                            Create one now →
-                        </button>
+                    <div className="text-center py-12 text-gray-400">
+                        <p className="text-sm">You're not in any groups yet.</p>
+                        <p className="text-xs mt-1">Create or join a group to get started.</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -252,7 +427,6 @@ const Dashboard = () => {
                                                 {group.pendingMemberCount} pending
                                             </span>
                                         )}
-                                        {/* <span className="text-blue-600 font-medium group-hover:translate-x-1 transition-transform inline-block">Open →</span> */}
                                     </div>
                                 </div>
                             </div>
