@@ -74,4 +74,9 @@ public class UserController {
         UserDto updated = userService.deleteAvatar(userId);
         return ResponseEntity.ok(updated);
     }
+
+    @GetMapping("/me/onboarding-status")
+    public ResponseEntity<OnboardingStatusDto> getOnboardingStatus() {
+        return ResponseEntity.ok(userService.getOnboardingStatus());
+    }
 }

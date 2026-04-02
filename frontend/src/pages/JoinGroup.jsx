@@ -141,12 +141,12 @@ const JoinGroup = () => {
                             ) : (
                                 <ul className="mt-3 space-y-3">
                                     {invites.map((invite) => (
-                                        <li key={invite.id} className="flex items-center justify-between rounded-lg border border-slate-100 bg-white px-3 py-2">
-                                            <div>
-                                                <p className="text-sm font-medium text-slate-900">{invite.groupDisplayName}</p>
+                                        <li key={invite.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg border border-slate-100 bg-white px-3 py-2">
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-medium text-slate-900 truncate">{invite.groupDisplayName}</p>
                                                 <p className="text-xs text-slate-500">Direct invite to this group</p>
                                             </div>
-                                            <div className="flex gap-2">
+                                            <div className="flex gap-2 self-end sm:self-auto shrink-0">
                                                 <button
                                                     type="button"
                                                     onClick={() => handleDeclineInvite(invite.id)}

@@ -1,13 +1,19 @@
 package com.example.frly.user;
 
+import com.example.frly.auth.AuthUtil;
 import com.example.frly.auth.dto.RegisterUserDto;
 import com.example.frly.common.storage.FileStorageService;
+import com.example.frly.group.enums.GroupMemberStatus;
+import com.example.frly.group.model.GroupMember;
+import com.example.frly.group.repository.GroupMemberRepository;
+import com.example.frly.section.repository.SectionRepository;
 import com.example.frly.user.dto.UserDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import java.util.List;
 import java.util.Optional;
 
 import static com.example.frly.constants.LogConstants.*;
@@ -20,6 +26,8 @@ public class UserService {
     private final UserMapper userMapper;
     private final BCryptPasswordEncoder passwordEncoder;
     private final FileStorageService fileStorageService;
+    private final GroupMemberRepository groupMemberRepository;
+    private final SectionRepository sectionRepository;
 
     public UserDto createUser(RegisterUserDto registerUserDto) {
         log.info(USER_CREATE_START + ": " + registerUserDto.getEmail());
@@ -82,5 +90,25 @@ public class UserService {
         user.setPfpUrl(null);
         User saved = userRepository.save(user);
         return userMapper.toUserDto(saved);
+    }
+
+    public OnboardingStatusDto getOnboardingStatus() {
+        Long userId = AuthUtil.getCurrentUserId();
+
+        List<GroupMember> approved = groupMemberRepository.findByUserId(userId)
+                .stream()
+                .filter(m -> m.getStatus() == GroupMemberStatus.APPROVED)
+                .toList();
+
+        boolean hasGroup = !approved.isEmpty();
+
+        boolean hasSection = approved.stream()
+                .anyMatch(m -> sectionRepository.existsByGroupId(String.valueOf(m.getGroup().getId())));
+
+        boolean hasMember = approved.stream()
+                .anyMatch(m -> groupMemberRepository.countByGroupIdAndStatus(
+                        m.getGroup().getId(), GroupMemberStatus.APPROVED) >= 2);
+
+        return new OnboardingStatusDto(hasGroup, hasSection, hasMember);
     }
 }

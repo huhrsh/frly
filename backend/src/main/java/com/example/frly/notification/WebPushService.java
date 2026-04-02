@@ -95,17 +95,17 @@ public class WebPushService {
         return publicKey;
     }
 
-    public void sendPushNotification(Long userId, String title, String body, String data) {
+    public void sendPushNotification(Long userId, String title, String body, String clickUrl) {
         List<PushSubscription> subscriptions = pushSubscriptionRepository.findByUserId(userId);
-        
+
         for (PushSubscription subscription : subscriptions) {
             try {
                 Map<String, Object> payload = new HashMap<>();
                 payload.put("title", title);
                 payload.put("body", body);
-                if (data != null) {
-                    payload.put("data", data);
-                }
+                Map<String, Object> dataMap = new HashMap<>();
+                dataMap.put("url", clickUrl != null ? clickUrl : "/");
+                payload.put("data", dataMap);
                 
                 String payloadJson = objectMapper.writeValueAsString(payload);
                 

@@ -156,10 +156,21 @@ const NotificationBell = () => {
         if (!notification.read) {
             await markAsRead(notification.id);
         }
-        
-        // Navigate to section if available
+
+        // Navigate based on notification type / available ids
+        let target = null;
         if (notification.groupId && notification.sectionId) {
-            navigate(`/groups/${notification.groupId}/sections/${notification.sectionId}`);
+            target = `/groups/${notification.groupId}/sections/${notification.sectionId}`;
+        } else if (notification.type === 'GROUP_INVITE_RECEIVED') {
+            target = '/groups/join';
+        } else if (notification.type === 'GROUP_JOIN_REQUEST') {
+            target = notification.groupId ? `/groups/${notification.groupId}/manage` : '/dashboard';
+        } else if (['GROUP_JOIN_APPROVED', 'GROUP_JOIN_REJECTED', 'MEMBER_JOINED', 'GROUP_MEMBER_LEFT', 'GROUP_MEMBER_REMOVED'].includes(notification.type)) {
+            target = notification.groupId ? `/groups/${notification.groupId}` : '/dashboard';
+        }
+
+        if (target) {
+            navigate(target);
             setOpen(false);
         }
     };

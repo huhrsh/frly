@@ -38,6 +38,7 @@ public class NotificationService {
         NotificationType.REMINDER_DUE,
         NotificationType.REMINDER_OVERDUE,
         NotificationType.GROUP_INVITE_RECEIVED,
+        NotificationType.GROUP_JOIN_REQUEST,
         NotificationType.GROUP_JOIN_APPROVED,
         NotificationType.MEMBER_JOINED,
         NotificationType.FILE_UPLOADED,
@@ -102,7 +103,8 @@ public class NotificationService {
         // Send push notification if allowed and type is push-enabled
         if (allowPush && PUSH_ENABLED_TYPES.contains(request.getType()) && request.getTitle() != null) {
             if (isPushNotificationEnabled(request.getUserId(), request.getGroupId())) {
-                webPushService.sendPushNotification(request.getUserId(), request.getTitle(), request.getMessage(), null);
+                String clickUrl = resolveClickUrl(request.getType(), request.getGroupId(), request.getSectionId());
+                webPushService.sendPushNotification(request.getUserId(), request.getTitle(), request.getMessage(), clickUrl);
             } else {
                 log.debug("Push notifications disabled for user {} in group {}", request.getUserId(), request.getGroupId());
             }
@@ -302,6 +304,25 @@ public class NotificationService {
         log.info("Updated notification preferences for user {} in group {}", userId, groupId);
     }
     
+    /**
+     * Resolve the frontend URL to navigate to when a push notification is clicked.
+     */
+    private String resolveClickUrl(String type, Long groupId, Long sectionId) {
+        if (sectionId != null && groupId != null) {
+            return "/groups/" + groupId + "/sections/" + sectionId;
+        }
+        return switch (type) {
+            case NotificationType.GROUP_INVITE_RECEIVED -> "/groups/join";
+            case NotificationType.GROUP_JOIN_REQUEST -> groupId != null ? "/groups/" + groupId + "/manage" : "/dashboard";
+            case NotificationType.GROUP_JOIN_APPROVED,
+                 NotificationType.GROUP_JOIN_REJECTED,
+                 NotificationType.MEMBER_JOINED,
+                 NotificationType.GROUP_MEMBER_LEFT,
+                 NotificationType.GROUP_MEMBER_REMOVED -> groupId != null ? "/groups/" + groupId : "/dashboard";
+            default -> "/dashboard";
+        };
+    }
+
     /**
      * Get the notification mode for a specific section type
      */
