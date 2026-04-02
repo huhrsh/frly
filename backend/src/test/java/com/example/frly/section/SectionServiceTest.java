@@ -25,6 +25,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -446,6 +447,330 @@ class SectionServiceTest {
         assertThrows(BadRequestException.class, () -> sectionService.deleteReminder(99L));
     }
 
+    // ─── updateListItem ──────────────────────────────────────────────────────
+
+    @Test
+    void updateListItem_updatesTextAndSaves() {
+        Section section = buildSection(1L, "List", SectionType.LIST);
+        ListItem item = buildListItem(5L, "Old text", section);
+
+        when(listItemRepository.findById(5L)).thenReturn(Optional.of(item));
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(buildUser()));
+
+        UpdateListItemRequestDto req = new UpdateListItemRequestDto();
+        req.setText("New text");
+
+        sectionService.updateListItem(5L, req);
+
+        assertEquals("New text", item.getText());
+        verify(listItemRepository).save(item);
+    }
+
+    @Test
+    void updateListItem_whenNotFound_throwsBadRequest() {
+        when(listItemRepository.findById(99L)).thenReturn(Optional.empty());
+
+        UpdateListItemRequestDto req = new UpdateListItemRequestDto();
+        req.setText("text");
+
+        assertThrows(BadRequestException.class, () -> sectionService.updateListItem(99L, req));
+    }
+
+    // ─── getReminders ────────────────────────────────────────────────────────
+
+    @Test
+    void getReminders_returnsMappedDtos() {
+        Section section = buildSection(1L, "Reminders", SectionType.REMINDER);
+        Reminder reminder = buildReminder(1L, "Dentist", section);
+        ReminderDto dto = new ReminderDto();
+
+        when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
+        when(reminderRepository.findBySectionIdAndStatusNotOrderByTriggerTimeAsc(1L, RecordStatus.DELETED))
+            .thenReturn(List.of(reminder));
+        when(sectionMapper.toReminderDto(reminder)).thenReturn(dto);
+
+        List<ReminderDto> result = sectionService.getReminders(1L);
+
+        assertEquals(1, result.size());
+        assertSame(dto, result.get(0));
+    }
+
+    // ─── updateReminder ──────────────────────────────────────────────────────
+
+    @Test
+    void updateReminder_updatesFieldsAndSaves() {
+        Section section = buildSection(1L, "Reminders", SectionType.REMINDER);
+        Reminder reminder = buildReminder(3L, "Old title", section);
+
+        when(reminderRepository.findById(3L)).thenReturn(Optional.of(reminder));
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(buildUser()));
+
+        UpdateReminderRequestDto req = new UpdateReminderRequestDto();
+        req.setTitle("New title");
+
+        sectionService.updateReminder(3L, req);
+
+        assertEquals("New title", reminder.getTitle());
+        verify(reminderRepository).save(reminder);
+    }
+
+    @Test
+    void updateReminder_whenNotFound_throwsBadRequest() {
+        when(reminderRepository.findById(99L)).thenReturn(Optional.empty());
+
+        UpdateReminderRequestDto req = new UpdateReminderRequestDto();
+        req.setTitle("x");
+
+        assertThrows(BadRequestException.class, () -> sectionService.updateReminder(99L, req));
+    }
+
+    // ─── addLink ─────────────────────────────────────────────────────────────
+
+    @Test
+    void addLink_toLinksSection_savesAndReturnsId() {
+        Section section = buildSection(1L, "My Links", SectionType.LINKS);
+        LinkItem saved = buildLinkItem(20L, "GitHub", section);
+
+        when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
+        when(linkItemRepository.save(any(LinkItem.class))).thenReturn(saved);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(buildUser()));
+
+        CreateLinkRequestDto req = new CreateLinkRequestDto();
+        req.setKey("GitHub");
+        req.setUrl("https://github.com");
+
+        Long id = sectionService.addLink(1L, req);
+
+        assertEquals(20L, id);
+        verify(linkItemRepository).save(argThat(link -> "GitHub".equals(link.getKey())));
+    }
+
+    @Test
+    void addLink_toNonLinksSection_throwsBadRequest() {
+        Section section = buildSection(1L, "My Note", SectionType.NOTE);
+        when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
+
+        CreateLinkRequestDto req = new CreateLinkRequestDto();
+        req.setKey("k");
+        req.setUrl("https://x.com");
+
+        assertThrows(BadRequestException.class, () -> sectionService.addLink(1L, req));
+    }
+
+    // ─── getLinks ────────────────────────────────────────────────────────────
+
+    @Test
+    void getLinks_returnsMappedDtos() {
+        Section section = buildSection(1L, "Links", SectionType.LINKS);
+        LinkItem link = buildLinkItem(1L, "Docs", section);
+        LinkDto dto = new LinkDto();
+
+        when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
+        when(linkItemRepository.findBySectionIdAndStatusNotOrderByPositionAsc(1L, RecordStatus.DELETED))
+            .thenReturn(List.of(link));
+        when(sectionMapper.toLinkDto(link)).thenReturn(dto);
+
+        List<LinkDto> result = sectionService.getLinks(1L);
+
+        assertEquals(1, result.size());
+        assertSame(dto, result.get(0));
+    }
+
+    // ─── updateLink ──────────────────────────────────────────────────────────
+
+    @Test
+    void updateLink_updatesFieldsAndSaves() {
+        Section section = buildSection(1L, "Links", SectionType.LINKS);
+        LinkItem link = buildLinkItem(5L, "OldKey", section);
+
+        when(linkItemRepository.findById(5L)).thenReturn(Optional.of(link));
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(buildUser()));
+
+        UpdateLinkRequestDto req = new UpdateLinkRequestDto();
+        req.setKey("NewKey");
+        req.setUrl("https://new.url");
+
+        sectionService.updateLink(5L, req);
+
+        assertEquals("NewKey", link.getKey());
+        assertEquals("https://new.url", link.getUrl());
+        verify(linkItemRepository).save(link);
+    }
+
+    @Test
+    void updateLink_whenNotFound_throwsBadRequest() {
+        when(linkItemRepository.findById(99L)).thenReturn(Optional.empty());
+
+        UpdateLinkRequestDto req = new UpdateLinkRequestDto();
+        req.setKey("k");
+
+        assertThrows(BadRequestException.class, () -> sectionService.updateLink(99L, req));
+    }
+
+    // ─── deleteLink ──────────────────────────────────────────────────────────
+
+    @Test
+    void deleteLink_softDeletesLink() {
+        Section section = buildSection(1L, "Links", SectionType.LINKS);
+        LinkItem link = buildLinkItem(5L, "Docs", section);
+
+        when(linkItemRepository.findById(5L)).thenReturn(Optional.of(link));
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(buildUser()));
+
+        sectionService.deleteLink(5L);
+
+        assertEquals(RecordStatus.DELETED, link.getStatus());
+        verify(linkItemRepository).save(link);
+    }
+
+    @Test
+    void deleteLink_whenNotFound_throwsBadRequest() {
+        when(linkItemRepository.findById(99L)).thenReturn(Optional.empty());
+        assertThrows(BadRequestException.class, () -> sectionService.deleteLink(99L));
+    }
+
+    // ─── reorderLinks ────────────────────────────────────────────────────────
+
+    @Test
+    void reorderLinks_updatesPositionsInOrder() {
+        Section section = buildSection(1L, "Links", SectionType.LINKS);
+        LinkItem a = buildLinkItem(10L, "A", section);
+        LinkItem b = buildLinkItem(20L, "B", section);
+
+        when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
+        when(linkItemRepository.findBySectionIdAndStatusNot(1L, RecordStatus.DELETED))
+            .thenReturn(List.of(a, b));
+
+        sectionService.reorderLinks(1L, List.of(20L, 10L)); // B first, A second
+
+        assertEquals(1, b.getPosition());
+        assertEquals(2, a.getPosition());
+        verify(linkItemRepository).saveAll(anyList());
+    }
+
+    // ─── addCalendarEvent ────────────────────────────────────────────────────
+
+    @Test
+    void addCalendarEvent_toCalendarSection_savesAndReturnsId() {
+        Section section = buildSection(1L, "Calendar", SectionType.CALENDAR);
+        CalendarEvent saved = buildCalendarEvent(9L, "Team meeting", section);
+
+        when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
+        when(calendarEventRepository.save(any(CalendarEvent.class))).thenReturn(saved);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(buildUser()));
+
+        CreateCalendarEventRequestDto req = new CreateCalendarEventRequestDto();
+        req.setTitle("Team meeting");
+        req.setStartTime(java.time.LocalDateTime.now().plusDays(1));
+
+        Long id = sectionService.addCalendarEvent(1L, req);
+
+        assertEquals(9L, id);
+        verify(calendarEventRepository).save(argThat(e -> "Team meeting".equals(e.getTitle())));
+    }
+
+    @Test
+    void addCalendarEvent_withMemberIds_savesEventMembers() {
+        Section section = buildSection(1L, "Calendar", SectionType.CALENDAR);
+        CalendarEvent saved = buildCalendarEvent(9L, "Trip", section);
+
+        when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
+        when(calendarEventRepository.save(any(CalendarEvent.class))).thenReturn(saved);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(buildUser()));
+
+        CreateCalendarEventRequestDto req = new CreateCalendarEventRequestDto();
+        req.setTitle("Trip");
+        req.setStartTime(java.time.LocalDateTime.now().plusDays(2));
+        req.setMemberIds(List.of(1L, 2L));
+
+        sectionService.addCalendarEvent(1L, req);
+
+        verify(calendarEventMemberRepository).saveAll(any());
+    }
+
+    @Test
+    void addCalendarEvent_toNonCalendarSection_throwsBadRequest() {
+        Section section = buildSection(1L, "My List", SectionType.LIST);
+        when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
+
+        CreateCalendarEventRequestDto req = new CreateCalendarEventRequestDto();
+        req.setTitle("Event");
+        req.setStartTime(java.time.LocalDateTime.now());
+
+        assertThrows(BadRequestException.class, () -> sectionService.addCalendarEvent(1L, req));
+    }
+
+    // ─── getCalendarEvents ───────────────────────────────────────────────────
+
+    @Test
+    void getCalendarEvents_returnsMappedEvents() {
+        Section section = buildSection(1L, "Calendar", SectionType.CALENDAR);
+        CalendarEvent event = buildCalendarEvent(1L, "Standup", section);
+        CalendarEventDto dto = new CalendarEventDto();
+
+        when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
+        when(calendarEventRepository.findBySectionIdOrderByStartTimeAsc(1L)).thenReturn(List.of(event));
+        when(calendarEventMemberRepository.findByEventIdIn(any())).thenReturn(Collections.emptyList());
+        when(sectionMapper.toCalendarEventDto(event)).thenReturn(dto);
+
+        var result = sectionService.getCalendarEvents(1L);
+
+        assertEquals(1, result.size());
+    }
+
+    // ─── deleteCalendarEvent ─────────────────────────────────────────────────
+
+    @Test
+    void deleteCalendarEvent_deletesEventAndItsMembers() {
+        Section section = buildSection(1L, "Calendar", SectionType.CALENDAR);
+        CalendarEvent event = buildCalendarEvent(5L, "Stand-up", section);
+
+        when(calendarEventRepository.findById(5L)).thenReturn(Optional.of(event));
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(buildUser()));
+
+        sectionService.deleteCalendarEvent(5L);
+
+        verify(calendarEventMemberRepository).deleteByEventId(5L);
+        verify(calendarEventRepository).deleteById(5L);
+    }
+
+    @Test
+    void deleteCalendarEvent_whenNotFound_throwsBadRequest() {
+        when(calendarEventRepository.findById(99L)).thenReturn(Optional.empty());
+        assertThrows(BadRequestException.class, () -> sectionService.deleteCalendarEvent(99L));
+    }
+
+    // ─── updateCalendarEvent ─────────────────────────────────────────────────
+
+    @Test
+    void updateCalendarEvent_updatesFieldsAndSaves() {
+        Section section = buildSection(1L, "Calendar", SectionType.CALENDAR);
+        CalendarEvent event = buildCalendarEvent(5L, "Old Title", section);
+
+        when(calendarEventRepository.findById(5L)).thenReturn(Optional.of(event));
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(buildUser()));
+
+        UpdateCalendarEventRequestDto req = new UpdateCalendarEventRequestDto();
+        req.setTitle("New Title");
+        req.setLocation("Room 101");
+
+        sectionService.updateCalendarEvent(5L, req);
+
+        assertEquals("New Title", event.getTitle());
+        assertEquals("Room 101", event.getLocation());
+        verify(calendarEventRepository).save(event);
+    }
+
+    @Test
+    void updateCalendarEvent_whenNotFound_throwsBadRequest() {
+        when(calendarEventRepository.findById(99L)).thenReturn(Optional.empty());
+
+        UpdateCalendarEventRequestDto req = new UpdateCalendarEventRequestDto();
+        req.setTitle("x");
+
+        assertThrows(BadRequestException.class, () -> sectionService.updateCalendarEvent(99L, req));
+    }
+
     // ─── helpers ─────────────────────────────────────────────────────────────
 
     private Section buildSection(Long id, String title, SectionType type) {
@@ -497,5 +822,26 @@ class SectionServiceTest {
         u.setLastName("User");
         u.setEmail("user@example.com");
         return u;
+    }
+
+    private CalendarEvent buildCalendarEvent(Long id, String title, Section section) {
+        CalendarEvent e = new CalendarEvent();
+        e.setId(id);
+        e.setTitle(title);
+        e.setSection(section);
+        e.setStartTime(java.time.LocalDateTime.now().plusDays(1));
+        e.setGroupId(GROUP_ID);
+        return e;
+    }
+
+    private LinkItem buildLinkItem(Long id, String key, Section section) {
+        LinkItem link = new LinkItem();
+        link.setId(id);
+        link.setKey(key);
+        link.setUrl("https://example.com");
+        link.setSection(section);
+        link.setStatus(RecordStatus.ACTIVE);
+        link.setGroupId(GROUP_ID);
+        return link;
     }
 }
