@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axiosClient from '../../api/axiosClient';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
@@ -8,6 +8,7 @@ import { ChevronRight, Search } from 'lucide-react';
 
 const ReminderView = ({ sectionId }) => {
     const { user } = useAuth();
+    const formRef = useRef(null);
     const [reminders, setReminders] = useState([]);
     const [newReminderTitle, setNewReminderTitle] = useState('');
     const [newReminderDescription, setNewReminderDescription] = useState('');
@@ -42,10 +43,14 @@ const ReminderView = ({ sectionId }) => {
     const handleAddReminder = async (e) => {
         e.preventDefault();
         try {
+            // Convert datetime-local (local time) to UTC before sending to backend
+            const utcTriggerTime = newReminderTime
+                ? new Date(newReminderTime).toISOString().slice(0, 16)
+                : newReminderTime;
             const payload = {
                 title: newReminderTitle,
                 description: newReminderDescription,
-                triggerTime: newReminderTime,
+                triggerTime: utcTriggerTime,
                 notify,
                 frequency
             };
@@ -105,7 +110,7 @@ const ReminderView = ({ sectionId }) => {
         setNewReminderTitle(reminder.title || '');
         setNewReminderDescription(reminder.description || '');
         if (reminder.triggerTime) {
-            const dt = new Date(reminder.triggerTime);
+            const dt = new Date(reminder.triggerTime + 'Z');
             const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000)
                 .toISOString()
                 .slice(0, 16);
@@ -115,6 +120,7 @@ const ReminderView = ({ sectionId }) => {
         }
         setNotify(!!reminder.notify);
         setFrequency(reminder.frequency || 'ONCE');
+        setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
     };
 
     const cancelEdit = () => {
@@ -140,7 +146,7 @@ const ReminderView = ({ sectionId }) => {
                 To keep costs low while we&apos;re early, fryly processes reminders roughly once every hour. Emails and bell notifications may arrive with a delay.
             </div> */}
 
-            <form onSubmit={handleAddReminder} className="mb-4">
+            <form ref={formRef} onSubmit={handleAddReminder} className="mb-4">
                 <div className="bg-white rounded-lg border border-gray-100 p-3 sm:p-4 space-y-3">
                     <div className="space-y-2">
                         <input

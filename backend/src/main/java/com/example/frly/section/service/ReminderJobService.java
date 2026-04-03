@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,8 +44,8 @@ public class ReminderJobService {
     // Cache the email template after first load
     private String cachedEmailTemplate;
 
-    // Run roughly once an hour instead of every minute to reduce load
-    @Scheduled(fixedRate = 60_000)
+    // Run at the top of every minute (:00 second) regardless of server start time
+    @Scheduled(cron = "0 * * * * *")
     public void processDueReminders() {
         String originalGroupId = GroupContext.getGroupId();
         try {
@@ -75,7 +76,7 @@ public class ReminderJobService {
 
     @Transactional
     protected int processDueRemindersForCurrentGroup() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         // Use JOIN FETCH query to eagerly load Section to avoid LazyInitializationException
         List<Reminder> dueReminders = reminderRepository
                 .findDueRemindersWithSection(RecordStatus.ACTIVE, now);

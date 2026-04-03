@@ -63,7 +63,8 @@ const CalendarView = ({ sectionId }) => {
     const map = {};
     events.forEach((ev) => {
       if (!ev.startTime) return;
-      const d = startOfDay(ev.startTime);
+      // parseUTCDate appends Z so the raw backend string is treated as UTC before localising
+      const d = startOfDay(parseUTCDate(ev.startTime) || ev.startTime);
       const key = d.toISOString();
       if (!map[key]) map[key] = [];
       map[key].push(ev);
@@ -120,11 +121,12 @@ const CalendarView = ({ sectionId }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const toUTC = (local) => local ? new Date(local).toISOString().slice(0, 16) : null;
       const payload = {
         title: form.title,
         description: form.description,
-        startTime: form.start,
-        endTime: form.end || null,
+        startTime: toUTC(form.start),
+        endTime: form.end ? toUTC(form.end) : null,
         location: form.location,
         category: form.category,
         memberIds: Array.isArray(form.memberIds) ? form.memberIds : [],
