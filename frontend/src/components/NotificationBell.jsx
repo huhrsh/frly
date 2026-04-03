@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { formatTimeAgo } from '../utils/dateUtils';
+import { toast } from 'react-toastify';
 
 const formatNotificationType = (type) => {
     if (!type) return '';

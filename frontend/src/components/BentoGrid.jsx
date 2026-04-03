@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { parseUTCDate } from '../utils/dateUtils';
 
 const BentoGrid = ({ sections, previews, allSections, groupId, onOpenCreateModal }) => {
     const navigate = useNavigate();
