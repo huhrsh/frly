@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axiosClient from '../../api/axiosClient';
 import ConfirmModal from '../ConfirmModal';
 import { toast } from 'react-toastify';
-import { ExternalLink, Copy, Edit2, Trash2, ArrowUp, ArrowDown, Check } from 'lucide-react';
+import { ExternalLink, Copy, Edit2, Trash2, ArrowUp, ArrowDown, Check, Search } from 'lucide-react';
 
 function getFavicon(url) {
   try {
@@ -26,6 +26,7 @@ const emptyLink = { id: null, key: '', url: '', description: '' };
 
 export default function LinksSection({ sectionId }) {
   const [links, setLinks] = useState([]);
+  const [filterText, setFilterText] = useState('');
   const [editingIndex, setEditingIndex] = useState(null);
   const [form, setForm] = useState(emptyLink);
   const [deleteIndex, setDeleteIndex] = useState(null);
@@ -189,12 +190,25 @@ export default function LinksSection({ sectionId }) {
           <p className="text-xs text-red-600 mb-2">{error}</p>
         )}
 
+        {links.length > 4 && (
+          <div className="relative mb-3 max-w-xs">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              value={filterText}
+              onChange={e => setFilterText(e.target.value)}
+              placeholder="Filter links…"
+              className="w-full pl-8 pr-3 py-2 text-xs border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+            />
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto space-y-2">
           {links.length === 0 ? (
             <div className="text-xs text-gray-400">No links yet. Add your first link above.</div>
           ) : (
             <ul className="space-y-2">
-              {links.map((link, i) => (
+              {links.filter(l => !filterText || l.key?.toLowerCase().includes(filterText.toLowerCase()) || l.description?.toLowerCase().includes(filterText.toLowerCase()) || l.url?.toLowerCase().includes(filterText.toLowerCase())).map((link, i) => (
                 <li
                   key={link.id ?? i}
                   className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-gray-100 bg-white hover:border-blue-100 hover:shadow-sm transition group"

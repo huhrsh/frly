@@ -18,7 +18,7 @@ import SettingsModal from '../components/SettingsModal';
 import UserInfoModal from '../components/UserInfoModal';
 import { useSectionPreviews } from '../hooks/useSectionPreviews';
 import { toast } from 'react-toastify';
-import { Copy, Trash2, LayoutPanelLeft, LayoutGrid, Users, ArrowLeft, Check, ChevronRight, Pencil, X, ArrowUpDown, Settings, RefreshCw } from 'lucide-react';
+import { Copy, Trash2, LayoutPanelLeft, LayoutGrid, Users, ArrowLeft, Check, ChevronRight, Pencil, X, ArrowUpDown, Settings, RefreshCw, Search } from 'lucide-react';
 import ConfirmModal from '../components/ConfirmModal';
 import { useAuth } from '../context/AuthContext';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
@@ -67,6 +67,13 @@ const GroupView = () => {
 
     const [showReorderModal, setShowReorderModal] = useState(false);
     const [reorderParentId, setReorderParentId] = useState(null); // null = root sections
+
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [searchOpen, setSearchOpen] = useState(false);
+    const [searchLoading, setSearchLoading] = useState(false);
+    const searchRef = useRef(null);
+    const searchDebounceRef = useRef(null);
 
     // We only fetch previews for root sections in the main view
     const rootSections = sections.filter(s => !s.parentId);
@@ -120,8 +127,44 @@ const GroupView = () => {
         // Ensure currentGroup is loaded and matches the URL groupId before fetching sections
         if (currentGroup && currentGroup.id === id) {
             fetchSections();
+            // Fire-and-forget: mark this group as seen so the activity dot clears on Dashboard
+            axiosClient.post(`/groups/${groupId}/mark-seen`).catch(() => { });
         }
     }, [currentGroup, groupId]);
+
+    // Search: debounced fetch
+    useEffect(() => {
+        if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+        if (!searchQuery || searchQuery.trim().length < 2) {
+            setSearchResults([]);
+            setSearchOpen(false);
+            return;
+        }
+        searchDebounceRef.current = setTimeout(async () => {
+            try {
+                setSearchLoading(true);
+                const res = await axiosClient.get('/groups/search', { params: { q: searchQuery.trim() } });
+                setSearchResults(res.data || []);
+                setSearchOpen(true);
+            } catch {
+                setSearchResults([]);
+            } finally {
+                setSearchLoading(false);
+            }
+        }, 300);
+        return () => clearTimeout(searchDebounceRef.current);
+    }, [searchQuery]);
+
+    // Search: click-outside closes dropdown
+    useEffect(() => {
+        const handler = (e) => {
+            if (searchRef.current && !searchRef.current.contains(e.target)) {
+                setSearchOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
 
     // Fetch members when group is ready (needed for workspace view sidebar)
     useEffect(() => {
@@ -237,7 +280,7 @@ const GroupView = () => {
 
     const handleSectionsDragEnd = async (result) => {
         const { source, destination, draggableId } = result || {};
-        
+
         // Clear dragging state after a short delay to prevent accidental clicks
         if (dragTimeoutRef.current) {
             clearTimeout(dragTimeoutRef.current);
@@ -245,7 +288,7 @@ const GroupView = () => {
         dragTimeoutRef.current = setTimeout(() => {
             setIsDragging(false);
         }, 200);
-        
+
         if (!destination || !source) return;
 
         if (
@@ -315,7 +358,7 @@ const GroupView = () => {
         const reordered = orderedIds
             .map((id) => rootSections.find((s) => s.id === id))
             .filter(Boolean);
-        
+
         const nonRootSections = sections.filter((s) => s.parentId && s.parentId !== 'null');
         setSections([...reordered, ...nonRootSections]);
 
@@ -621,6 +664,103 @@ const GroupView = () => {
         });
     };
 
+    const SECTION_TYPE_ICONS = { NOTE: '📝', LIST: '✅', GALLERY: '🖼️', REMINDER: '🔔', PAYMENT: '💰', CALENDAR: '📅', LINKS: '🔗', FOLDER: '📁' };
+    const SECTION_TYPE_LABELS = { NOTE: 'Note', LIST: 'Checklist', GALLERY: 'Files', REMINDER: 'Reminder', PAYMENT: 'Expenses', CALENDAR: 'Calendar', LINKS: 'Links', FOLDER: 'Folder' };
+    const SECTION_TYPE_COLORS = {
+        NOTE: { border: 'border-l-blue-400', badge: 'bg-blue-50 text-blue-700' },
+        LIST: { border: 'border-l-emerald-400', badge: 'bg-emerald-50 text-emerald-700' },
+        REMINDER: { border: 'border-l-amber-400', badge: 'bg-amber-50 text-amber-700' },
+        CALENDAR: { border: 'border-l-indigo-400', badge: 'bg-indigo-50 text-indigo-700' },
+        GALLERY: { border: 'border-l-rose-400', badge: 'bg-rose-50 text-rose-700' },
+        PAYMENT: { border: 'border-l-purple-400', badge: 'bg-purple-50 text-purple-700' },
+        LINKS: { border: 'border-l-sky-400', badge: 'bg-sky-50 text-sky-700' },
+        FOLDER: { border: 'border-l-gray-400', badge: 'bg-gray-50 text-gray-600' },
+    };
+
+    const handleSearchResultClick = (result) => {
+        setSearchOpen(false);
+        setSearchQuery('');
+        if (isMobile) {
+            // On mobile the workspace sidebar is not usable; SectionView is the right destination
+            navigate(`/groups/${groupId}/sections/${result.sectionId}`);
+        } else {
+            // Force WORKSPACE view so the section is actually rendered.
+            // Without &view=WORKSPACE, the viewMode useEffect may re-apply the
+            // group's stored preference (e.g. BENTO), leaving the section unrendered.
+            navigate(`/groups/${groupId}?section=${result.sectionId}&view=WORKSPACE`);
+        }
+    };
+
+    const renderSearchBox = (rightAlign = false) => {
+        const sectionResults = searchResults.filter(r => r.matchType === 'SECTION');
+        const itemResults = searchResults.filter(r => r.matchType === 'ITEM');
+        const dropdownPos = rightAlign ? 'right-0' : 'left-0';
+        return (
+            <div ref={searchRef} className="relative">
+                <div className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg border bg-white shadow-sm transition ${searchQuery ? 'border-blue-300 ring-2 ring-blue-100' : 'border-gray-200'}`}>
+                    <Search size={13} className="text-gray-400 flex-shrink-0" />
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        onFocus={() => searchResults.length > 0 && setSearchOpen(true)}
+                        onKeyDown={e => e.key === 'Escape' && (setSearchOpen(false), setSearchQuery(''))}
+                        placeholder="Search sections & items…"
+                        className="w-40 sm:w-52 text-xs bg-transparent focus:outline-none text-gray-700 placeholder-gray-400"
+                    />
+                    {searchLoading && <div className="w-3 h-3 rounded-full border border-blue-400 border-t-transparent animate-spin flex-shrink-0" />}
+                    {searchQuery && !searchLoading && (
+                        <button type="button" onClick={() => { setSearchQuery(''); setSearchOpen(false); }} className="text-gray-400 hover:text-gray-600">
+                            <X size={12} />
+                        </button>
+                    )}
+                </div>
+                {searchOpen && searchResults.length > 0 && (
+                    <div className={`absolute top-full ${dropdownPos} mt-1 w-72 max-w-[calc(100vw-1rem)] bg-white rounded-md shadow-lg border border-gray-200 z-50 overflow-hidden pb-1`}>
+                        {sectionResults.length > 0 && (
+                            <>
+                                <div className="px-3 pt-1.5 pb-1 text-[10px] font-semibold text-gray-700 bg-gray-50 uppercase tracking-wide">Sections</div>
+                                {sectionResults.map((r, i) => {
+                                    const colors = SECTION_TYPE_COLORS[r.sectionType] || SECTION_TYPE_COLORS.FOLDER;
+                                    return (
+                                        <button key={`s-${i}`} type="button" onClick={() => handleSearchResultClick(r)}
+                                            className={`w-full flex items-center justify-between gap-2 pl-0 pr-3 py-2 hover:bg-gray-50 text-left border-b-2 border-b-gray-100 border-l-4 ${colors.border}`}>
+                                            <span className="pl-3 text-sm text-gray-800 truncate flex-1">{r.sectionTitle}</span>
+                                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${colors.badge}`}>{SECTION_TYPE_LABELS[r.sectionType] || r.sectionType}</span>
+                                        </button>
+                                    );
+                                })}
+                            </>
+                        )}
+                        {itemResults.length > 0 && (
+                            <>
+                                <div className={`px-3 pt-1.5 pb-1 text-[10px] font-semibold text-gray-700 bg-gray-50 uppercase tracking-wide ${sectionResults.length > 0 ? 'border-t border-gray-100' : ''}`}>Items</div>
+                                {itemResults.map((r, i) => {
+                                    const colors = SECTION_TYPE_COLORS[r.sectionType] || SECTION_TYPE_COLORS.FOLDER;
+                                    return (
+                                        <button key={`i-${i}`} type="button" onClick={() => handleSearchResultClick(r)}
+                                            className={`w-full flex items-center justify-between gap-2 pl-0 pr-3 py-2 hover:bg-gray-50 text-left border-b-2 border-b-gray-100 border-l-4 ${colors.border}`}>
+                                            <div className="pl-3 min-w-0 flex-1">
+                                                <p className="text-xs text-gray-800 truncate">{r.itemText}</p>
+                                                <p className="text-[10px] text-gray-400 truncate">{r.sectionTitle}</p>
+                                            </div>
+                                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${colors.badge}`}>{SECTION_TYPE_LABELS[r.sectionType] || r.sectionType}</span>
+                                        </button>
+                                    );
+                                })}
+                            </>
+                        )}
+                    </div>
+                )}
+                {searchOpen && searchQuery.length >= 2 && !searchLoading && searchResults.length === 0 && (
+                    <div className={`absolute top-full ${dropdownPos} mt-1 w-64 max-w-[calc(100vw-1rem)] bg-white rounded-md shadow-lg border border-gray-200 z-50 px-4 py-3 text-sm text-gray-400`}>
+                        No results for "{searchQuery}"
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     const renderSectionContent = () => {
         if (!selectedSection) {
             const hasSections = sections && sections.length > 0;
@@ -692,6 +832,16 @@ const GroupView = () => {
         return (
             <>
                 <div className="hidden sm:inline-flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={fetchSections}
+                        disabled={sectionsLoading}
+                        className="inline-flex items-center gap-1 px-3 py-2 rounded-full border border-gray-200 bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-50 text-xs font-medium shadow-sm transition disabled:opacity-50"
+                        title="Refresh sections"
+                    >
+                        <RefreshCw size={14} className={sectionsLoading ? 'animate-spin' : ''} />
+                        <span className="hidden sm:inline">Refresh</span>
+                    </button>
                     <div className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white p-0.5 text-xs shadow-sm">
                         <button
                             type="button"
@@ -716,23 +866,17 @@ const GroupView = () => {
                             Overview
                         </button>
                     </div>
-                    <button
-                        type="button"
-                        onClick={handleOpenManageModal}
-                        className="inline-flex items-center gap-1 px-3 py-2 rounded-full border border-gray-200 bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-50 text-xs font-medium shadow-sm transition"
-                        title="Group Settings"
-                    >
-                        <Settings size={14} />
-                    </button>
                 </div>
-                {/* Mobile-only settings button */}
+                {/* Mobile-only refresh button */}
                 <button
                     type="button"
-                    onClick={handleOpenManageModal}
-                    className="sm:hidden inline-flex items-center gap-1 px-3 py-2 rounded-full border border-gray-200 bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-50 text-xs font-medium shadow-sm transition"
-                    title="Group Settings"
+                    onClick={fetchSections}
+                    disabled={sectionsLoading}
+                    className="sm:hidden inline-flex items-center gap-1 px-3 py-2 rounded-full border border-gray-200 bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-50 text-xs font-medium shadow-sm transition disabled:opacity-50"
+                    title="Refresh sections"
                 >
-                    <Settings size={14} />
+                    <RefreshCw size={14} className={sectionsLoading ? 'animate-spin' : ''} />
+                    <span className="">Refresh</span>
                 </button>
             </>
         );
@@ -742,107 +886,113 @@ const GroupView = () => {
     if (viewMode === 'WORKSPACE') {
         return (
             <DragDropContext onDragEnd={handleSectionsDragEnd} onDragStart={handleDragStart}>
-            <div className="flex h-[calc(100vh-7rem)] bg-gray-50 overflow-hidden shadow-sm rounded">
-                {/* Sidebar */}
-                <aside className="w-80 bg-white border-r flex flex-col shadow-sm z-10">
-                    <div className="p-4 border-b">
-                        <div className="flex items-center justify-between gap-2 mb-2">
-                            <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        localStorage.removeItem('currentGroupId');
-                                        navigate('/dashboard');
-                                    }}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 bg-white text-[11px] font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300"
-                                >
-                                    <ArrowLeft size={12} />
-                                    <span>Back to groups</span>
-                                </button>
-                                {currentGroup && (
+                <div className="flex h-[calc(100vh-7rem)] bg-gray-50 overflow-hidden shadow-sm rounded">
+                    {/* Sidebar */}
+                    <aside className="w-80 bg-white border-r flex flex-col shadow-sm z-10">
+                        <div className="p-4 border-b">
+                            <div className="flex items-center justify-between gap-2 mb-2">
+                                <div className="flex items-center gap-2">
                                     <button
                                         type="button"
-                                        onClick={handleOpenManageModal}
-                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 bg-white text-[11px] font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300"
+                                        onClick={() => {
+                                            localStorage.removeItem('currentGroupId');
+                                            navigate('/dashboard');
+                                        }}
+                                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-gray-200 bg-white text-xs font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300"
                                     >
-                                        {currentGroup.currentUserRole === 'ADMIN' ? 'Manage group' : 'View group'}
+                                        <ArrowLeft size={13} />
+                                        <span>Back to groups</span>
+                                    </button>
+                                    {currentGroup && (
+                                        <button
+                                            type="button"
+                                            onClick={handleOpenManageModal}
+                                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-gray-200 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300"
+                                        >
+                                            <Settings size={14} />
+                                            Settings
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                            <h1 className="font-bold text-lg text-gray-800 truncate">{currentGroup?.displayName}</h1>
+                            <div className="text-xs text-gray-500 mt-1 flex justify-between items-center gap-2">
+                                <div className="flex items-center gap-1">
+                                    <span>Code:</span>
+                                    <span className="font-mono text-[11px] uppercase bg-gray-50 px-1.5 py-0.5 rounded text-gray-800">{currentGroup?.inviteCode}</span>
+                                </div>
+                                {currentGroup?.inviteCode && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(currentGroup.inviteCode || '').then(() => {
+                                                setInviteCodeCopied(true);
+                                                toast.success('Invite code copied');
+                                                setTimeout(() => setInviteCodeCopied(false), 1500);
+                                            }).catch(() => {
+                                                toast.error('Failed to copy');
+                                            });
+                                        }}
+                                        className="p-1 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+                                        aria-label="Copy invite code"
+                                    >
+                                        {inviteCodeCopied ? <Check size={12} /> : <Copy size={12} />}
                                     </button>
                                 )}
                             </div>
-                        </div>
-                        <h1 className="font-bold text-lg text-gray-800 truncate">{currentGroup?.displayName}</h1>
-                        <div className="text-xs text-gray-500 mt-1 flex justify-between items-center gap-2">
-                            <div className="flex items-center gap-1">
-                                <span>Code:</span>
-                                <span className="font-mono text-[11px] uppercase bg-gray-50 px-1.5 py-0.5 rounded text-gray-800">{currentGroup?.inviteCode}</span>
-                            </div>
-                            {currentGroup?.inviteCode && (
+                            {currentGroup?.storageLimit && (
+                                <>
+                                    <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
+                                        <div
+                                            className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500"
+                                            style={{ width: `${Math.min(100, (currentGroup.storageUsage / currentGroup.storageLimit) * 100)}%` }}
+                                        ></div>
+                                    </div>
+                                    {(() => {
+                                        const usedMb = currentGroup.storageUsage / 1024 / 1024;
+                                        const limitMb = currentGroup.storageLimit / 1024 / 1024;
+                                        const percent = Math.min(100, (currentGroup.storageUsage / currentGroup.storageLimit) * 100);
+                                        return (
+                                            <div className="mt-1 flex items-center justify-between text-[10px] text-gray-500">
+                                                <span>{percent.toFixed(0)}% used</span>
+                                                <span>
+                                                    {usedMb.toFixed(1)} MB of {limitMb.toFixed(1)} MB
+                                                </span>
+                                            </div>
+                                        );
+                                    })()}
+                                </>
+                            )}
+
+                            {currentGroup?.currentUserRole === 'ADMIN' && (
                                 <button
                                     type="button"
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(currentGroup.inviteCode || '').then(() => {
-                                            setInviteCodeCopied(true);
-                                            toast.success('Invite code copied');
-                                            setTimeout(() => setInviteCodeCopied(false), 1500);
-                                        }).catch(() => {
-                                            toast.error('Failed to copy');
-                                        });
-                                    }}
-                                    className="p-1 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
-                                    aria-label="Copy invite code"
+                                    onClick={() => handleOpenCreateModal(null)}
+                                    className="mt-3 w-full flex items-center justify-center px-3 py-2 rounded-lg border border-blue-200 bg-white text-blue-700 text-xs font-medium hover:bg-blue-50 focus:outline-none"
                                 >
-                                    {inviteCodeCopied ? <Check size={12} /> : <Copy size={12} />}
+                                    + New Section
                                 </button>
                             )}
                         </div>
-                        {currentGroup?.storageLimit && (
-                            <>
-                                <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
-                                    <div
-                                        className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500"
-                                        style={{ width: `${Math.min(100, (currentGroup.storageUsage / currentGroup.storageLimit) * 100)}%` }}
-                                    ></div>
-                                </div>
-                                {(() => {
-                                    const usedMb = currentGroup.storageUsage / 1024 / 1024;
-                                    const limitMb = currentGroup.storageLimit / 1024 / 1024;
-                                    const percent = Math.min(100, (currentGroup.storageUsage / currentGroup.storageLimit) * 100);
-                                    return (
-                                        <div className="mt-1 flex items-center justify-between text-[10px] text-gray-500">
-                                            <span>{percent.toFixed(0)}% used</span>
-                                            <span>
-                                                {usedMb.toFixed(1)} MB of {limitMb.toFixed(1)} MB
-                                            </span>
-                                        </div>
-                                    );
-                                })()}
-                            </>
-                        )}
 
-                        {currentGroup?.currentUserRole === 'ADMIN' && (
+                        {/* Search sits outside the scrollable area so its dropdown is never clipped */}
+                        <div className="px-3 py-2 border-b">
+                            {renderSearchBox(false)}
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-2">
                             <button
                                 type="button"
-                                onClick={() => handleOpenCreateModal(null)}
-                                className="mt-3 w-full flex items-center justify-center px-3 py-2 rounded-lg border border-blue-200 bg-white text-blue-700 text-xs font-medium hover:bg-blue-50 focus:outline-none"
+                                onClick={() => setShowSections(prev => !prev)}
+                                className="flex w-full items-center justify-between px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500 hover:bg-gray-50 rounded-md"
                             >
-                                + New Section
+                                <span>Sections</span>
+                                <ChevronRight
+                                    size={12}
+                                    className={`text-gray-400 transition-transform ${showSections ? 'rotate-90' : ''}`}
+                                />
                             </button>
-                        )}
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto p-2">
-                        <button
-                            type="button"
-                            onClick={() => setShowSections(prev => !prev)}
-                            className="flex w-full items-center justify-between px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500 hover:bg-gray-50 rounded-md"
-                        >
-                            <span>Sections</span>
-                            <ChevronRight
-                                size={12}
-                                className={`text-gray-400 transition-transform ${showSections ? 'rotate-90' : ''}`}
-                            />
-                        </button>
-                        {showSections && (
+                            {showSections && (
                                 <Droppable droppableId="root-sidebar">
                                     {(provided) => (
                                         <nav
@@ -860,17 +1010,17 @@ const GroupView = () => {
                                                         index={index}
                                                     >
                                                         {(dragProvided, dragSnapshot) => (
-                                                                <SidebarSection
-                                                                    section={section}
-                                                                    allSections={sections}
-                                                                    selectedSection={selectedSection}
-                                                                    onSelect={handleSelectSection}
-                                                                    dragHandleProps={dragProvided.dragHandleProps}
-                                                                    draggableProps={dragProvided.draggableProps}
-                                                                    innerRef={dragProvided.innerRef}
-                                                                    isDragging={isDragging}
-                                                                    snapshot={dragSnapshot}
-                                                                />
+                                                            <SidebarSection
+                                                                section={section}
+                                                                allSections={sections}
+                                                                selectedSection={selectedSection}
+                                                                onSelect={handleSelectSection}
+                                                                dragHandleProps={dragProvided.dragHandleProps}
+                                                                draggableProps={dragProvided.draggableProps}
+                                                                innerRef={dragProvided.innerRef}
+                                                                isDragging={isDragging}
+                                                                snapshot={dragSnapshot}
+                                                            />
                                                         )}
                                                     </Draggable>
                                                 ))
@@ -879,325 +1029,325 @@ const GroupView = () => {
                                         </nav>
                                     )}
                                 </Droppable>
-                        )}
-                        {showSections && !sectionsLoading && rootSections.length > 0 && (
-                            <p className="mt-1 text-[10px] text-gray-400">
-                                Tip: drag sections to change their order.
-                            </p>
-                        )}
-                    </div>
-
-                    <div className="p-4 border-t space-y-3">
-                        <div className="space-y-2">
-                            <button
-                                type="button"
-                                onClick={() => setShowMembers(prev => !prev)}
-                                className="flex w-full items-center justify-between text-xs text-gray-600 px-2 py-1.5 rounded-md hover:bg-gray-50"
-                            >
-                                <span className="flex items-center gap-1 font-semibold">
-                                    <Users size={12} className="text-gray-500" />
-                                    <span>Members</span>
-                                </span>
-                                <span className="flex items-center gap-1">
-                                    <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-[10px]">
-                                        {membersLoading ? '…' : members.length}
-                                    </span>
-                                    <ChevronRight
-                                        size={12}
-                                        className={`text-gray-400 transition-transform ${showMembers ? 'rotate-90' : ''}`}
-                                    />
-                                </span>
-                            </button>
-
-                            {showMembers && (
-                                <ul className="mt-2 space-y-1 max-h-none md:max-h-72 overflow-y-auto text-[11px] text-gray-700">
-                                    {members.length === 0 && !membersLoading ? (
-                                        <li className="text-gray-400">No members loaded.</li>
-                                    ) : (
-                                        members.map(member => (
-                                            <li
-                                                key={member.userId}
-                                                className="flex items-center justify-between gap-2 px-2 py-1 rounded-md hover:bg-gray-50"
-                                                title={`${member.firstName || ''} ${member.lastName || ''} \n${member.email || ''}`}
-                                            >
-                                                <div className="flex items-center gap-2 min-w-0">
-                                                    {member.pfpUrl ? (
-                                                        <div className="h-7 w-7 rounded-full overflow-hidden bg-gray-100 border border-gray-200 shrink-0 flex items-center justify-center">
-                                                            <img
-                                                                src={member.pfpUrl}
-                                                                alt={member.firstName || member.email}
-                                                                className="h-full w-full object-cover"
-                                                            />
-                                                        </div>
-                                                    ) : (
-                                                        <div className="h-7 w-7 rounded-full bg-blue-50 flex items-center justify-center text-[10px] font-semibold text-blue-600 border border-blue-100 shrink-0">
-                                                            {((member.firstName?.[0] || '') + (member.lastName?.[0] || '') || (member.email?.[0] || '?')).toUpperCase()}
-                                                        </div>
-                                                    )}
-                                                    <div className="min-w-0">
-                                                        <button
-                                                            type="button"
-                                                            className="truncate font-medium text-left hover:underline"
-                                                            onClick={() => setSelectedMemberForInfo(member)}
-                                                        >
-                                                            {member.firstName} {member.lastName}
-                                                        </button>
-                                                        {member.email && (
-                                                            <p className="text-[10px] text-gray-500 truncate">{member.email}</p>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-1 flex-shrink-0">
-                                                    {currentGroup?.currentUserRole !== 'ADMIN' && member.role == 'ADMIN' && (
-                                                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200">
-                                                            {member.role}
-                                                        </span>
-                                                    )}
-                                                    {currentGroup?.currentUserRole === 'ADMIN' && member.role !== 'ADMIN' && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleRemoveMember(member)}
-                                                            className="p-1 text-gray-400 hover:text-red-500"
-                                                        >
-                                                            <Trash2 size={12} />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </li>
-                                        ))
-                                    )}
-                                </ul>
+                            )}
+                            {showSections && !sectionsLoading && rootSections.length > 0 && (
+                                <p className="mt-1 text-[10px] text-gray-400">
+                                    Tip: drag sections to change their order.
+                                </p>
                             )}
                         </div>
 
-                        {currentGroup?.currentUserRole === 'ADMIN' && (
+                        <div className="p-4 border-t space-y-3">
                             <div className="space-y-2">
                                 <button
                                     type="button"
-                                    onClick={() => setShowPendingInvites(prev => !prev)}
+                                    onClick={() => setShowMembers(prev => !prev)}
                                     className="flex w-full items-center justify-between text-xs text-gray-600 px-2 py-1.5 rounded-md hover:bg-gray-50"
                                 >
                                     <span className="flex items-center gap-1 font-semibold">
-                                        <span>Pending invites</span>
+                                        <Users size={12} className="text-gray-500" />
+                                        <span>Members</span>
                                     </span>
                                     <span className="flex items-center gap-1">
                                         <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-[10px]">
-                                            {pendingLoading ? '…' : pendingRequests.length}
+                                            {membersLoading ? '…' : members.length}
                                         </span>
                                         <ChevronRight
                                             size={12}
-                                            className={`text-gray-400 transition-transform ${showPendingInvites ? 'rotate-90' : ''}`}
+                                            className={`text-gray-400 transition-transform ${showMembers ? 'rotate-90' : ''}`}
                                         />
                                     </span>
                                 </button>
 
-                                {showPendingInvites && (
-                                    <ul className="mt-1 space-y-1 max-h-40 overflow-y-auto text-[11px] text-gray-700">
-                                        {pendingRequests.length === 0 && !pendingLoading ? (
-                                            <li className="text-gray-400 px-2 py-1.5 text-[11px] bg-gray-50 rounded-md border border-dashed border-gray-200">
-                                                No pending invites.
-                                            </li>
+                                {showMembers && (
+                                    <ul className="mt-2 space-y-1 max-h-none md:max-h-72 overflow-y-auto text-[11px] text-gray-700">
+                                        {members.length === 0 && !membersLoading ? (
+                                            <li className="text-gray-400">No members loaded.</li>
                                         ) : (
-                                            pendingRequests.map(req => (
+                                            members.map(member => (
                                                 <li
-                                                    key={req.memberId}
+                                                    key={member.userId}
                                                     className="flex items-center justify-between gap-2 px-2 py-1 rounded-md hover:bg-gray-50"
+                                                    title={`${member.firstName || ''} ${member.lastName || ''} \n${member.email || ''}`}
                                                 >
-                                                    <div className="min-w-0">
-                                                        <p className="font-medium truncate">
-                                                            {req.firstName} {req.lastName}
-                                                        </p>
-                                                        {req.email && (
-                                                            <p className="text-[10px] text-gray-500 truncate">{req.email}</p>
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        {member.pfpUrl ? (
+                                                            <div className="h-7 w-7 rounded-full overflow-hidden bg-gray-100 border border-gray-200 shrink-0 flex items-center justify-center">
+                                                                <img
+                                                                    src={member.pfpUrl}
+                                                                    alt={member.firstName || member.email}
+                                                                    className="h-full w-full object-cover"
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="h-7 w-7 rounded-full bg-blue-50 flex items-center justify-center text-[10px] font-semibold text-blue-600 border border-blue-100 shrink-0">
+                                                                {((member.firstName?.[0] || '') + (member.lastName?.[0] || '') || (member.email?.[0] || '?')).toUpperCase()}
+                                                            </div>
+                                                        )}
+                                                        <div className="min-w-0">
+                                                            <button
+                                                                type="button"
+                                                                className="truncate font-medium text-left hover:underline"
+                                                                onClick={() => setSelectedMemberForInfo(member)}
+                                                            >
+                                                                {member.firstName} {member.lastName}
+                                                            </button>
+                                                            {member.email && (
+                                                                <p className="text-[10px] text-gray-500 truncate">{member.email}</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-1 flex-shrink-0">
+                                                        {currentGroup?.currentUserRole !== 'ADMIN' && member.role == 'ADMIN' && (
+                                                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200">
+                                                                {member.role}
+                                                            </span>
+                                                        )}
+                                                        {currentGroup?.currentUserRole === 'ADMIN' && member.role !== 'ADMIN' && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleRemoveMember(member)}
+                                                                className="p-1 text-gray-400 hover:text-red-500"
+                                                            >
+                                                                <Trash2 size={12} />
+                                                            </button>
                                                         )}
                                                     </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleApproveRequest(req.memberId)}
-                                                        className="px-2 py-0.5 rounded-md bg-blue-600 text-white text-[10px] font-medium hover:bg-blue-700 flex-shrink-0"
-                                                    >
-                                                        Approve
-                                                    </button>
                                                 </li>
                                             ))
                                         )}
                                     </ul>
                                 )}
                             </div>
-                        )}
-                    </div>
-                </aside>
 
-                {/* Main workspace */}
-                <main className="flex-1 flex flex-col bg-gray-50">
-                    <div className="border-b bg-white px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between gap-2">
-                        <div className="min-w-0">
-                            {selectedSection ? (
-                                <>
-                                    <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">Current section</p>
-                                    {renamingSectionId === selectedSection.id ? (
-                                        <div className="mt-0.5 flex items-center gap-2">
-                                            <input
-                                                type="text"
-                                                className="w-40 sm:w-64 lg:w-80 px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                                value={renameTitle}
-                                                onChange={(e) => setRenameTitle(e.target.value)}
-                                                maxLength={120}
-                                                autoFocus
+                            {currentGroup?.currentUserRole === 'ADMIN' && (
+                                <div className="space-y-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPendingInvites(prev => !prev)}
+                                        className="flex w-full items-center justify-between text-xs text-gray-600 px-2 py-1.5 rounded-md hover:bg-gray-50"
+                                    >
+                                        <span className="flex items-center gap-1 font-semibold">
+                                            <span>Pending invites</span>
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                            <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-[10px]">
+                                                {pendingLoading ? '…' : pendingRequests.length}
+                                            </span>
+                                            <ChevronRight
+                                                size={12}
+                                                className={`text-gray-400 transition-transform ${showPendingInvites ? 'rotate-90' : ''}`}
                                             />
-                                            <button
-                                                type="button"
-                                                onClick={handleSubmitRenameSection}
-                                                className="inline-flex items-center px-2.5 py-1 rounded-md bg-blue-600 text-white text-xs font-medium hover:bg-blue-700"
-                                            >
-                                                Save
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={handleCancelRenameSection}
-                                                className="inline-flex items-center px-2.5 py-1 rounded-md border border-gray-200 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50"
-                                            >
-                                                Cancel
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center gap-1.5">
-                                            <h2 className="text-sm sm:text-base font-semibold text-gray-900 truncate">
-                                                {selectedSection.title}
-                                            </h2>
-                                            {currentGroup?.currentUserRole === 'ADMIN' && (
+                                        </span>
+                                    </button>
+
+                                    {showPendingInvites && (
+                                        <ul className="mt-1 space-y-1 max-h-40 overflow-y-auto text-[11px] text-gray-700">
+                                            {pendingRequests.length === 0 && !pendingLoading ? (
+                                                <li className="text-gray-400 px-2 py-1.5 text-[11px] bg-gray-50 rounded-md border border-dashed border-gray-200">
+                                                    No pending invites.
+                                                </li>
+                                            ) : (
+                                                pendingRequests.map(req => (
+                                                    <li
+                                                        key={req.memberId}
+                                                        className="flex items-center justify-between gap-2 px-2 py-1 rounded-md hover:bg-gray-50"
+                                                    >
+                                                        <div className="min-w-0">
+                                                            <p className="font-medium truncate">
+                                                                {req.firstName} {req.lastName}
+                                                            </p>
+                                                            {req.email && (
+                                                                <p className="text-[10px] text-gray-500 truncate">{req.email}</p>
+                                                            )}
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleApproveRequest(req.memberId)}
+                                                            className="px-2 py-0.5 rounded-md bg-blue-600 text-white text-[10px] font-medium hover:bg-blue-700 flex-shrink-0"
+                                                        >
+                                                            Approve
+                                                        </button>
+                                                    </li>
+                                                ))
+                                            )}
+                                        </ul>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </aside>
+
+                    {/* Main workspace */}
+                    <main className="flex-1 flex flex-col bg-gray-50">
+                        <div className="border-b bg-white px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                                {selectedSection ? (
+                                    <>
+                                        <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">Current section</p>
+                                        {renamingSectionId === selectedSection.id ? (
+                                            <div className="mt-0.5 flex items-center gap-2">
+                                                <input
+                                                    type="text"
+                                                    className="w-40 sm:w-64 lg:w-80 px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                                    value={renameTitle}
+                                                    onChange={(e) => setRenameTitle(e.target.value)}
+                                                    maxLength={120}
+                                                    autoFocus
+                                                />
                                                 <button
                                                     type="button"
-                                                    onClick={handleStartRenameSection}
-                                                    className="inline-flex items-center justify-center p-1 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 flex-shrink-0"
-                                                    aria-label="Rename section"
+                                                    onClick={handleSubmitRenameSection}
+                                                    className="inline-flex items-center px-2.5 py-1 rounded-md bg-blue-600 text-white text-xs font-medium hover:bg-blue-700"
                                                 >
-                                                    <Pencil size={14} />
+                                                    Save
                                                 </button>
-                                            )}
-                                        </div>
-                                    )}
-                                </>
-                            ) : (
-                                <>
-                                    <h2 className="text-sm sm:text-base font-semibold text-gray-900">Workspace</h2>
-                                    <p className="text-[11px] text-gray-500">Select a section from the sidebar to start.</p>
-                                </>
-                            )}
+                                                <button
+                                                    type="button"
+                                                    onClick={handleCancelRenameSection}
+                                                    className="inline-flex items-center px-2.5 py-1 rounded-md border border-gray-200 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-1.5">
+                                                <h2 className="text-sm sm:text-base font-semibold text-gray-900 truncate">
+                                                    {selectedSection.title}
+                                                </h2>
+                                                {currentGroup?.currentUserRole === 'ADMIN' && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleStartRenameSection}
+                                                        className="inline-flex items-center justify-center p-1 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 flex-shrink-0"
+                                                        aria-label="Rename section"
+                                                    >
+                                                        <Pencil size={14} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <>
+                                        <h2 className="text-sm sm:text-base font-semibold text-gray-900">Workspace</h2>
+                                        <p className="text-[11px] text-gray-500">Select a section from the sidebar to start.</p>
+                                    </>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {selectedSection && currentGroup?.currentUserRole === 'ADMIN' && (
+                                    <button
+                                        type="button"
+                                        onClick={handleDeleteSection}
+                                        className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 shadow-sm hover:bg-red-50"
+                                    >
+                                        <Trash2 size={14} />
+                                        <span>Delete section</span>
+                                    </button>
+                                )}
+                                {selectedSection && selectedSection.type === 'FOLDER' && currentGroup?.currentUserRole === 'ADMIN' && (
+                                    <button
+                                        type="button"
+                                        onClick={() => openFolderReorderModal(selectedSection.id)}
+                                        className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                                    >
+                                        <ArrowUpDown size={14} />
+                                        <span>Reorder items</span>
+                                    </button>
+                                )}
+                                {renderViewToggle()}
+                            </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            {selectedSection && currentGroup?.currentUserRole === 'ADMIN' && (
-                                <button
-                                    type="button"
-                                    onClick={handleDeleteSection}
-                                    className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 shadow-sm hover:bg-red-50"
-                                >
-                                    <Trash2 size={14} />
-                                    <span>Delete section</span>
-                                </button>
-                            )}
-                            {selectedSection && selectedSection.type === 'FOLDER' && currentGroup?.currentUserRole === 'ADMIN' && (
-                                <button
-                                    type="button"
-                                    onClick={() => openFolderReorderModal(selectedSection.id)}
-                                    className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-                                >
-                                    <ArrowUpDown size={14} />
-                                    <span>Reorder items</span>
-                                </button>
-                            )}
-                            {renderViewToggle()}
+
+                        <div className="flex-1 overflow-y-auto px-2 sm:px-6 py-3 sm:py-4">
+                            {renderSectionContent()}
                         </div>
-                    </div>
+                    </main>
 
-                    <div className="flex-1 overflow-y-auto px-2 sm:px-6 py-3 sm:py-4">
-                        {renderSectionContent()}
-                    </div>
-                </main>
-
-                {showCreateModal && (
-                    <CreateSectionModal
-                        groupId={groupId}
-                        parentId={createModalParentId}
-                        onClose={() => setShowCreateModal(false)}
-                        onCreated={handleSectionCreated}
-                    />
-                )}
-                {showSettingsModal && currentGroup && (
-                    <SettingsModal
-                        group={currentGroup}
-                        sections={sections}
-                        members={members}
-                        onClose={() => setShowSettingsModal(false)}
-                        onUpdateGroupName={handleUpdateGroupName}
-                        onDeleteGroup={() => {
-                            setShowSettingsModal(false);
-                            handleDeleteGroup();
-                        }}
-                        onAddSection={() => {
-                            setShowSettingsModal(false);
-                            handleOpenCreateModal(null);
-                        }}
-                        onRemoveMember={(member) => {
-                            setShowSettingsModal(false);
-                            handleRemoveMember(member);
-                        }}
-                        onDeleteSection={(section) => {
-                            setShowSettingsModal(false);
-                            handleDeleteSectionById(section);
-                        }}
-                        onViewMember={(member) => setSelectedMemberForInfo(member)}
-                        onLeaveGroup={currentGroup.currentUserRole !== 'ADMIN' ? () => {
-                            setShowSettingsModal(false);
-                            handleLeaveGroup();
-                        } : undefined}
-                        joinRequests={pendingRequests}
-                        onApproveJoinRequest={handleApproveRequest}
-                        onRejectJoinRequest={handleRejectRequest}
-                        onInviteByEmail={currentGroup.currentUserRole === 'ADMIN' ? async (email) => {
-                            try {
-                                await axiosClient.post(`/groups/${groupId}/invites`, { email });
-                                toast.success('Invite sent');
-                            } catch (error) {
-                                console.error('Failed to send invite', error);
-                                const msg = error.response?.data?.message || 'Failed to send invite';
-                                toast.error(msg);
-                            }
-                        } : undefined}
-                        onReorderSections={handleReorderSections}
-                    />
-                )}
-                {selectedMemberForInfo && (
-                    <UserInfoModal
-                        member={selectedMemberForInfo}
-                        onClose={() => setSelectedMemberForInfo(null)}
-                    />
-                )}
-                {confirmConfig && (
-                    <ConfirmModal
-                        title={confirmConfig.title}
-                        message={confirmConfig.message}
-                        confirmLabel={confirmConfig.confirmLabel}
-                        onCancel={() => setConfirmConfig(null)}
-                        onConfirm={async () => {
-                            const fn = confirmConfig.onConfirm;
-                            setConfirmConfig(null);
-                            if (fn) {
-                                await fn();
-                            }
-                        }}
-                    />
-                )}
-                {showReorderModal && (
-                    <ReorderSectionsModal
-                        open={showReorderModal}
-                        title={reorderParentId == null ? 'Reorder sections' : 'Reorder items in folder'}
-                        items={sections.filter((s) => normalizeParentId(s.parentId) === normalizeParentId(reorderParentId))}
-                        onClose={() => setShowReorderModal(false)}
-                        onSave={handleApplyReorder}
-                    />
-                )}
-            </div>
+                    {showCreateModal && (
+                        <CreateSectionModal
+                            groupId={groupId}
+                            parentId={createModalParentId}
+                            onClose={() => setShowCreateModal(false)}
+                            onCreated={handleSectionCreated}
+                        />
+                    )}
+                    {showSettingsModal && currentGroup && (
+                        <SettingsModal
+                            group={currentGroup}
+                            sections={sections}
+                            members={members}
+                            onClose={() => setShowSettingsModal(false)}
+                            onUpdateGroupName={handleUpdateGroupName}
+                            onDeleteGroup={() => {
+                                setShowSettingsModal(false);
+                                handleDeleteGroup();
+                            }}
+                            onAddSection={() => {
+                                setShowSettingsModal(false);
+                                handleOpenCreateModal(null);
+                            }}
+                            onRemoveMember={(member) => {
+                                setShowSettingsModal(false);
+                                handleRemoveMember(member);
+                            }}
+                            onDeleteSection={(section) => {
+                                setShowSettingsModal(false);
+                                handleDeleteSectionById(section);
+                            }}
+                            onViewMember={(member) => setSelectedMemberForInfo(member)}
+                            onLeaveGroup={currentGroup.currentUserRole !== 'ADMIN' ? () => {
+                                setShowSettingsModal(false);
+                                handleLeaveGroup();
+                            } : undefined}
+                            joinRequests={pendingRequests}
+                            onApproveJoinRequest={handleApproveRequest}
+                            onRejectJoinRequest={handleRejectRequest}
+                            onInviteByEmail={currentGroup.currentUserRole === 'ADMIN' ? async (email) => {
+                                try {
+                                    await axiosClient.post(`/groups/${groupId}/invites`, { email });
+                                    toast.success('Invite sent');
+                                } catch (error) {
+                                    console.error('Failed to send invite', error);
+                                    const msg = error.response?.data?.message || 'Failed to send invite';
+                                    toast.error(msg);
+                                }
+                            } : undefined}
+                            onReorderSections={handleReorderSections}
+                        />
+                    )}
+                    {selectedMemberForInfo && (
+                        <UserInfoModal
+                            member={selectedMemberForInfo}
+                            onClose={() => setSelectedMemberForInfo(null)}
+                        />
+                    )}
+                    {confirmConfig && (
+                        <ConfirmModal
+                            title={confirmConfig.title}
+                            message={confirmConfig.message}
+                            confirmLabel={confirmConfig.confirmLabel}
+                            onCancel={() => setConfirmConfig(null)}
+                            onConfirm={async () => {
+                                const fn = confirmConfig.onConfirm;
+                                setConfirmConfig(null);
+                                if (fn) {
+                                    await fn();
+                                }
+                            }}
+                        />
+                    )}
+                    {showReorderModal && (
+                        <ReorderSectionsModal
+                            open={showReorderModal}
+                            title={reorderParentId == null ? 'Reorder sections' : 'Reorder items in folder'}
+                            items={sections.filter((s) => normalizeParentId(s.parentId) === normalizeParentId(reorderParentId))}
+                            onClose={() => setShowReorderModal(false)}
+                            onSave={handleApplyReorder}
+                        />
+                    )}
+                </div>
             </DragDropContext>
         );
     }
@@ -1214,9 +1364,9 @@ const GroupView = () => {
                                 localStorage.removeItem('currentGroupId');
                                 navigate('/dashboard');
                             }}
-                            className="mb-1 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 bg-white text-[11px] font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300"
+                            className="mb-1 inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-gray-200 bg-white text-xs font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300"
                         >
-                            <ArrowLeft size={12} />
+                            <ArrowLeft size={13} />
                             <span>Back to groups</span>
                         </button>
                         <div className="flex flex-col gap-1">
@@ -1261,32 +1411,43 @@ const GroupView = () => {
                             )}
                         </div>
                     </div>
-                        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                            {currentGroup?.currentUserRole === 'ADMIN' && (
-                                <button
-                                    onClick={() => handleOpenCreateModal(null)}
-                                    className="px-3 py-1.5 rounded-lg border border-blue-200 text-blue-700 bg-white hover:bg-blue-50 font-medium text-xs"
-                                >
-                                    + New Section
-                                </button>
-                            )}
-                            {renderViewToggle()}
-                        </div>
+                    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                        {currentGroup?.currentUserRole === 'ADMIN' && (
+                            <button
+                                onClick={() => handleOpenCreateModal(null)}
+                                className="px-3 py-2 rounded-full border border-blue-200 text-blue-700 bg-white hover:bg-blue-50 font-medium text-xs"
+                            >
+                                + New Section
+                            </button>
+                        )}
+                        <button
+                            type="button"
+                            onClick={openRootReorderModal}
+                            className="inline-flex items-center gap-1 px-3 py-2 rounded-full border border-gray-200 bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-50 text-xs font-medium shadow-sm transition"
+                            title="Reorder sections"
+                        >
+                            <ArrowUpDown size={14} />
+                            <span className="inline">Reorder</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleOpenManageModal}
+                            className="inline-flex items-center gap-1 px-3 py-2 rounded-full border border-gray-200 bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-50 text-xs font-medium shadow-sm transition"
+                            title="Group Settings"
+                        >
+                            <Settings size={14} />
+                            <span className="inline">Settings</span>
+                        </button>
+                        {renderViewToggle()}
+                    </div>
                 </div>
 
                 <div>
-                    <div className="flex items-center justify-between mb-1">
-                        <h2 className="text-sm font-semibold text-gray-700">Sections</h2>
-                        <button
-                            type="button"
-                            onClick={fetchSections}
-                            disabled={sectionsLoading}
-                            className="p-1 rounded text-gray-400 hover:text-gray-600 disabled:opacity-40"
-                            aria-label="Refresh sections"
-                            title="Refresh sections"
-                        >
-                            <RefreshCw size={14} className={sectionsLoading ? 'animate-spin' : ''} />
-                        </button>
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                        <h2 className="text-sm font-semibold text-gray-700 shrink-0">Sections</h2>
+                        <div className="flex items-center gap-1">
+                            {renderSearchBox(true)}
+                        </div>
                     </div>
                     {sectionsLoading ? (
                         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center text-sm text-gray-400">

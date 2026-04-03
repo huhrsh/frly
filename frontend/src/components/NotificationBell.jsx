@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Bell, BellRing } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { formatTimeAgo } from '../utils/dateUtils';
@@ -160,11 +160,14 @@ const NotificationBell = () => {
         // Navigate based on notification type / available ids
         let target = null;
         if (notification.groupId && notification.sectionId) {
-            target = `/groups/${notification.groupId}/sections/${notification.sectionId}`;
+            const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+            target = isMobile
+                ? `/groups/${notification.groupId}/sections/${notification.sectionId}`
+                : `/groups/${notification.groupId}?section=${notification.sectionId}&view=WORKSPACE`;
         } else if (notification.type === 'GROUP_INVITE_RECEIVED') {
             target = '/groups/join';
         } else if (notification.type === 'GROUP_JOIN_REQUEST') {
-            target = notification.groupId ? `/groups/${notification.groupId}/manage` : '/dashboard';
+            target = notification.groupId ? `/groups/${notification.groupId}?manage=1` : '/dashboard';
         } else if (['GROUP_JOIN_APPROVED', 'GROUP_JOIN_REJECTED', 'MEMBER_JOINED', 'GROUP_MEMBER_LEFT', 'GROUP_MEMBER_REMOVED'].includes(notification.type)) {
             target = notification.groupId ? `/groups/${notification.groupId}` : '/dashboard';
         }
@@ -219,9 +222,9 @@ const NotificationBell = () => {
             </button>
 
             {open && (
-                <div className="absolute right-0 mt-2 w-72 bg-white rounded-md shadow-lg border border-gray-100 z-50">
-                    <div className="px-3 py-2 border-b flex items-center justify-between gap-2">
-                        <span className="text-xs font-semibold text-gray-700">Notifications</span>
+                <div className="fixed sm:absolute inset-x-2 sm:inset-x-auto top-16 sm:top-auto sm:right-0 sm:mt-2 sm:w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                        <span className="text-sm font-semibold text-gray-800">Notifications</span>
                         <div className="flex items-center gap-2">
                             {unreadCount > 0 && (
                                 <button
@@ -235,22 +238,22 @@ const NotificationBell = () => {
                                             console.error('Failed to mark all notifications as read', error);
                                         }
                                     }}
-                                    className="text-[10px] text-blue-600 hover:text-blue-800"
+                                    className="text-xs text-blue-600 hover:underline"
                                 >
                                     Mark all read
                                 </button>
                             )}
-                            {loading && <span className="text-[10px] text-gray-400">Loading...</span>}
+                            {loading && <span className="text-xs text-gray-400">Loading...</span>}
                         </div>
                     </div>
-                    
+
                     {/* Push notification settings */}
                     {isSupported && permission !== 'denied' && (
-                        <div className="px-3 py-2 border-b bg-gray-50">
+                        <div className="px-4 py-2 border-b bg-gray-50/80">
                             <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-2">
                                     <BellRing size={14} className="text-gray-600" />
-                                    <span className="text-[11px] text-gray-700">Push notifications</span>
+                                    <span className="text-xs text-gray-700">Push notifications</span>
                                 </div>
                                 <button
                                     type="button"
@@ -267,48 +270,83 @@ const NotificationBell = () => {
                                     />
                                 </button>
                             </div>
-                            <p className="text-[10px] text-gray-500 mt-1">
-                                {isSubscribed 
-                                    ? 'Get alerts for expenses, reminders & groups' 
-                                    : 'Enable to get important updates'
-                                }
-                            </p>
                         </div>
                     )}
-                    
-                    <div className="max-h-80 overflow-y-auto" onScroll={handleScroll}>
-                        {notifications.length === 0 && !loading ? (
-                            <div className="px-3 py-4 text-xs text-gray-400 text-center">
-                                No notifications yet.
+
+                    <div className="max-h-[60vh] sm:max-h-96 overflow-y-auto" onScroll={handleScroll}>
+                        {loading && (
+                            <div className="flex justify-center py-6">
+                                <div className="w-5 h-5 rounded-full border-2 border-blue-400 border-t-transparent animate-spin" />
                             </div>
-                        ) : (
-                            notifications.map(n => (
-                                <div
-                                    key={n.id}
-                                    onClick={() => handleNotificationClick(n)}
-                                    className={`px-3 py-2 text-xs border-b last:border-b-0 cursor-pointer hover:bg-gray-50 ${n.read ? 'bg-white' : 'bg-blue-50'}`}
-                                >
-                                    <div className="flex justify-between items-start gap-2">
-                                        <div className="flex-1 min-w-0">
-                                            {n.title && (
-                                                <p className="font-semibold text-[11px] text-gray-900 mb-0.5 truncate">{n.title}</p>
-                                            )}
-                                            <p className="text-[11px] text-gray-700 leading-snug line-clamp-2">{n.message}</p>
-                                            <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-500">
-                                                {n.actorName ? <span>{n.actorName}</span> : <span>System</span>}
-                                                {n.createdAt && <span>·</span>}
-                                                {n.createdAt && <span>{formatTimeAgo(n.createdAt)}</span>}
-                                            </div>
-                                        </div>
-                                        {!n.read && (
-                                            <div className="flex-shrink-0">
-                                                <span className="inline-block w-2 h-2 bg-blue-500 rounded-full"></span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            ))
                         )}
+
+                        {!loading && notifications.length === 0 && (
+                            <p className="text-center text-xs text-gray-400 py-8">No notifications yet.</p>
+                        )}
+
+                        {!loading && (() => {
+                            // Group by date label (same logic as ActivityFeed)
+                            const grouped = notifications.reduce((acc, n) => {
+                                const d = new Date(n.createdAt);
+                                const today = new Date();
+                                const yesterday = new Date(today);
+                                yesterday.setDate(today.getDate() - 1);
+                                let label;
+                                if (d.toDateString() === today.toDateString()) label = 'Today';
+                                else if (d.toDateString() === yesterday.toDateString()) label = 'Yesterday';
+                                else label = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                                if (!acc[label]) acc[label] = [];
+                                acc[label].push(n);
+                                return acc;
+                            }, {});
+
+                            const initials = (name) => {
+                                if (!name) return '?';
+                                return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+                            };
+
+                            return Object.entries(grouped).map(([label, entries]) => (
+                                <div key={label}>
+                                    <div className="px-4 pt-1 pb-1 text-[10px] font-semibold text-gray-700 bg-gray-100 uppercase tracking-wide">
+                                        {label}
+                                    </div>
+                                    {entries.map(n => (
+                                        <button
+                                            key={n.id}
+                                            type="button"
+                                            onClick={() => handleNotificationClick(n)}
+                                            className={`w-full flex items-start gap-3 px-4 py-2.5 hover:bg-gray-50 text-left transition border-b border-gray-100 last:border-b-0 ${n.read ? '' : 'bg-blue-50/60'}`}
+                                        >
+                                            <div className="flex-shrink-0 w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold mt-0.5">
+                                                {initials(n.actorName)}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                {n.title && (
+                                                    <p className="text-xs font-semibold text-gray-900 leading-snug truncate">{n.title}</p>
+                                                )}
+                                                <p className="text-xs text-gray-700 leading-snug line-clamp-2">{n.message}</p>
+                                                <p className="text-[10px] text-gray-400 mt-0.5">
+                                                    {formatTimeAgo(n.createdAt)}
+                                                </p>
+                                            </div>
+                                            {!n.read && (
+                                                <span className="flex-shrink-0 mt-1 inline-block w-2 h-2 bg-blue-500 rounded-full" />
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            ));
+                        })()}
+                    </div>
+
+                    <div className="px-4 py-2 border-t border-gray-100">
+                        <Link
+                            to="/activity?tab=notifications"
+                            onClick={() => setOpen(false)}
+                            className="text-xs text-blue-600 hover:underline"
+                        >
+                            View all →
+                        </Link>
                     </div>
                 </div>
             )}

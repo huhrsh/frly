@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchGroupDetails } from '../redux/slices/groupSlice';
 import NotificationBell from './NotificationBell';
+import ActivityFeed from './ActivityFeed';
 
 const Header = () => {
     const { user, logout } = useAuth();
@@ -84,12 +85,14 @@ const Header = () => {
                                         type="button"
                                         onClick={handleRefresh}
                                         disabled={refreshing}
-                                        className="p-1.5 rounded-full border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-800 disabled:opacity-50"
+                                        className="inline-flex items-center gap-1 px-1.5 py-1.5 rounded-full border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-800 disabled:opacity-50 text-xs"
                                         aria-label="Refresh"
                                     >
                                         <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+                                        {/* <span>Refresh</span> */}
                                     </button>
                                 )}
+                                <ActivityFeed />
                                 <NotificationBell />
                                 <button
                                     type="button"

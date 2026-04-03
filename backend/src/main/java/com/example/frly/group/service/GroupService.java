@@ -18,9 +18,12 @@ import com.example.frly.group.repository.GroupMemberRepository;
 import com.example.frly.group.model.Group;
 import com.example.frly.group.model.GroupMember;
 import com.example.frly.group.GroupContext;
+import com.example.frly.activity.ActivityLogService;
+import com.example.frly.activity.ActivityType;
 import com.example.frly.notification.NotificationService;
 import com.example.frly.notification.NotificationType;
 import com.example.frly.notification.NotificationRequest;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,6 +31,9 @@ import com.example.frly.common.exception.BadRequestException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -43,6 +49,8 @@ public class GroupService {
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final ActivityLogService activityLogService;
+    private final EntityManager entityManager;
     private static final String CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ123456789";
     private static final int CODE_LENGTH = 8;
     private static final SecureRandom random = new SecureRandom();
@@ -242,6 +250,8 @@ public class GroupService {
                     )
                 );
             });
+        activityLogService.log(String.valueOf(currentGroupId), memberToApprove.getUser().getId(), newMemberName,
+                ActivityType.MEMBER_JOINED, newMemberName, null, null);
     }
     
     public GroupResponseDto getGroupDetails(Long groupId) {
@@ -267,6 +277,7 @@ public class GroupService {
                .ifPresent(member -> {
                   dto.setCurrentUserRole(member.getRole().getName());
                   dto.setMembershipStatus(member.getStatus());
+                  dto.setPinned(member.isPinned());
                   if (member.getViewPreference() != null) {
                       dto.setViewPreference(member.getViewPreference());
                   }
@@ -298,6 +309,7 @@ public class GroupService {
                     dto.setStatus(group.getStatus());
                     dto.setCurrentUserRole(member.getRole().getName());
                     dto.setMembershipStatus(member.getStatus());
+                    dto.setPinned(member.isPinned());
 
                     if (member.getViewPreference() != null) {
                         dto.setViewPreference(member.getViewPreference());
@@ -532,8 +544,58 @@ public class GroupService {
                     actorName
                 )
             );
+            String removedName = String.format("%s %s", member.getUser().getFirstName(), member.getUser().getLastName()).trim();
+            activityLogService.log(String.valueOf(groupId), currentUserId, actorName,
+                    ActivityType.MEMBER_REMOVED, removedName, null, null);
         }
         // If status was REMOVED, no notification needed
+    }
+
+    @Transactional
+    public void togglePinGroup(Long groupId) {
+        Long userId = AuthUtil.getCurrentUserId();
+        GroupMember member = groupMemberRepository.findByUserIdAndGroupId(userId, groupId)
+                .orElseThrow(() -> new BadRequestException("Not a member of this group"));
+        member.setPinned(!member.isPinned());
+        groupMemberRepository.save(member);
+    }
+
+    @Transactional
+    public void markGroupSeen(Long groupId) {
+        Long userId = AuthUtil.getCurrentUserId();
+        groupMemberRepository.findByUserIdAndGroupId(userId, groupId).ifPresent(member -> {
+            member.setLastSeenAt(LocalDateTime.now());
+            groupMemberRepository.save(member);
+        });
+    }
+
+    @SuppressWarnings("unchecked")
+    public Map<Long, Boolean> getActivityStatus() {
+        Long userId = AuthUtil.getCurrentUserId();
+        String sql =
+            "SELECT gm.group_id, " +
+            "EXISTS(" +
+            "    SELECT 1 FROM config.activity_log al" +
+            "    WHERE al.group_id = CAST(gm.group_id AS VARCHAR)" +
+            "    AND al.created_at > COALESCE(gm.last_seen_at, CAST('1970-01-01' AS TIMESTAMP))" +
+            "    AND al.actor_id != :userId" +
+            ") AS has_new " +
+            "FROM config.group_members gm " +
+            "WHERE gm.user_id = :userId AND gm.status = 'APPROVED'";
+
+        java.util.List<Object[]> rows = entityManager.createNativeQuery(sql)
+                .setParameter("userId", userId)
+                .getResultList();
+
+        Map<Long, Boolean> result = new HashMap<>();
+        for (Object[] row : rows) {
+            Long groupId = row[0] != null ? ((Number) row[0]).longValue() : null;
+            boolean hasNew = row[1] != null && (Boolean) row[1];
+            if (groupId != null) {
+                result.put(groupId, hasNew);
+            }
+        }
+        return result;
     }
 
     @Transactional(readOnly = true)

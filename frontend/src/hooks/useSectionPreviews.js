@@ -125,7 +125,8 @@ export const useSectionPreviews = (sections) => {
                         };
                     }
                 } catch (error) {
-                    // console.debug('Preview load failed', section.id);
+                    // Set empty preview so BentoGrid doesn't show "Loading..."
+                    newPreviews[section.id] = { kind: section.type };
                 }
             }));
 

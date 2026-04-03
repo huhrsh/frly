@@ -22,6 +22,8 @@ import com.example.frly.notification.NotificationType;
 import com.example.frly.section.SectionMapper;
 import com.example.frly.user.User;
 import com.example.frly.user.UserRepository;
+import com.example.frly.activity.ActivityLogService;
+import com.example.frly.activity.ActivityType;
 import com.example.frly.common.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +52,7 @@ public class SectionService {
     private final GroupService groupService;
     private final SectionMapper sectionMapper;
     private final UserRepository userRepository;
+    private final ActivityLogService activityLogService;
 
     private String getFullName(User user) {
         if (user == null) {
@@ -114,6 +117,9 @@ public class SectionService {
             noteRepository.save(note);
             log.info(NOTE_CREATED, section.getId());
         }
+
+        activityLogService.log(section.getGroupId(), AuthUtil.getCurrentUserId(), actorName,
+                ActivityType.SECTION_CREATED, section.getTitle(), section.getId(), section.getTitle());
 
         return section.getId();
     }
@@ -249,6 +255,8 @@ public class SectionService {
             actorName,
             getSectionTypeString(section)
         );
+        activityLogService.log(section.getGroupId(), AuthUtil.getCurrentUserId(), actorName,
+                ActivityType.SECTION_RENAMED, title.trim(), section.getId(), title.trim());
     }
 
     @Transactional
@@ -320,6 +328,8 @@ public class SectionService {
                 actorName,
                 section.getType() != null ? section.getType().name() : null
             );
+            activityLogService.log(groupId, AuthUtil.getCurrentUserId(), actorName,
+                    ActivityType.SECTION_DELETED, sectionTitle, null, sectionTitle);
         }
     }
 
@@ -363,7 +373,9 @@ public class SectionService {
             actorName,
             "LIST"
         );
-        
+        activityLogService.log(section.getGroupId(), AuthUtil.getCurrentUserId(), actorName,
+                ActivityType.ITEM_ADDED, item.getText(), section.getId(), section.getTitle());
+
         return item.getId();
     }
 
@@ -401,6 +413,8 @@ public class SectionService {
                 actorName,
                 "LIST"
             );
+            activityLogService.log(section.getGroupId(), AuthUtil.getCurrentUserId(), actorName,
+                    ActivityType.ITEM_COMPLETED, item.getText(), section.getId(), section.getTitle());
         }
     }
 
@@ -462,6 +476,8 @@ public class SectionService {
             actorName,
             "LIST"
         );
+        activityLogService.log(section.getGroupId(), AuthUtil.getCurrentUserId(), actorName,
+                ActivityType.ITEM_DELETED, itemText, section.getId(), section.getTitle());
     }
 
     // --- LINK ITEMS ---

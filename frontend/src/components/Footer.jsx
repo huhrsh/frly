@@ -63,7 +63,7 @@ const Footer = () => {
 
                 <div className="pt-4 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-3 text-xs text-gray-400">
                     <p>
-                        fryly · v1.3
+                        fryly · v1.4
                     </p>
                     <p>
                         Made with 💙 by 

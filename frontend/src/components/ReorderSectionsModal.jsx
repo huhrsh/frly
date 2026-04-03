@@ -119,7 +119,7 @@ const ReorderSectionsModal = ({
                 </div>
 
                 <div className="px-4 py-3 text-xs text-gray-500 border-b border-gray-100 bg-gray-50/70">
-                    Drag items using the handle to change their order. This order is shared across the group.
+                    Drag items using the handle to change their order. This order is personal — only you will see it.
                 </div>
 
                 <DragDropContext onDragEnd={handleDragEnd}>

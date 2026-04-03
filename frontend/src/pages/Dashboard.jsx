@@ -4,7 +4,7 @@ import { useDispatch } from 'react-redux';
 import { selectGroup, clearGroup } from '../redux/slices/groupSlice';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { Copy, Users, ChevronDown, ChevronUp, X, Check } from 'lucide-react';
+import { Copy, Users, ChevronDown, ChevronUp, X, Check, Search, Pin, PinOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 // ─── Onboarding checklist ────────────────────────────────────────────────────
@@ -171,6 +171,8 @@ const Dashboard = () => {
     const [invites, setInvites] = useState([]);
     const [onboarding, setOnboarding] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [groupSearch, setGroupSearch] = useState('');
+    const [activityStatus, setActivityStatus] = useState({});
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -187,6 +189,10 @@ const Dashboard = () => {
                 setGroups(groupsRes.data || []);
                 setInvites(invitesRes.data || []);
                 setOnboarding(onboardingRes.data);
+                // Fetch activity status separately — failure is non-critical
+                axiosClient.get('/groups/activity-status').then(res => {
+                    setActivityStatus(res.data || {});
+                }).catch(() => {});
             } catch (error) {
                 console.error("Failed to fetch dashboard data", error);
             } finally {
@@ -195,6 +201,18 @@ const Dashboard = () => {
         };
         fetchAll();
     }, [dispatch]);
+
+    const handleTogglePin = async (group, e) => {
+        e.stopPropagation();
+        // Optimistic update
+        setGroups(prev => prev.map(g => g.id === group.id ? { ...g, pinned: !g.pinned } : g));
+        try {
+            await axiosClient.patch(`/groups/${group.id}/pin`);
+        } catch {
+            // Revert on failure
+            setGroups(prev => prev.map(g => g.id === group.id ? { ...g, pinned: group.pinned } : g));
+        }
+    };
 
     useEffect(() => {
         if (loading) return;
@@ -232,6 +250,10 @@ const Dashboard = () => {
     );
 
     const visibleGroups = groups.filter(g => g.membershipStatus !== 'REMOVED');
+    const filteredGroups = (groupSearch.trim()
+        ? visibleGroups.filter(g => g.displayName?.toLowerCase().includes(groupSearch.toLowerCase()))
+        : visibleGroups
+    ).slice().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
     const totalGroups = visibleGroups.length;
     const adminGroups = visibleGroups.filter(g => g.currentUserRole === 'ADMIN').length;
     const pendingGroups = visibleGroups.filter(g => g.membershipStatus === 'PENDING').length;
@@ -342,23 +364,51 @@ const Dashboard = () => {
                     />
                 )}
 
+                {visibleGroups.length > 0 && (
+                    <div className="relative">
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                        <input
+                            type="text"
+                            value={groupSearch}
+                            onChange={e => setGroupSearch(e.target.value)}
+                            placeholder="Filter groups…"
+                            className="w-full sm:w-64 pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-blue-300"
+                        />
+                    </div>
+                )}
+
                 {visibleGroups.length === 0 ? (
                     <div className="text-center py-12 text-gray-400">
                         <p className="text-sm">You're not in any groups yet.</p>
                         <p className="text-xs mt-1">Create or join a group to get started.</p>
                     </div>
+                ) : filteredGroups.length === 0 ? (
+                    <div className="text-center py-12 text-gray-400">
+                        <p className="text-sm">No groups match "{groupSearch}".</p>
+                    </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                        {visibleGroups.map(group => (
+                        {filteredGroups.map(group => (
                             <div
                                 key={group.id}
                                 onClick={() => handleGroupClick(group)}
-                                className="bg-white rounded-xl shadow-sm hover:shadow-md transition cursor-pointer border border-transparent hover:border-blue-200 overflow-hidden"
+                                className={`relative bg-white rounded-xl shadow-sm hover:shadow-md transition cursor-pointer border overflow-hidden ${group.pinned ? 'border-blue-200' : 'border-transparent hover:border-blue-200'}`}
                             >
+                                {activityStatus[group.id] && (
+                                    <span className="absolute top-3 right-3 w-2.5 h-2.5 bg-red-500 rounded-full z-10" title="New activity" />
+                                )}
                                 <div className="p-4 sm:p-6">
                                     <div className="flex items-center justify-between mb-2 gap-2">
                                         <h3 className="text-base sm:text-lg capitalize font-bold text-gray-800 truncate">{group.displayName}</h3>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-1.5">
+                                            <button
+                                                type="button"
+                                                onClick={(e) => handleTogglePin(group, e)}
+                                                className={`p-1 rounded-md transition ${group.pinned ? 'text-blue-600 hover:text-blue-800' : 'text-gray-300 hover:text-gray-500'}`}
+                                                title={group.pinned ? 'Unpin group' : 'Pin group'}
+                                            >
+                                                {group.pinned ? <Pin size={13} /> : <PinOff size={13} />}
+                                            </button>
                                             <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 uppercase">
                                                 {group.currentUserRole || 'MEMBER'}
                                             </span>

@@ -20,6 +20,8 @@ import com.example.frly.section.repository.PaymentExpenseRepository;
 import com.example.frly.section.repository.PaymentShareRepository;
 import com.example.frly.section.repository.SectionRepository;
 import com.example.frly.section.mapper.PaymentMapper;
+import com.example.frly.activity.ActivityLogService;
+import com.example.frly.activity.ActivityType;
 import com.example.frly.notification.NotificationService;
 import com.example.frly.notification.NotificationType;
 import com.example.frly.user.User;
@@ -49,6 +51,7 @@ public class PaymentService {
     private final PaymentMapper paymentMapper;
     private final GroupMemberRepository groupMemberRepository;
     private final NotificationService notificationService;
+    private final ActivityLogService activityLogService;
 
     private String getFullName(User user) {
         if (user == null) {
@@ -87,6 +90,10 @@ public class PaymentService {
             actorName,
             "PAYMENT"
         );
+        activityLogService.log(section.getGroupId(), AuthUtil.getCurrentUserId(), actorName,
+                ActivityType.EXPENSE_ADDED,
+                amountStr + (expense.getDescription() != null ? " – " + expense.getDescription() : ""),
+                section.getId(), section.getTitle());
 
         return expense.getId();
     }

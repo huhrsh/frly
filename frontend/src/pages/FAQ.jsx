@@ -55,6 +55,20 @@ const FAQ = () => {
             Common examples include rent and bill splits, grocery lists, house rules, shared trip plans, school schedules, medical information, important documents, recurring chores and shared memories.
           </p>
         </div>
+
+        <div>
+          <h2 className="font-semibold text-gray-900">How do I find something in my group?</h2>
+          <p className="mt-1 text-gray-700">
+            Use the search bar at the top of your group view. It searches across sections, notes, list items, reminders, links, expenses, gallery files and events — just start typing and results appear instantly.
+          </p>
+        </div>
+
+        <div>
+          <h2 className="font-semibold text-gray-900">Can I see what my groupmates have been doing?</h2>
+          <p className="mt-1 text-gray-700">
+            Yes. Every group has an activity log that tracks changes — who added an expense, updated a note, checked off a task, and more. Find it via the history icon in the header or the Activity tab inside Group Settings.
+          </p>
+        </div>
       </div>
     </div>
   );

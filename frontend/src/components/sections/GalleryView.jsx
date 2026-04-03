@@ -11,7 +11,8 @@ import {
     X,
     Trash2,
     Edit2,
-    UploadCloud
+    UploadCloud,
+    Search
 } from 'lucide-react';
 import ConfirmModal from '../ConfirmModal';
 
@@ -31,6 +32,7 @@ const GalleryView = ({ sectionId }) => {
     const [deleteTarget, setDeleteTarget] = useState(null);
 
     // Menu state: { itemId: number | null }
+    const [filterText, setFilterText] = useState('');
     const [openMenuId, setOpenMenuId] = useState(null);
     const menuRef = useRef(null);
     const loadMoreRef = useRef(null);
@@ -371,8 +373,21 @@ const GalleryView = ({ sectionId }) => {
                 </div>
             )}
 
+            {images.length > 4 && (
+                <div className="relative mb-3 max-w-xs">
+                    <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    <input
+                        type="text"
+                        value={filterText}
+                        onChange={e => setFilterText(e.target.value)}
+                        placeholder="Filter files…"
+                        className="w-full pl-8 pr-3 py-2 text-xs border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+                    />
+                </div>
+            )}
+
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {images.map(img => (
+                {images.filter(img => !filterText || (img.title || img.originalFilename || '').toLowerCase().includes(filterText.toLowerCase())).map(img => (
                     <div
                         key={img.id}
                         className="group relative bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow-lg hover:border-blue-100 transition flex flex-col cursor-pointer"

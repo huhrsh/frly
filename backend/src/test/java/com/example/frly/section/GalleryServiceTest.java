@@ -53,6 +53,7 @@ class GalleryServiceTest {
     @Mock private SectionMapper sectionMapper;
     @Mock private NotificationService notificationService;
     @Mock private UserRepository userRepository;
+    @Mock private com.example.frly.activity.ActivityLogService activityLogService;
 
     @InjectMocks
     private GalleryService galleryService;

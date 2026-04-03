@@ -3,7 +3,7 @@ import axiosClient from '../../api/axiosClient';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
 import ConfirmModal from '../ConfirmModal';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Search } from 'lucide-react';
 
 const ReminderView = ({ sectionId }) => {
     const { user } = useAuth();
@@ -125,8 +125,10 @@ const ReminderView = ({ sectionId }) => {
         setFrequency('ONCE');
     };
 
-    const activeReminders = reminders.filter(r => !r.isSent);
-    const sentReminders = reminders.filter(r => r.isSent);
+    const [filterText, setFilterText] = useState('');
+    const filterFn = (r) => !filterText || r.title?.toLowerCase().includes(filterText.toLowerCase()) || r.description?.toLowerCase().includes(filterText.toLowerCase());
+    const activeReminders = reminders.filter(r => !r.isSent).filter(filterFn);
+    const sentReminders = reminders.filter(r => r.isSent).filter(filterFn);
 
     return (
         <div className="h-full flex flex-col sm:p-4">
@@ -221,6 +223,19 @@ const ReminderView = ({ sectionId }) => {
                     </div>
                 </div>
             </form>
+
+            {reminders.length > 4 && (
+                <div className="relative mb-3 max-w-xs">
+                    <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    <input
+                        type="text"
+                        value={filterText}
+                        onChange={e => setFilterText(e.target.value)}
+                        placeholder="Filter reminders…"
+                        className="w-full pl-8 pr-3 py-2 text-xs border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+                    />
+                </div>
+            )}
 
             <div className="flex-1 overflow-y-auto space-y-3 mt-1">
                 <div>

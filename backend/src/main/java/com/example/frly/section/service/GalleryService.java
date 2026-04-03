@@ -15,6 +15,8 @@ import com.example.frly.section.model.Section;
 import com.example.frly.section.model.SectionType;
 import com.example.frly.section.repository.GalleryItemRepository;
 import com.example.frly.section.repository.SectionRepository;
+import com.example.frly.activity.ActivityLogService;
+import com.example.frly.activity.ActivityType;
 import com.example.frly.notification.NotificationService;
 import com.example.frly.notification.NotificationType;
 import com.example.frly.notification.NotificationRequest;
@@ -46,6 +48,7 @@ public class GalleryService {
     private final SectionMapper sectionMapper;
     private final NotificationService notificationService;
     private final UserRepository userRepository;
+    private final ActivityLogService activityLogService;
 
     @Transactional
     public GalleryItemDto uploadItem(Long sectionId, MultipartFile file) throws IOException {
@@ -113,6 +116,9 @@ public class GalleryService {
             actorName,
             "GALLERY"
         );
+
+        activityLogService.log(String.valueOf(groupId), AuthUtil.getCurrentUserId(), actorName,
+                ActivityType.FILE_UPLOADED, item.getOriginalFilename(), sectionId, section.getTitle());
 
         GalleryItemDto dto = sectionMapper.toGalleryItemDto(item);
         dto.setUrl(fileStorageService.generateAccessUrl(item.getPublicId()));

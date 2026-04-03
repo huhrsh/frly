@@ -47,6 +47,7 @@ class SectionServiceTest {
     @Mock private SectionMapper sectionMapper;
     @Mock private UserRepository userRepository;
     @Mock private NotificationService notificationService;
+    @Mock private com.example.frly.activity.ActivityLogService activityLogService;
 
     @InjectMocks
     private SectionService sectionService;
