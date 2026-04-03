@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axiosClient from '../../api/axiosClient';
 import ConfirmModal from '../ConfirmModal';
+import { Search, ArrowDownUp, List, Circle, Hash } from 'lucide-react';
 
 const ListView = ({ sectionId, section }) => {
     const [items, setItems] = useState([]);
@@ -118,12 +119,15 @@ const ListView = ({ sectionId, section }) => {
         }
     };
 
-    const activeItems = items.filter(i => !i.completed);
-    const completedItems = items.filter(i => i.completed);
+    const [filterText, setFilterText] = useState('');
+
+    const filterFn = (i) => !filterText || i.text?.toLowerCase().includes(filterText.toLowerCase());
+    const activeItems = items.filter(i => !i.completed).filter(filterFn);
+    const completedItems = items.filter(i => i.completed).filter(filterFn);
     const totalCount = items.length;
 
     // For CHECKBOX-STATIC mode, keep original order
-    const staticItems = items;
+    const staticItems = items.filter(filterFn);
 
     return (
         <div className="h-full flex flex-col p-0 sm:p-4">
@@ -133,47 +137,26 @@ const ListView = ({ sectionId, section }) => {
                         <h2 className="text-base sm:text-lg font-semibold text-gray-900">Checklist</h2>
                         <p className="text-xs text-gray-500 mt-1">Capture tasks and tick them off. Completed items glide down automatically.</p>
                         <div className="mt-2 flex flex-wrap items-center gap-1 text-[11px] text-gray-600">
-                            <span className="text-gray-500">View as:</span>
-                            <button
-                                type="button"
-                                onClick={() => handleDisplayModeChange('CHECKBOX')}
-                                className={`px-2 py-1 rounded-full border ${displayMode === 'CHECKBOX'
-                                    ? 'bg-blue-50 border-blue-400 text-blue-700'
-                                    : 'bg-white border-gray-200 text-gray-600'
-                                    }`}
-                            >
-                                Checklist (auto-sort)
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleDisplayModeChange('CHECKBOX-STATIC')}
-                                className={`px-2 py-1 rounded-full border ${displayMode === 'CHECKBOX-STATIC'
-                                    ? 'bg-blue-50 border-blue-400 text-blue-700'
-                                    : 'bg-white border-gray-200 text-gray-600'
-                                    }`}
-                            >
-                                Checklist (keep order)
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleDisplayModeChange('UNORDERED')}
-                                className={`px-2 py-1 rounded-full border ${displayMode === 'UNORDERED'
-                                    ? 'bg-blue-50 border-blue-400 text-blue-700'
-                                    : 'bg-white border-gray-200 text-gray-600'
-                                    }`}
-                            >
-                                Bullets
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleDisplayModeChange('ORDERED')}
-                                className={`px-2 py-1 rounded-full border ${displayMode === 'ORDERED'
-                                    ? 'bg-blue-50 border-blue-400 text-blue-700'
-                                    : 'bg-white border-gray-200 text-gray-600'
-                                    }`}
-                            >
-                                Numbered
-                            </button>
+                            <span className="text-gray-400 text-[10px] uppercase tracking-wide font-medium mr-0.5">View:</span>
+                            {[
+                                { mode: 'CHECKBOX', icon: <ArrowDownUp size={11} />, label: 'Auto-sort' },
+                                { mode: 'CHECKBOX-STATIC', icon: <List size={11} />, label: 'Keep order' },
+                                { mode: 'UNORDERED', icon: <Circle size={11} />, label: 'Bullets' },
+                                { mode: 'ORDERED', icon: <Hash size={11} />, label: 'Numbered' },
+                            ].map(({ mode, icon, label }) => (
+                                <button
+                                    key={mode}
+                                    type="button"
+                                    onClick={() => handleDisplayModeChange(mode)}
+                                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full border ${displayMode === mode
+                                        ? 'bg-blue-50 border-blue-400 text-blue-700'
+                                        : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                                        }`}
+                                >
+                                    {icon}
+                                    {label}
+                                </button>
+                            ))}
                         </div>
                     </div>
                     {totalCount > 0 && (
@@ -209,6 +192,19 @@ const ListView = ({ sectionId, section }) => {
                         {isAdding ? 'Adding...' : 'Add'}
                     </button>
                 </form>
+
+                {totalCount > 4 && (
+                    <div className="relative mb-3 max-w-xs">
+                        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                        <input
+                            type="text"
+                            value={filterText}
+                            onChange={e => setFilterText(e.target.value)}
+                            placeholder="Filter items…"
+                            className="w-full pl-8 pr-3 py-2 text-xs border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+                        />
+                    </div>
+                )}
 
                 <div className="flex-1 overflow-y-auto space-y-4">
                     {displayMode === 'CHECKBOX' ? (

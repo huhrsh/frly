@@ -55,7 +55,14 @@ const Features = () => {
           <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Staying in sync</p>
           <h2 className="font-semibold">Notifications that matter</h2>
           <p>
-            Get notified when someone joins your group, when admins approve requests, or when important activity happens – without turning your workspace into another noisy chat.
+            Get notified when someone joins your group, admins approve requests, or important things happen. Check the activity log for a full history of what your group has been up to — without turning your workspace into another noisy chat.
+          </p>
+        </div>
+        <div className="rounded-xl border border-gray-100 bg-white p-4 flex flex-col gap-2">
+          <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Search</p>
+          <h2 className="font-semibold">Find anything, fast</h2>
+          <p>
+            Search across every section type — notes, lists, reminders, links, expenses, files and more — from one bar. No need to remember which section something is in.
           </p>
         </div>
       </div>

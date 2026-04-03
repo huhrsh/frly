@@ -22,7 +22,7 @@ A collaborative home-base app for small real-world groups (flatmates, families, 
 | File Host | Cloudinary                                          |
 | Email     | Spring Mail (SMTP) + SendGrid                       |
 | Push Notif| Web Push API (VAPID)                                |
-| Migrations| Flyway (V1–V36)                                     |
+| Migrations| Flyway (V1–V38)                                     |
 
 ---
 
@@ -50,13 +50,15 @@ A collaborative home-base app for small real-world groups (flatmates, families, 
 │       ├── group/        # Groups, members, invites, DTOs
 │       ├── section/      # Lists, notes, reminders, calendar, gallery, payments, links
 │       ├── notification/ # Push + email notifications
+│       ├── activity/     # Activity log (fire-and-forget @Async writes, per-group + cross-group reads)
+│       ├── search/       # Cross-section search (ILIKE native SQL UNION across 8 content types)
 │       ├── feedback/     # User feedback
 │       ├── review/       # Public reviews
 │       ├── email/        # Email service + HTML templates
 │       └── common/       # Base entities, exceptions, storage service
 │   └── src/main/resources/
 │       ├── application.properties
-│       └── db/           # 36 Flyway migration SQL files
+│       └── db/           # 38 Flyway migration SQL files
 │
 ├── docker-compose.yml  # PostgreSQL 15 for local dev
 └── CLAUDE.md           # This file
@@ -74,6 +76,8 @@ A collaborative home-base app for small real-world groups (flatmates, families, 
 6. **Links** — Bookmarks, folders, reorderable
 7. **Payments** — Expense tracking and balance summaries
 8. **Sections** — Container for any of the above types; support parent/child nesting, per-user ordering
+9. **Activity log** — Fire-and-forget audit trail of group actions; visible per-group (Settings modal) and cross-group (ActivityFeed dropdown + `/activity` page)
+10. **Search** — Real-time cross-section search within a group; queries sections, list items, notes, reminders, calendar events, gallery items, links, and expenses via ILIKE UNION
 
 ---
 
@@ -85,6 +89,9 @@ A collaborative home-base app for small real-world groups (flatmates, families, 
 - **State management**: Redux slice (`groupSlice`) holds group/section data on the frontend.
 - **PWA**: Offline-capable via Vite PWA + Workbox service worker.
 - **DTOs + MapStruct**: Controllers receive/return DTOs; MapStruct generates mapper implementations.
+- **Async activity logging**: `@EnableAsync` + `@Async` on `ActivityLogService.log()` so audit writes never block the request thread. `@EnableScheduling` powers reminder notifications.
+- **Search**: `SearchRepository` uses `EntityManager` with a native UNION SQL query (8 content-type branches, ILIKE, limit 30). `SearchService` validates min-2-char query and reads `GroupContext` for the tenant.
+- **Group member extras** (V38): `pinned BOOLEAN` and `last_seen_at TIMESTAMP` columns added to `group_members`.
 
 ---
 
@@ -96,6 +103,9 @@ Key route groups:
 - `/auth/*` — register, login, forgot/reset password
 - `/groups/*` — CRUD, members, invites, view prefs
 - `/groups/sections/*` — all section types (lists, notes, reminders, calendar, gallery, links, payments)
+- `/groups/{groupId}/activity` — paginated activity log for a single group
+- `/groups/search?q=` — cross-section search within the current group (min 2 chars, reads `X-Group-ID`)
+- `/activity/recent` — cross-group activity feed for the current user (last 15 entries, APPROVED groups only)
 - `/notifications/*` — in-app + push
 - `/users/*` — profile + settings
 - `/feedback`, `/reviews`, `/group-invites/*`
@@ -138,6 +148,8 @@ Frontend env vars live in `frontend/.env`.
 - `JwtServiceTest` — generateToken, validateToken, getUserId, getEmail, wrong-secret rejection
 - `UserServiceTest` — createUser (hashed password), getUserById, updateCurrentUser
 - `GroupServiceTest` — createGroup, joinGroup (all edge cases), validateGroupAccess, deleteGroup
+- `ActivityLogServiceTest` — log() saves correct fields, swallows exceptions; getGroupActivity() pagination; getRecentForCurrentUser() filters PENDING/REMOVED memberships
+- `SearchServiceTest` — null/short/whitespace query guard clauses; no-group-context guard; delegates trimmed query + groupId to repository
 
 `AuthUtil.getCurrentUserId()` is tested by setting `SecurityContextHolder` directly.
 `GroupContext` is a ThreadLocal; tests call `GroupContext.setGroupId()` / `GroupContext.clear()`.
@@ -146,6 +158,8 @@ Frontend env vars live in `frontend/.env`.
 - `dateUtils.test.js` — parseUTCDate, formatTimeAgo (fake timers)
 - `groupSlice.test.js` — all reducers + extraReducers for fetchGroupDetails
 - `AuthContext.test.jsx` — login/logout/register/updateUser via RTL render
+- `ActivityFeed.test.jsx` — open/close dropdown, API fetch on open, empty/error states, entry rendering, action text formatting, click navigation (desktop vs mobile), "View all" link
+- `ActivityPage.test.jsx` — page structure, Activity tab (fetch + empty state + entries), Notifications tab (tab switch, entries, push toggle, mark-all-read)
 
 **CI** — `.github/workflows/ci.yml`:
 - Triggers on every push and PR to `main`
@@ -163,3 +177,7 @@ Frontend env vars live in `frontend/.env`.
 - Cloudinary, SendGrid, and VAPID keys must NOT be committed; use GitHub Secrets in CI
 - Multi-tenancy is driven by `X-Group-ID` header — tests must set this header correctly
 - Notes use optimistic locking; concurrent-write tests should verify 409 behaviour
+- `ActivityLogService.log()` is `@Async` but without a Spring context the annotation is ignored — tests run synchronously, which is fine for unit testing
+- `SearchService` reads `GroupContext.getGroupId()` (ThreadLocal) — tests must call `GroupContext.setGroupId()` in setup and `GroupContext.clear()` in `@AfterEach`
+- The notifications endpoint returns a paginated object `{ content, last }` — the activity endpoint returns a plain array. Don't confuse them in frontend mocks
+- `usePushNotifications` hook must be mocked in `ActivityPage` tests to avoid browser API calls

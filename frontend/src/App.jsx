@@ -32,6 +32,7 @@ import Contact from './pages/Contact';
 import Feedback from './pages/Feedback';
 import Review from './pages/Review';
 import FAQ from './pages/FAQ';
+import ActivityPage from './pages/ActivityPage';
 
 function App() {
   return (
@@ -151,6 +152,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <MemberProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/activity"
+            element={
+              <ProtectedRoute>
+                <ActivityPage />
               </ProtectedRoute>
             }
           />

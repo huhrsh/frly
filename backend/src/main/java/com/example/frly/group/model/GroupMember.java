@@ -7,6 +7,7 @@ import com.example.frly.user.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(
@@ -49,5 +50,11 @@ public class GroupMember {
 
     @Column(name = "push_notifications_enabled", nullable = false)
     private boolean pushNotificationsEnabled = true;
+
+    @Column(name = "pinned", nullable = false)
+    private boolean pinned = false;
+
+    @Column(name = "last_seen_at")
+    private LocalDateTime lastSeenAt;
 
 }

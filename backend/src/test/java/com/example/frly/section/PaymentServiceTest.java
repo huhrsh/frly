@@ -55,6 +55,7 @@ class PaymentServiceTest {
     @Mock private PaymentMapper paymentMapper;
     @Mock private GroupMemberRepository groupMemberRepository;
     @Mock private NotificationService notificationService;
+    @Mock private com.example.frly.activity.ActivityLogService activityLogService;
 
     @InjectMocks
     private PaymentService paymentService;

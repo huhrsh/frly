@@ -6,13 +6,24 @@ const Changelog = () => {
     <div className="max-w-3xl mx-auto py-10 px-4 sm:px-6">
       <PageMeta
         title="fryly changelog – What’s new"
-        description="See recent updates to fryly, including new sections like Links, workspace improvements, payments and reminders."
+        description="See recent updates to fryly, including activity logs, search, new sections like Links, workspace improvements, payments and reminders."
       />
       <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-3">Changelog</h1>
       <p className="text-sm text-gray-600 mb-6">
         A quick overview of recent improvements in fryly.
       </p>
       <ul className="space-y-4 text-sm text-gray-700">
+        <li>
+          <p className="font-semibold">Version 1.4 – Activity, search &amp; notification centre</p>
+          <ul className="mt-1 list-disc list-inside space-y-1">
+            <li>Added a group activity log — see a timestamped trail of everything that's happened in a group. Access it from the Settings modal (new "Activity" tab) or the history icon in the header.</li>
+            <li>The history icon in the top bar now shows a quick cross-group activity feed covering all your groups at a glance.</li>
+            <li>Added search — find any section or item inside your current group instantly from the header. Covers notes, lists, reminders, expenses, links, gallery files, calendar events and folders.</li>
+            <li>Added a dedicated Activity &amp; Notifications page with full notification history, push-notification toggle, and a "Mark all read" button.</li>
+            <li>Fixed the Settings modal tab bar so the Activity tab is never clipped on small screens.</li>
+            <li>Minor overflow and layout fixes on narrow screens.</li>
+          </ul>
+        </li>
         <li>
           <p className="font-semibold">Version 1.3 – Section reordering for everyone</p>
           <ul className="mt-1 list-disc list-inside space-y-1">

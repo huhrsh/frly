@@ -26,4 +26,7 @@ public class GroupResponseDto {
 
     // View preference for the current user in this group (e.g. WORKSPACE, BENTO)
     private GroupViewPreference viewPreference;
+
+    // Whether the current user has pinned this group on the dashboard
+    private boolean pinned;
 }

@@ -91,5 +91,22 @@ public class GroupController {
         groupInviteService.sendInvite(groupId, request);
         return ResponseEntity.ok().build();
     }
+
+    @PatchMapping("/{groupId}/pin")
+    public ResponseEntity<Void> togglePin(@PathVariable Long groupId) {
+        groupService.togglePinGroup(groupId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{groupId}/mark-seen")
+    public ResponseEntity<Void> markSeen(@PathVariable Long groupId) {
+        groupService.markGroupSeen(groupId);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/activity-status")
+    public ResponseEntity<java.util.Map<Long, Boolean>> getActivityStatus() {
+        return ResponseEntity.ok(groupService.getActivityStatus());
+    }
 }
 

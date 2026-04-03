@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, RotateCcw, Bell, Smartphone, Trash2, PlusCircle, GripVertical } from 'lucide-react';
+import { X, RotateCcw, Bell, Smartphone, Trash2, PlusCircle, GripVertical, History } from 'lucide-react';
 import { toast } from 'react-toastify';
 import axiosClient from '../api/axiosClient';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
@@ -23,6 +23,10 @@ const SettingsModal = ({
   onReorderSections
 }) => {
   const [activeTab, setActiveTab] = useState('manage');
+  const [activityLog, setActivityLog] = useState([]);
+  const [activityLoading, setActivityLoading] = useState(false);
+  const [activityPage, setActivityPage] = useState(0);
+  const [activityHasMore, setActivityHasMore] = useState(true);
   const [processingRequests, setProcessingRequests] = useState({});
   const [notificationPrefs, setNotificationPrefs] = useState({
     sectionPreferences: {
@@ -81,6 +85,129 @@ const SettingsModal = ({
       setLocalSections(Array.isArray(sections) ? [...sections] : []);
     }
   }, [activeTab, sections]);
+
+  useEffect(() => {
+    if (group?.id && activeTab === 'activity' && activityLog.length === 0) {
+      fetchActivity(0);
+    }
+  }, [group?.id, activeTab]);
+
+  const fetchActivity = async (page) => {
+    try {
+      setActivityLoading(true);
+      const res = await axiosClient.get(`/groups/${group.id}/activity`, { params: { page, size: 20 } });
+      const data = res.data || [];
+      setActivityLog(prev => page === 0 ? data : [...prev, ...data]);
+      setActivityPage(page);
+      setActivityHasMore(data.length === 20);
+    } catch {
+      // silent
+    } finally {
+      setActivityLoading(false);
+    }
+  };
+
+  const formatActivityAction = (entry) => {
+    const labels = {
+      SECTION_CREATED: 'created section',
+      SECTION_DELETED: 'deleted section',
+      SECTION_RENAMED: 'renamed section to',
+      ITEM_ADDED: 'added item',
+      ITEM_COMPLETED: 'completed',
+      ITEM_DELETED: 'deleted item',
+      NOTE_UPDATED: 'updated note in',
+      REMINDER_CREATED: 'added reminder',
+      EXPENSE_ADDED: 'added expense',
+      EVENT_CREATED: 'created event',
+      EVENT_DELETED: 'deleted event',
+      FILE_UPLOADED: 'uploaded file',
+      MEMBER_JOINED: 'joined the group',
+      MEMBER_REMOVED: 'was removed from group',
+      GROUP_RENAMED: 'renamed group to',
+    };
+    const verb = labels[entry.actionType] || entry.actionType?.toLowerCase().replace(/_/g, ' ');
+    return entry.entityName ? `${verb} "${entry.entityName}"` : verb;
+  };
+
+  const renderActivityTab = () => {
+    const grouped = activityLog.reduce((acc, entry) => {
+      const d = new Date(entry.createdAt);
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+      let label;
+      if (d.toDateString() === today.toDateString()) label = 'Today';
+      else if (d.toDateString() === yesterday.toDateString()) label = 'Yesterday';
+      else label = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      if (!acc[label]) acc[label] = [];
+      acc[label].push(entry);
+      return acc;
+    }, {});
+
+    const initials = (name) => name ? name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?';
+
+    return (
+      <div className="p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+            <History size={15} className="text-gray-400" /> Activity log
+          </h3>
+          <button type="button" onClick={() => fetchActivity(0)} className="text-xs text-blue-600 hover:underline">
+            Refresh
+          </button>
+        </div>
+
+        {activityLoading && activityLog.length === 0 && (
+          <div className="flex justify-center py-10">
+            <div className="w-5 h-5 rounded-full border-2 border-blue-400 border-t-transparent animate-spin" />
+          </div>
+        )}
+
+        {!activityLoading && activityLog.length === 0 && (
+          <p className="text-center text-xs text-gray-400 py-10">No activity recorded yet.</p>
+        )}
+
+        <div className="space-y-4">
+          {Object.entries(grouped).map(([label, entries]) => (
+            <div key={label}>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">{label}</p>
+              <div className="space-y-0 rounded-xl border border-gray-100 overflow-hidden">
+                {entries.map((entry, i) => (
+                  <div key={entry.id} className={`flex items-start gap-3 px-4 py-3 ${i > 0 ? 'border-t border-gray-50' : ''}`}>
+                    <div className="flex-shrink-0 w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold mt-0.5">
+                      {initials(entry.actorName)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-800 leading-snug">
+                        <span className="font-medium">{entry.actorName || 'Someone'}</span>
+                        {' '}{formatActivityAction(entry)}
+                      </p>
+                      {entry.sectionName && entry.actionType !== 'SECTION_CREATED' && entry.actionType !== 'SECTION_DELETED' && (
+                        <p className="text-[10px] text-gray-400 mt-0.5">in {entry.sectionName}</p>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-gray-400 flex-shrink-0 mt-0.5">
+                      {new Date(entry.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {activityHasMore && !activityLoading && activityLog.length > 0 && (
+          <button
+            type="button"
+            onClick={() => fetchActivity(activityPage + 1)}
+            className="mt-4 w-full text-xs text-blue-600 hover:underline text-center"
+          >
+            Load more
+          </button>
+        )}
+      </div>
+    );
+  };
 
   const fetchNotificationPreferences = async () => {
     try {
@@ -396,7 +523,7 @@ const SettingsModal = ({
                             e.stopPropagation();
                             onRemoveMember && onRemoveMember(m);
                           }}
-                          className="text-[10px] text-red-600 hover:text-red-700 font-medium px-2 py-1 rounded hover:bg-red-50 flex-shrink-0"
+                          className="text-[10px] text-red-600 hover:text-red-700 font-medium px-2 py-1 rounded-md hover:bg-red-50 flex-shrink-0"
                         >
                           Remove
                         </button>
@@ -690,7 +817,7 @@ const SettingsModal = ({
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1 border-b -mb-4">
+          <div className="flex gap-1 border-b -mb-4 overflow-x-auto">
             <button
               type="button"
               onClick={() => setActiveTab('manage')}
@@ -724,6 +851,17 @@ const SettingsModal = ({
             >
               Notifications
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('activity')}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'activity'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Activity
+            </button>
           </div>
         </div>
 
@@ -732,6 +870,7 @@ const SettingsModal = ({
           {activeTab === 'manage' && renderManageTab()}
           {activeTab === 'reorder' && renderReorderTab()}
           {activeTab === 'notifications' && renderNotificationsTab()}
+          {activeTab === 'activity' && renderActivityTab()}
         </div>
       </div>
     </div>

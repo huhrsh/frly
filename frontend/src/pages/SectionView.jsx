@@ -264,7 +264,7 @@ const SectionView = () => {
                             ? 'Calendar'
                             : section?.type === 'LINKS'
                                 ? 'Links'
-                            : 'Folder';
+                                : 'Folder';
 
     if (groupLoading || loading) {
         return (
@@ -304,49 +304,53 @@ const SectionView = () => {
                                 <Users size={14} />
                                 Back to groups
                             </button>
-                            <button
-                                type="button"
-                                onClick={loadSection}
-                                disabled={loading}
-                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs sm:text-sm text-gray-500 bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-40"
-                                aria-label="Refresh section"
-                                title="Refresh section"
-                            >
-                                <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-                            </button>
                         </div>
-                        {section && currentGroup?.currentUserRole === 'ADMIN' && (
+                        {section && (
                             <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={handleDeleteSection}
-                                    className="hidden sm:inline-flex items-center gap-1 rounded-md border border-red-200 bg-white px-3 py-1.5 text-xs sm:text-sm font-medium text-red-600 shadow-sm hover:bg-red-50"
-                                >
-                                    <Trash2 size={14} />
-                                    Delete section
-                                </button>
+                                {currentGroup?.currentUserRole === 'ADMIN' && (
+                                    <button
+                                        type="button"
+                                        onClick={handleDeleteSection}
+                                        className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-3 py-1.5 text-xs sm:text-sm font-medium text-red-600 shadow-sm hover:bg-red-50"
+                                    >
+                                        <Trash2 size={14} />
+                                        <span className="hidden sm:inline">Delete section</span>
+                                        <span className="sm:hidden">Delete</span>
+                                    </button>
+                                )}
                                 {section?.type === 'FOLDER' && (
                                     <button
                                         type="button"
                                         onClick={() => setShowReorderModal(true)}
-                                        className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs sm:text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                                        className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs sm:text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
                                     >
                                         <ArrowUpDown size={14} />
-                                        Reorder items
+                                        Reorder
                                     </button>
                                 )}
+                                <button
+                                    type="button"
+                                    onClick={loadSection}
+                                    disabled={loading}
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs sm:text-sm text-gray-500 bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-40"
+                                    aria-label="Refresh section"
+                                    title="Refresh section"
+                                >
+                                    <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+                                    <span className="text-gray-700">Refresh</span>
+                                </button>
                                 <div className="hidden sm:inline-flex gap-1 items-center rounded-full border border-gray-200 bg-white p-0.5 text-xs shadow-sm">
                                     <button
                                         type="button"
                                         onClick={handleGoToWorkspace}
-                                        className="inline-flex items-center gap-1 px-3.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                                        className="inline-flex items-center gap-1 px-3.5 py-1.5 sm:py-2 rounded-full font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                                     >
                                         <LayoutPanelLeft size={14} />
                                         Workspace
                                     </button>
                                     <button
                                         type="button"
-                                        className="inline-flex items-center gap-1 px-3.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full font-medium bg-blue-600 text-white shadow"
+                                        className="inline-flex items-center gap-1 px-3.5 py-1.5 sm:py-2 rounded-full font-medium bg-blue-600 text-white shadow"
                                     >
                                         <LayoutGrid size={14} />
                                         Overview
@@ -439,16 +443,6 @@ const SectionView = () => {
                                 )}
                             </div>
                         </div>
-                        {section && currentGroup?.currentUserRole === 'ADMIN' && renamingSectionId !== section.id && (
-                            <button
-                                type="button"
-                                onClick={handleDeleteSection}
-                                className="sm:hidden inline-flex items-center gap-1 rounded-md border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 shadow-sm hover:bg-red-50 flex-shrink-0"
-                            >
-                                <Trash2 size={14} />
-                                Delete
-                            </button>
-                        )}
                     </div>
                 </div>
 

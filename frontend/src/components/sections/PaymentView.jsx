@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import axiosClient from '../../api/axiosClient';
 import { toast } from 'react-toastify';
 import ConfirmModal from '../ConfirmModal';
+import { Search } from 'lucide-react';
 
 const PaymentView = ({ sectionId }) => {
     const [members, setMembers] = useState([]);
@@ -19,6 +20,7 @@ const PaymentView = ({ sectionId }) => {
     const [showSettleConfirm, setShowSettleConfirm] = useState(false);
     const [expensesPage, setExpensesPage] = useState({ page: 0, totalPages: 0, totalElements: 0 });
     const [isLoadingExpenses, setIsLoadingExpenses] = useState(false);
+    const [filterText, setFilterText] = useState('');
 
     const isWholeAmount = (num) => {
         if (typeof num !== 'number' || !Number.isFinite(num)) return false;
@@ -587,11 +589,23 @@ const PaymentView = ({ sectionId }) => {
 
                 <div className="border rounded-lg bg-white p-3">
                     <h3 className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Expenses</h3>
+                    {expenses.length > 4 && (
+                        <div className="relative mb-3 max-w-xs">
+                            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                            <input
+                                type="text"
+                                value={filterText}
+                                onChange={e => setFilterText(e.target.value)}
+                                placeholder="Filter expenses…"
+                                className="w-full pl-8 pr-3 py-2 text-xs border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+                            />
+                        </div>
+                    )}
                     {expenses.length === 0 ? (
                         <p className="text-xs text-gray-400">No expenses yet.</p>
                     ) : (
                         <ul className="space-y-2 text-xs">
-                            {expenses.map(exp => (
+                            {expenses.filter(exp => !filterText || (exp.description || '').toLowerCase().includes(filterText.toLowerCase())).map(exp => (
                                 <li key={exp.id} className="border rounded-md p-2">
                                     <div className="flex justify-between mb-1">
                                         <span className="font-medium text-gray-800">{exp.description || 'Expense'}</span>
