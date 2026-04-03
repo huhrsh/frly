@@ -201,6 +201,7 @@ const CalendarView = ({ sectionId }) => {
     .filter((ev) => {
       if (!ev.startTime) return false;
       const start = parseUTCDate(ev.startTime);
+      if (!start) return false;
       const end = ev.endTime ? parseUTCDate(ev.endTime) : null;
       // If we have an end time, treat events as upcoming/current until they finish.
       if (end) {
@@ -547,8 +548,8 @@ const CalendarView = ({ sectionId }) => {
                     <div className="min-w-0">
                       <p className="truncate font-medium">{ev.title}</p>
                       <p className="text-[11px] text-gray-500">
-                        {parseUTCDate(ev.startTime).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}{' '}
-                        · {parseUTCDate(ev.startTime).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                        {parseUTCDate(ev.startTime)?.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}{' '}
+                        · {parseUTCDate(ev.startTime)?.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                       </p>
                       {ev.location && (
                         <p className="text-[11px] text-gray-500 truncate">
@@ -578,8 +579,8 @@ const CalendarView = ({ sectionId }) => {
                     <div className="min-w-0">
                       <p className="truncate font-medium">{ev.title}</p>
                       <p className="text-[11px] text-gray-500">
-                        {parseUTCDate(ev.startTime).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}{' '}
-                        · {parseUTCDate(ev.startTime).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                        {parseUTCDate(ev.startTime)?.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}{' '}
+                        · {parseUTCDate(ev.startTime)?.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                       </p>
                       {ev.location && (
                         <p className="text-[11px] text-gray-500 truncate">
