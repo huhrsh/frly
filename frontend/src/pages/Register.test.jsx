@@ -24,6 +24,13 @@ vi.mock('react-toastify', () => ({
   toast: { error: vi.fn(), success: vi.fn() },
 }))
 
+vi.mock('@react-oauth/google', () => ({
+  GoogleLogin: ({ onSuccess }) => (
+    <button onClick={() => onSuccess({ credential: 'mock-token' })}>Google Sign In</button>
+  ),
+  useGoogleLogin: () => vi.fn(),
+}))
+
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
 function renderRegister() {

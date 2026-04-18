@@ -51,7 +51,7 @@ class ActivityLogServiceTest {
 
     @Test
     void log_savesActivityEntryWithCorrectFields() {
-        activityLogService.log("group-1", USER_ID, "Alice Smith",
+        activityLogService.log("group-1", USER_ID, "Alice Smith", null,
                 ActivityType.EXPENSE_ADDED, "Groceries", 5L, "Payments");
 
         verify(activityLogRepository).save(argThat(entry ->
@@ -67,7 +67,7 @@ class ActivityLogServiceTest {
 
     @Test
     void log_withNullOptionalFields_savesSuccessfully() {
-        activityLogService.log("group-1", USER_ID, "Bob", ActivityType.MEMBER_JOINED, null, null, null);
+        activityLogService.log("group-1", USER_ID, "Bob", null, ActivityType.MEMBER_JOINED, null, null, null);
 
         verify(activityLogRepository).save(argThat(entry ->
                 ActivityType.MEMBER_JOINED.equals(entry.getActionType()) &&
@@ -81,7 +81,7 @@ class ActivityLogServiceTest {
         when(activityLogRepository.save(any())).thenThrow(new RuntimeException("DB down"));
 
         assertDoesNotThrow(() ->
-                activityLogService.log("g1", USER_ID, "Alice", ActivityType.NOTE_UPDATED, "Note", null, "Notes"));
+                activityLogService.log("g1", USER_ID, "Alice", null, ActivityType.NOTE_UPDATED, "Note", null, "Notes"));
     }
 
     // ─── getGroupActivity() ───────────────────────────────────────────────────
@@ -127,7 +127,7 @@ class ActivityLogServiceTest {
     void getRecentForCurrentUser_returnsEmptyWhenUserHasNoGroups() {
         when(groupMemberRepository.findByUserId(USER_ID)).thenReturn(List.of());
 
-        List<ActivityLogDto> result = activityLogService.getRecentForCurrentUser(15);
+        List<ActivityLogDto> result = activityLogService.getRecentForCurrentUser(0, 15);
 
         assertTrue(result.isEmpty());
         verifyNoInteractions(activityLogRepository);
@@ -138,7 +138,7 @@ class ActivityLogServiceTest {
         GroupMember pending = buildMember(GroupMemberStatus.PENDING, 2L);
         when(groupMemberRepository.findByUserId(USER_ID)).thenReturn(List.of(pending));
 
-        List<ActivityLogDto> result = activityLogService.getRecentForCurrentUser(15);
+        List<ActivityLogDto> result = activityLogService.getRecentForCurrentUser(0, 15);
 
         assertTrue(result.isEmpty());
         verifyNoInteractions(activityLogRepository);
@@ -149,7 +149,7 @@ class ActivityLogServiceTest {
         GroupMember removed = buildMember(GroupMemberStatus.REMOVED, 3L);
         when(groupMemberRepository.findByUserId(USER_ID)).thenReturn(List.of(removed));
 
-        List<ActivityLogDto> result = activityLogService.getRecentForCurrentUser(15);
+        List<ActivityLogDto> result = activityLogService.getRecentForCurrentUser(0, 15);
 
         assertTrue(result.isEmpty());
         verifyNoInteractions(activityLogRepository);
@@ -164,7 +164,7 @@ class ActivityLogServiceTest {
         when(activityLogRepository.findByGroupIdInOrderByCreatedAtDesc(eq(List.of("1")), any()))
                 .thenReturn(List.of(log));
 
-        List<ActivityLogDto> result = activityLogService.getRecentForCurrentUser(15);
+        List<ActivityLogDto> result = activityLogService.getRecentForCurrentUser(0, 15);
 
         assertEquals(1, result.size());
         assertEquals(ActivityType.MEMBER_JOINED, result.get(0).getActionType());
@@ -178,7 +178,7 @@ class ActivityLogServiceTest {
         when(activityLogRepository.findByGroupIdInOrderByCreatedAtDesc(any(), any()))
                 .thenReturn(List.of());
 
-        activityLogService.getRecentForCurrentUser(15);
+        activityLogService.getRecentForCurrentUser(0, 15);
 
         verify(activityLogRepository).findByGroupIdInOrderByCreatedAtDesc(
                 eq(List.of("1")), any());
