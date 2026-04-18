@@ -3,13 +3,14 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import PasswordInput from '../components/PasswordInput';
+import { GoogleLogin } from '@react-oauth/google';
 
 const Register = () => {
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const { register } = useAuth();
+    const { register, googleLogin } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
@@ -119,6 +120,32 @@ const Register = () => {
                             </button>
                         </div>
                     </form>
+
+                    <div className="mt-4 relative">
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-gray-200" />
+                        </div>
+                        <div className="relative flex justify-center text-xs">
+                            <span className="bg-white px-2 text-gray-400">or sign up with</span>
+                        </div>
+                    </div>
+
+                    <div className="mt-4 flex justify-center">
+                        <GoogleLogin
+                            onSuccess={async (credentialResponse) => {
+                                try {
+                                    await googleLogin(credentialResponse.credential);
+                                    navigate('/dashboard', { replace: true });
+                                } catch (error) {
+                                    const msg = error?.response?.data?.message || error?.message || '';
+                                    toast.error(msg || 'Google sign-up failed');
+                                }
+                            }}
+                            onError={() => toast.error('Google sign-up failed')}
+                            width="100%"
+                            text="signup_with"
+                        />
+                    </div>
 
                     <p className="mt-6 text-center text-xs text-slate-500">
                         Already have an account?{' '}

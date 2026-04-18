@@ -43,7 +43,7 @@ const BentoGrid = ({ sections, previews, allSections, groupId, onOpenCreateModal
                     <div
                         key={section.id}
                         onClick={() => handleCardClick(section.id)}
-                        className="bg-white rounded-xl shadow-sm border border-gray-100 hover:border-blue-200 hover:shadow-md flex flex-col justify-between min-h-[120px] group cursor-pointer p-4 transition-all duration-200"
+                        className="bg-white rounded-xl shadow-sm border border-gray-100 hover:border-blue-200 hover:shadow-md flex flex-col h-[130px] group cursor-pointer p-4 transition-all duration-200 overflow-hidden"
                     >
                         <div className="flex items-start justify-between mb-2 w-full">
                             <h3 className="text-sm font-semibold text-gray-900 truncate mr-2 w-full">
@@ -68,36 +68,46 @@ const BentoGrid = ({ sections, previews, allSections, groupId, onOpenCreateModal
                             </div>
                         </div>
 
-                        <div className="mt-1 text-xs text-gray-500 flex-1 min-h-[40px] w-full">
+                        <div className="mt-1 text-xs text-gray-500 flex-1 w-full overflow-hidden">
                             {!preview && section.type !== 'FOLDER' ? (
                                 <span className="text-gray-400">Loading...</span>
                             ) : preview?.kind === 'NOTE' ? (
-                                <div className="space-y-1">
-                                    <p className="text-xs text-gray-600 leading-snug max-h-16 overflow-hidden line-clamp-3 break-words">
+                                <div className="flex flex-col justify-between h-full">
+                                    <p className="text-xs text-gray-600 leading-snug line-clamp-2 break-words">
                                         {preview.snippet || 'Empty note'}
                                     </p>
-                                    {(preview.lastEditedAt || preview.lastEditedByName) && (
-                                        <p className="text-[10px] text-gray-400 flex items-center gap-1 mt-2">
-                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-gray-50 border border-gray-100">
-                                                <span className="mr-1">✏️</span>
-                                                <span>
-                                                    {preview.lastEditedByName || 'Someone'}
-                                                </span>
-                                            </span>
-                                        </p>
-                                    )}
+                                    <p className="text-[10px] text-gray-400 mt-1 truncate">
+                                        Last edited by {preview.lastEditedByName || 'Someone'}
+                                        {preview.lastEditedAt && (
+                                            <span className="ml-1">· {parseUTCDate(preview.lastEditedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                                        )}
+                                    </p>
                                 </div>
                             ) : preview?.kind === 'LIST' ? (
-                                <ul className="space-y-0.5 max-h-16 overflow-hidden">
-                                    {preview.items?.length ? preview.items.map((item, idx) => (
-                                        <li key={idx} className="flex items-center gap-1">
-                                            <span className={`inline-block w-2 h-2 rounded-full ${item.completed ? 'bg-emerald-400' : 'bg-gray-300'}`} />
-                                            <span className="truncate">{item.text}</span>
-                                        </li>
-                                    )) : (
-                                        <li className="text-gray-400">No items yet</li>
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2 text-[11px] font-medium flex-wrap">
+                                        <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">
+                                            {preview.openCount ?? 0} open
+                                        </span>
+                                        {(preview.completedCount ?? 0) > 0 && (
+                                            <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                                                {preview.completedCount} done
+                                            </span>
+                                        )}
+                                    </div>
+                                    {(preview.openCount ?? 0) === 0 ? (
+                                        <p className="text-xs text-gray-400">All done!</p>
+                                    ) : (
+                                        <ul className="space-y-0.5 mt-0.5">
+                                            {(preview.items || []).map((item, idx) => (
+                                                <li key={idx} className="flex items-center gap-1 text-xs text-gray-600 truncate">
+                                                    <span className="text-gray-400 shrink-0">•</span>
+                                                    <span className="truncate">{item.text}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
                                     )}
-                                </ul>
+                                </div>
                             ) : preview?.kind === 'LINKS' ? (
                                 <p className="text-xs text-gray-500">
                                     {typeof preview.count === 'number' && preview.count > 0
@@ -105,23 +115,34 @@ const BentoGrid = ({ sections, previews, allSections, groupId, onOpenCreateModal
                                         : 'No links yet'}
                                 </p>
                             ) : preview?.kind === 'REMINDER' ? (
-                                <ul className="space-y-1 max-h-16 overflow-hidden">
-                                    {preview.reminders?.length ? preview.reminders.map((r, idx) => (
-                                        <li key={idx} className={`flex items-center justify-between text-xs ${r.isSent ? 'opacity-50' : ''}`}>
+                                <div className="space-y-1.5">
+                                    <div className="flex items-center gap-2 text-[11px] font-medium">
+                                        <span className={`px-2 py-0.5 rounded-full ${(preview.activeCount ?? 0) > 0 ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>
+                                            {preview.activeCount ?? 0} active
+                                        </span>
+                                        {(preview.totalCount ?? 0) > (preview.activeCount ?? 0) && (
+                                            <span className="bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">
+                                                {(preview.totalCount ?? 0) - (preview.activeCount ?? 0)} sent
+                                            </span>
+                                        )}
+                                    </div>
+                                    {preview.next && (
+                                        <div className="flex items-center justify-between text-xs text-gray-600">
                                             <div className="flex items-center gap-1 truncate">
-                                                <span className={`w-1.5 h-1.5 rounded-full ${r.isSent ? 'bg-gray-400' : 'bg-amber-500'}`}></span>
-                                                <span className={`truncate font-medium ${r.isSent ? 'text-gray-500 line-through' : 'text-gray-700'}`}>{r.title}</span>
+                                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                                                <span className="truncate font-medium">{preview.next.title}</span>
                                             </div>
-                                            {r.triggerTime && !r.isSent && (
+                                            {preview.next.triggerTime && (
                                                 <span className="text-gray-400 text-[10px] whitespace-nowrap ml-1">
-                                                    {parseUTCDate(r.triggerTime).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                    {parseUTCDate(preview.next.triggerTime).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                                                 </span>
                                             )}
-                                        </li>
-                                    )) : (
-                                        <li className="text-gray-400">No active reminders</li>
+                                        </div>
                                     )}
-                                </ul>
+                                    {(preview.activeCount ?? 0) === 0 && (
+                                        <p className="text-xs text-gray-400">No active reminders</p>
+                                    )}
+                                </div>
                             ) : preview?.kind === 'GALLERY' ? (
                                 <div className="flex flex-col gap-1">
                                     <p className="text-xs text-gray-500">
@@ -133,10 +154,20 @@ const BentoGrid = ({ sections, previews, allSections, groupId, onOpenCreateModal
                                 </div>
                             ) : preview?.kind === 'PAYMENT' ? (
                                 <div className="flex flex-col gap-1">
-                                    <p className="text-xs text-gray-500">Group Expenses:</p>
-                                    <p className="text-lg font-bold text-gray-800">
-                                        {preview.totalSpent?.toFixed(2) || '0.00'}
-                                    </p>
+                                    <div className="flex items-baseline justify-between gap-2">
+                                        <div>
+                                            <p className="text-[10px] text-gray-400">Total spent</p>
+                                            <p className="text-base font-bold text-gray-800">₹{preview.totalSpent?.toFixed(2) || '0.00'}</p>
+                                        </div>
+                                        {preview.balance !== undefined && (
+                                            <div className="text-right">
+                                                <p className="text-[10px] text-gray-400">My balance</p>
+                                                <p className={`text-sm font-semibold ${preview.balance > 0 ? 'text-emerald-600' : preview.balance < 0 ? 'text-red-500' : 'text-gray-500'}`}>
+                                                    {preview.balance > 0 ? '+' : ''}₹{Math.abs(preview.balance || 0).toFixed(2)}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             ) : preview?.kind === 'CALENDAR' ? (
                                 <div className="flex flex-col gap-1">

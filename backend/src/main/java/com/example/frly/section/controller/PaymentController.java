@@ -34,8 +34,9 @@ public class PaymentController {
     @GetMapping("/{sectionId}/payments/expenses/paged")
     public ResponseEntity<Page<PaymentExpenseDto>> getExpensesPaged(@PathVariable Long sectionId,
                                                                     @RequestParam(defaultValue = "0") int page,
-                                                                    @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(paymentService.getExpensesPaged(sectionId, page, size));
+                                                                    @RequestParam(defaultValue = "20") int size,
+                                                                    @RequestParam(required = false) Long userId) {
+        return ResponseEntity.ok(paymentService.getExpensesPaged(sectionId, userId, page, size));
     }
 
     @GetMapping("/{sectionId}/payments/expenses/total")

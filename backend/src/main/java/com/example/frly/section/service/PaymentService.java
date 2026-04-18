@@ -91,6 +91,7 @@ public class PaymentService {
             "PAYMENT"
         );
         activityLogService.log(section.getGroupId(), AuthUtil.getCurrentUserId(), actorName,
+                currentUser != null ? currentUser.getPfpUrl() : null,
                 ActivityType.EXPENSE_ADDED,
                 amountStr + (expense.getDescription() != null ? " – " + expense.getDescription() : ""),
                 section.getId(), section.getTitle());
@@ -200,6 +201,11 @@ public class PaymentService {
 
     @Transactional(readOnly = true)
     public Page<PaymentExpenseDto> getExpensesPaged(Long sectionId, int page, int size) {
+        return getExpensesPaged(sectionId, null, page, size);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PaymentExpenseDto> getExpensesPaged(Long sectionId, Long userId, int page, int size) {
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
 
         Section section = sectionRepository.findById(sectionId)
@@ -210,8 +216,9 @@ public class PaymentService {
             return Page.empty(pageable);
         }
 
-        Page<PaymentExpense> expensesPage = paymentExpenseRepository
-                .findBySectionIdAndStatusNot(sectionId, RecordStatus.DELETED, pageable);
+        Page<PaymentExpense> expensesPage = (userId != null)
+                ? paymentExpenseRepository.findBySectionIdAndUserId(sectionId, userId, RecordStatus.DELETED, pageable)
+                : paymentExpenseRepository.findBySectionIdAndStatusNot(sectionId, RecordStatus.DELETED, pageable);
         List<PaymentShare> allShares = paymentShareRepository
                 .findByExpenseSectionIdAndStatusNot(sectionId, RecordStatus.DELETED);
 

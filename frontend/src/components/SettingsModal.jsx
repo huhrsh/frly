@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, RotateCcw, Bell, Smartphone, Trash2, PlusCircle, GripVertical, History } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
@@ -46,7 +47,19 @@ const SettingsModal = ({
   const [inviteEmail, setInviteEmail] = useState('');
   const [sendingInvite, setSendingInvite] = useState(false);
   
+  const navigate = useNavigate();
   const isAdmin = group?.currentUserRole === 'ADMIN';
+
+  const handleActivityEntryClick = (entry) => {
+    if (!entry.sectionId) return;
+    onClose();
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    if (isMobile) {
+      navigate(`/groups/${group.id}/sections/${entry.sectionId}`);
+    } else {
+      navigate(`/groups/${group.id}?section=${entry.sectionId}&view=WORKSPACE`);
+    }
+  };
 
   const sectionTypes = [
     { key: 'NOTE', label: 'Notes', borderColor: '#60a5fa' },
@@ -173,9 +186,16 @@ const SettingsModal = ({
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">{label}</p>
               <div className="space-y-0 rounded-xl border border-gray-100 overflow-hidden">
                 {entries.map((entry, i) => (
-                  <div key={entry.id} className={`flex items-start gap-3 px-4 py-3 ${i > 0 ? 'border-t border-gray-50' : ''}`}>
-                    <div className="flex-shrink-0 w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold mt-0.5">
-                      {initials(entry.actorName)}
+                  <div
+                    key={entry.id}
+                    onClick={() => handleActivityEntryClick(entry)}
+                    className={`flex items-start gap-3 px-4 py-3 ${i > 0 ? 'border-t border-gray-50' : ''} ${entry.sectionId ? 'cursor-pointer hover:bg-gray-50 transition-colors' : ''}`}
+                  >
+                    <div className="flex-shrink-0 w-7 h-7 rounded-full overflow-hidden bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold mt-0.5">
+                      {entry.actorPfpUrl
+                        ? <img src={entry.actorPfpUrl} alt={entry.actorName} className="w-full h-full object-cover" />
+                        : initials(entry.actorName)
+                      }
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-gray-800 leading-snug">
@@ -324,19 +344,17 @@ const SettingsModal = ({
     }
   };
 
-  const getTypeMeta = (type) => {
-    switch (type) {
-      case 'NOTE': return { label: 'Note', badgeClass: 'bg-blue-50 text-blue-700' };
-      case 'LIST': return { label: 'Checklist', badgeClass: 'bg-emerald-50 text-emerald-700' };
-      case 'LINKS': return { label: 'Links', badgeClass: 'bg-sky-50 text-sky-700' };
-      case 'GALLERY': return { label: 'Files', badgeClass: 'bg-rose-50 text-rose-700' };
-      case 'REMINDER': return { label: 'Reminders', badgeClass: 'bg-amber-50 text-amber-700' };
-      case 'PAYMENT': return { label: 'Expenses', badgeClass: 'bg-indigo-50 text-indigo-700' };
-      case 'CALENDAR': return { label: 'Calendar', badgeClass: 'bg-indigo-50 text-indigo-700' };
-      case 'FOLDER': return { label: 'Folder', badgeClass: 'bg-slate-50 text-slate-700' };
-      default: return { label: type, badgeClass: 'bg-gray-100 text-gray-600' };
-    }
+  const TYPE_META = {
+    NOTE:     { label: 'Note',      color: '#60a5fa', badge: 'bg-blue-50 text-blue-700 border-blue-100' },
+    LIST:     { label: 'Checklist', color: '#34d399', badge: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
+    LINKS:    { label: 'Links',     color: '#38bdf8', badge: 'bg-sky-50 text-sky-700 border-sky-100' },
+    GALLERY:  { label: 'Files',     color: '#fb7185', badge: 'bg-rose-50 text-rose-700 border-rose-100' },
+    REMINDER: { label: 'Reminder',  color: '#fbbf24', badge: 'bg-amber-50 text-amber-700 border-amber-100' },
+    PAYMENT:  { label: 'Expenses',  color: '#818cf8', badge: 'bg-indigo-50 text-indigo-700 border-indigo-100' },
+    CALENDAR: { label: 'Calendar',  color: '#a78bfa', badge: 'bg-purple-50 text-purple-700 border-purple-100' },
+    FOLDER:   { label: 'Folder',    color: '#94a3b8', badge: 'bg-slate-50 text-slate-700 border-slate-100' },
   };
+  const getTypeMeta = (type) => TYPE_META[type] || { label: type || '', color: '#e5e7eb', badge: 'bg-gray-100 text-gray-600 border-gray-200' };
 
   const handleSave = async () => {
     if (!isAdmin || !onUpdateGroupName) return;
@@ -637,12 +655,12 @@ const SettingsModal = ({
   );
 
   const renderReorderTab = () => (
-    <div className="p-4 sm:p-6">
-      <div className="mb-4">
-        <h3 className="text-sm font-semibold text-gray-900 mb-2">Reorder Sections</h3>
-        <p className="text-xs text-gray-500">
-          Drag items using the handle to change their order
-        </p>
+    <div className="p-4 sm:p-6 flex flex-col h-full">
+      <div className="flex items-center justify-between mb-1 flex-shrink-0">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-900">Reorder sections</h3>
+          <p className="text-[11px] text-gray-400 mt-0.5">Drag to reorder — this order is personal to you.</p>
+        </div>
       </div>
 
       <DragDropContext onDragEnd={handleDragEnd}>
@@ -651,37 +669,53 @@ const SettingsModal = ({
             <div
               ref={provided.innerRef}
               {...provided.droppableProps}
-              className="max-h-96 overflow-y-auto space-y-2 mb-4"
+              className="overflow-y-auto space-y-1.5 py-3 flex-1 min-h-0"
             >
               {localSections.length === 0 && (
-                <div className="px-3 py-4 text-center text-xs text-gray-400 bg-gray-50 rounded-lg">
+                <div className="py-8 text-center text-xs text-gray-400">
                   No sections to reorder.
                 </div>
               )}
               {localSections.map((item, index) => {
-                const { label, badgeClass } = getTypeMeta(item.type);
+                const { label, color, badge } = getTypeMeta(item.type);
                 return (
                   <Draggable key={item.id} draggableId={String(item.id)} index={index}>
                     {(dragProvided, snapshot) => (
                       <div
                         ref={dragProvided.innerRef}
                         {...dragProvided.draggableProps}
-                        className={`flex items-center gap-2 rounded-lg border px-3 py-2 bg-white max-w-md ${
-                          snapshot.isDragging ? 'border-blue-400 shadow-lg' : 'border-gray-200'
+                        className={`flex items-center gap-3 rounded-lg border pl-0 pr-3 py-2.5 text-xs transition-colors ${
+                          snapshot.isDragging
+                            ? 'border-blue-300 bg-blue-50 shadow-md'
+                            : 'border-gray-200 bg-white hover:bg-gray-50/80'
                         }`}
+                        style={{
+                          ...dragProvided.draggableProps.style,
+                          borderLeftColor: color,
+                          borderLeftWidth: '3px',
+                        }}
                       >
-                        <div
-                          {...dragProvided.dragHandleProps}
-                          className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
-                        >
-                          <GripVertical size={16} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">{item.title}</p>
-                        </div>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${badgeClass}`}>
-                          {label}
+                        {/* Index */}
+                        <span className="w-6 text-center text-[10px] font-semibold text-gray-300 flex-shrink-0 pl-2">
+                          {index + 1}
                         </span>
+                        {/* Title */}
+                        <p className="flex-1 truncate text-gray-800 text-xs font-medium min-w-0">{item.title}</p>
+                        {/* Type badge */}
+                        {label && (
+                          <span className={`inline-flex flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium border ${badge}`}>
+                            {label}
+                          </span>
+                        )}
+                        {/* Drag handle */}
+                        <button
+                          type="button"
+                          {...dragProvided.dragHandleProps}
+                          className="inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-gray-300 hover:text-gray-500 hover:bg-gray-100 cursor-grab active:cursor-grabbing"
+                          aria-label="Drag to reorder"
+                        >
+                          <GripVertical size={14} />
+                        </button>
                       </div>
                     )}
                   </Draggable>
@@ -694,13 +728,14 @@ const SettingsModal = ({
       </DragDropContext>
 
       {localSections.length > 0 && (
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between pt-3 border-t border-gray-100 flex-shrink-0">
+          <span className="text-[11px] text-gray-400">{localSections.length} section{localSections.length !== 1 ? 's' : ''}</span>
           <button
             type="button"
             onClick={handleSaveReorder}
-            className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700"
+            className="px-4 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700"
           >
-            Save Order
+            Save order
           </button>
         </div>
       )}

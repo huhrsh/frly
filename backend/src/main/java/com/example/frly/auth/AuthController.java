@@ -1,6 +1,7 @@
 package com.example.frly.auth;
 
 import com.example.frly.auth.dto.AuthResponseDto;
+import com.example.frly.auth.dto.GoogleSignInRequestDto;
 import com.example.frly.auth.dto.LoginRequestDto;
 import com.example.frly.auth.dto.ForgotPasswordRequestDto;
 import com.example.frly.auth.dto.ResetPasswordRequestDto;
@@ -25,6 +26,13 @@ public class AuthController {
         log.info(AUTH_LOGIN_ATTEMPT + ": " + request.getEmail());
         GroupContext.clear();
         AuthResponseDto response = authService.login(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<AuthResponseDto> googleSignIn(@RequestBody GoogleSignInRequestDto request) {
+        GroupContext.clear();
+        AuthResponseDto response = authService.googleSignIn(request.getIdToken());
         return ResponseEntity.ok(response);
     }
 

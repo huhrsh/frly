@@ -26,4 +26,15 @@ public interface FileStorageService {
      * @return an access URL that can be used by clients to retrieve the file
      */
     String generateAccessUrl(String publicId);
+
+    /**
+     * Generates an access URL using the content type to select the correct resource type
+     * (image / video / raw). Falls back to {@link #generateAccessUrl(String)} if not overridden.
+     * @param publicId unique identifier of the file
+     * @param contentType MIME type, e.g. "video/mp4" or "image/jpeg"
+     * @return an access URL that can be used by clients to retrieve the file
+     */
+    default String generateAccessUrl(String publicId, String contentType) {
+        return generateAccessUrl(publicId);
+    }
 }

@@ -36,6 +36,9 @@ public class Section extends GroupAwareEntity {
 
     // Section-level password protection was removed; columns dropped via migration.
 
+    @Column(name = "currency", length = 10)
+    private String currency = "INR";
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
     private Section parentSection;

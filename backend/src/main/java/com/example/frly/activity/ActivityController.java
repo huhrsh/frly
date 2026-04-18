@@ -25,10 +25,16 @@ public class ActivityController {
     }
 
     /**
-     * Cross-group recent activity for the current user (up to 15 entries).
+     * Cross-group recent activity for the current user, paginated.
      */
     @GetMapping("/api/activity/recent")
-    public ResponseEntity<List<ActivityLogDto>> getRecentActivity() {
-        return ResponseEntity.ok(activityLogService.getRecentForCurrentUser(15));
+    public ResponseEntity<java.util.Map<String, Object>> getRecentActivity(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "15") int size) {
+        List<ActivityLogDto> items = activityLogService.getRecentForCurrentUser(page, size);
+        java.util.Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("content", items);
+        body.put("last", items.size() < size);
+        return ResponseEntity.ok(body);
     }
 }

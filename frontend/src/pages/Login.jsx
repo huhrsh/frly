@@ -4,11 +4,12 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import axiosClient from '../api/axiosClient';
 import PasswordInput from '../components/PasswordInput';
+import { GoogleLogin } from '@react-oauth/google';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const { login } = useAuth();
+    const { login, googleLogin } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -50,7 +51,8 @@ const Login = () => {
             await login(email, password);
             navigate(from, { replace: true });
         } catch (error) {
-            toast.error('Login failed. Please check your credentials.');
+            const msg = error?.response?.data?.message || 'Login failed. Please check your credentials.';
+            toast.error(msg);
         }
     };
 
@@ -135,6 +137,32 @@ const Login = () => {
                             </button>
                         </div>
                     </form>
+
+                    <div className="mt-4 relative">
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-gray-200" />
+                        </div>
+                        <div className="relative flex justify-center text-xs">
+                            <span className="bg-white px-2 text-gray-400">or continue with</span>
+                        </div>
+                    </div>
+
+                    <div className="mt-4 flex justify-center">
+                        <GoogleLogin
+                            onSuccess={async (credentialResponse) => {
+                                try {
+                                    await googleLogin(credentialResponse.credential);
+                                    navigate(from, { replace: true });
+                                } catch (error) {
+                                    const msg = error?.response?.data?.message || error?.message || '';
+                                    toast.error(msg || 'Google sign-in failed');
+                                }
+                            }}
+                            onError={() => toast.error('Google sign-in failed')}
+                            width="100%"
+                            text="signin_with"
+                        />
+                    </div>
 
                     <p className="mt-6 text-center text-xs text-slate-500">
                         New here?{' '}

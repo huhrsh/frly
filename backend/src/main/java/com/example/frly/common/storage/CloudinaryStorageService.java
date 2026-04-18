@@ -54,17 +54,26 @@ public class CloudinaryStorageService implements FileStorageService {
 
     @Override
     public String generateAccessUrl(String publicId) {
-        // Centralized place to construct delivery URLs for stored assets.
-        // Gallery/documents are stored using the `gallery_docs_private` preset
-        // and should be served via the `authenticated` delivery type. Avatars
-        // and other public assets continue to use the default `upload` type.
+        return generateAccessUrl(publicId, null);
+    }
 
+    @Override
+    public String generateAccessUrl(String publicId, String contentType) {
         boolean isGalleryAsset = publicId != null && publicId.contains("/tenant_");
+        String resourceType = toCloudinaryResourceType(contentType);
 
         return cloudinary.url()
             .secure(true)
+            .resourceType(resourceType)
             .type(isGalleryAsset ? "authenticated" : "upload")
             .signed(isGalleryAsset)
             .generate(publicId);
+    }
+
+    private String toCloudinaryResourceType(String contentType) {
+        if (contentType == null) return "image";
+        if (contentType.startsWith("video/")) return "video";
+        if (contentType.startsWith("image/")) return "image";
+        return "raw";
     }
 }

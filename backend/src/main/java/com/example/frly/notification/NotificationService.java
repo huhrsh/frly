@@ -87,6 +87,7 @@ public class NotificationService {
                 notification.setTitle(request.getTitle());
                 notification.setMessage(request.getMessage());
                 notification.setActorName(request.getActorName());
+                notification.setActorPfpUrl(request.getActorPfpUrl());
                 if (request.getGroupId() != null) {
                     notification.setGroup(new Group());
                     notification.getGroup().setId(request.getGroupId());
@@ -120,13 +121,17 @@ public class NotificationService {
     @Transactional
     public void notifyGroupMembers(Long groupId, Long sectionId, String type, String title, String message, String actorName, String sectionType) {
         Long currentUserId = AuthUtil.getCurrentUserId();
+        String actorPfpUrl = userRepository.findById(currentUserId)
+                .map(com.example.frly.user.User::getPfpUrl)
+                .orElse(null);
+
         List<Long> memberIds = groupMemberRepository
                 .findByGroupIdAndStatus(groupId, GroupMemberStatus.APPROVED)
                 .stream()
                 .map(gm -> gm.getUser().getId())
                 .filter(id -> !id.equals(currentUserId))
                 .toList();
-        
+
         int notifiedCount = 0;
         for (Long memberId : memberIds) {
             // Create notification request with section type
@@ -138,6 +143,7 @@ public class NotificationService {
             request.setGroupId(groupId);
             request.setSectionId(sectionId);
             request.setActorName(actorName);
+            request.setActorPfpUrl(actorPfpUrl);
             request.setSectionType(sectionType);
             
             // Each notifyUser call will check preferences internally
@@ -181,6 +187,7 @@ public class NotificationService {
         dto.setTitle(notification.getTitle());
         dto.setMessage(notification.getMessage());
         dto.setActorName(notification.getActorName());
+        dto.setActorPfpUrl(notification.getActorPfpUrl());
         dto.setGroupId(notification.getGroup() != null ? notification.getGroup().getId() : null);
         dto.setSectionId(notification.getSection() != null ? notification.getSection().getId() : null);
         dto.setRead(notification.isRead());

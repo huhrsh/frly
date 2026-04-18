@@ -8,8 +8,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -24,13 +26,14 @@ public class ActivityLogService {
      * Fire-and-forget log call. Never throws — failures are silently logged.
      */
     @Async
-    public void log(String groupId, Long actorId, String actorName,
+    public void log(String groupId, Long actorId, String actorName, String actorPfpUrl,
                     String actionType, String entityName, Long sectionId, String sectionName) {
         try {
             ActivityLog entry = new ActivityLog();
             entry.setGroupId(groupId);
             entry.setActorId(actorId);
             entry.setActorName(actorName);
+            entry.setActorPfpUrl(actorPfpUrl);
             entry.setActionType(actionType);
             entry.setEntityName(entityName);
             entry.setSectionId(sectionId);
@@ -49,20 +52,29 @@ public class ActivityLogService {
                 .collect(Collectors.toList());
     }
 
-    public List<ActivityLogDto> getRecentForCurrentUser(int limit) {
+    @Transactional(readOnly = true)
+    public List<ActivityLogDto> getRecentForCurrentUser(int page, int size) {
         Long userId = AuthUtil.getCurrentUserId();
-        List<String> groupIds = groupMemberRepository.findByUserId(userId)
+        var memberships = groupMemberRepository.findByUserId(userId)
                 .stream()
                 .filter(m -> m.getStatus() == GroupMemberStatus.APPROVED)
-                .map(m -> String.valueOf(m.getGroup().getId()))
                 .collect(Collectors.toList());
 
-        if (groupIds.isEmpty()) return List.of();
+        if (memberships.isEmpty()) return List.of();
+
+        Map<String, String> groupNames = memberships.stream()
+                .collect(Collectors.toMap(
+                        m -> String.valueOf(m.getGroup().getId()),
+                        m -> m.getGroup().getDisplayName(),
+                        (a, b) -> a
+                ));
+
+        List<String> groupIds = new java.util.ArrayList<>(groupNames.keySet());
 
         return activityLogRepository
-                .findByGroupIdInOrderByCreatedAtDesc(groupIds, PageRequest.of(0, limit))
+                .findByGroupIdInOrderByCreatedAtDesc(groupIds, PageRequest.of(page, size))
                 .stream()
-                .map(ActivityLogDto::from)
+                .map(log -> ActivityLogDto.from(log, groupNames.getOrDefault(log.getGroupId(), null)))
                 .collect(Collectors.toList());
     }
 }

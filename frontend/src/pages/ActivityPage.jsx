@@ -49,6 +49,7 @@ const formatNotificationType = (type) => {
 };
 
 const groupByDate = (items, dateField = 'createdAt') => {
+    if (!Array.isArray(items)) return {};
     return items.reduce((acc, entry) => {
         const d = new Date(entry[dateField]);
         const today = new Date();
@@ -79,7 +80,7 @@ const ActivityTab = () => {
             try {
                 setLoading(true);
                 const res = await axiosClient.get('/activity/recent');
-                setActivities(res.data || []);
+                setActivities(Array.isArray(res.data) ? res.data : (res.data?.content || []));
             } catch {
                 setActivities([]);
             } finally {
@@ -128,8 +129,11 @@ const ActivityTab = () => {
                                 onClick={() => handleClick(entry)}
                                 className="w-full flex items-start gap-3 px-3 py-2.5 bg-white rounded-xl border border-gray-100 hover:border-blue-100 hover:shadow-sm text-left transition"
                             >
-                                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold mt-0.5">
-                                    {initials(entry.actorName)}
+                                <div className="flex-shrink-0 w-8 h-8 rounded-full overflow-hidden bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold mt-0.5">
+                                    {entry.actorPfpUrl
+                                        ? <img src={entry.actorPfpUrl} alt={entry.actorName} className="w-full h-full object-cover" />
+                                        : initials(entry.actorName)
+                                    }
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm text-gray-800 leading-snug">
@@ -276,6 +280,12 @@ const NotificationsTab = () => {
                                         onClick={() => handleClick(n)}
                                         className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-xl border text-left transition ${n.read ? 'bg-white border-gray-100 hover:border-blue-100 hover:shadow-sm' : 'bg-blue-50 border-blue-100 hover:border-blue-200'}`}
                                     >
+                                        <div className="flex-shrink-0 w-8 h-8 rounded-full overflow-hidden bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold mt-0.5">
+                                            {n.actorPfpUrl
+                                                ? <img src={n.actorPfpUrl} alt={n.actorName} className="w-full h-full object-cover" />
+                                                : initials(n.actorName)
+                                            }
+                                        </div>
                                         <div className="flex-1 min-w-0">
                                             {n.title && <p className="text-sm font-medium text-gray-900 truncate">{n.title}</p>}
                                             <p className="text-xs text-gray-700 leading-snug line-clamp-2">{n.message}</p>

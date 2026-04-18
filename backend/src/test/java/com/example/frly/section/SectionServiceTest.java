@@ -231,7 +231,7 @@ class SectionServiceTest {
         ListItemDto dto = new ListItemDto();
 
         when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
-        when(listItemRepository.findBySectionIdAndStatusNotOrderByPositionAsc(1L, RecordStatus.DELETED))
+        when(listItemRepository.findBySectionIdAndStatusNotOrderByIdAsc(1L, RecordStatus.DELETED))
             .thenReturn(List.of(item));
         when(sectionMapper.toListItemDto(item)).thenReturn(dto);
 

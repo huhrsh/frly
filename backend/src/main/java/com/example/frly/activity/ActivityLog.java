@@ -37,6 +37,9 @@ public class ActivityLog {
     @Column(name = "section_name")
     private String sectionName;
 
+    @Column(name = "actor_pfp_url")
+    private String actorPfpUrl;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 }
