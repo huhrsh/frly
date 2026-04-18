@@ -100,7 +100,7 @@ class GalleryServiceTest {
         });
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(buildUser()));
         when(sectionMapper.toGalleryItemDto(any(GalleryItem.class))).thenReturn(dto);
-        when(fileStorageService.generateAccessUrl(any())).thenReturn("https://cdn.example.com/photo.jpg");
+        when(fileStorageService.generateAccessUrl(any(), any())).thenReturn("https://cdn.example.com/photo.jpg");
 
         GalleryItemDto result = galleryService.uploadItem(1L, file);
 

@@ -26,7 +26,7 @@ vi.mock('react-toastify', () => ({
 
 vi.mock('@react-oauth/google', () => ({
   GoogleLogin: ({ onSuccess }) => (
-    <button onClick={() => onSuccess({ credential: 'mock-token' })}>Google Sign In</button>
+    <button data-testid="google-login" onClick={() => onSuccess({ credential: 'mock-token' })}>Continue with Google</button>
   ),
   useGoogleLogin: () => vi.fn(),
 }))

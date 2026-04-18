@@ -199,6 +199,7 @@ class ActivityLogServiceTest {
     private GroupMember buildMember(GroupMemberStatus status, Long groupId) {
         Group group = new Group();
         group.setId(groupId);
+        group.setDisplayName("Group " + groupId);
         GroupMember m = new GroupMember();
         m.setStatus(status);
         m.setGroup(group);
