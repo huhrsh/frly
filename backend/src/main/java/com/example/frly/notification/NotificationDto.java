@@ -11,6 +11,7 @@ public class NotificationDto {
     private String title;
     private String message;
     private String actorName;
+    private String actorPfpUrl;
     private Long groupId;
     private Long sectionId;
     private boolean read;

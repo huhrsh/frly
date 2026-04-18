@@ -82,22 +82,8 @@ function App() {
           <Route path="/careers" element={<Careers />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/contact" element={<Contact />} />
-          <Route
-            path="/feedback"
-            element={
-              <ProtectedRoute>
-                <Feedback />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/review"
-            element={
-              <ProtectedRoute>
-                <Review />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/feedback" element={<Feedback />} />
+          <Route path="/review" element={<Review />} />
           {/* Dashboard is protected */}
           <Route
             path="/dashboard"

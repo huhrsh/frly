@@ -118,10 +118,11 @@ public class GalleryService {
         );
 
         activityLogService.log(String.valueOf(groupId), AuthUtil.getCurrentUserId(), actorName,
+                currentUser.getPfpUrl(),
                 ActivityType.FILE_UPLOADED, item.getOriginalFilename(), sectionId, section.getTitle());
 
         GalleryItemDto dto = sectionMapper.toGalleryItemDto(item);
-        dto.setUrl(fileStorageService.generateAccessUrl(item.getPublicId()));
+        dto.setUrl(fileStorageService.generateAccessUrl(item.getPublicId(), item.getContentType()));
         return dto;
     }
 
@@ -137,7 +138,7 @@ public class GalleryService {
                 .findBySectionIdAndStatusNotOrderByCreatedAtDesc(sectionId, com.example.frly.common.enums.RecordStatus.DELETED, pageable)
                 .map(item -> {
                     GalleryItemDto dto = sectionMapper.toGalleryItemDto(item);
-                    dto.setUrl(fileStorageService.generateAccessUrl(item.getPublicId()));
+                    dto.setUrl(fileStorageService.generateAccessUrl(item.getPublicId(), item.getContentType()));
                     return dto;
                 });
     }
@@ -214,6 +215,6 @@ public class GalleryService {
             throw new BadRequestException("Section is deleted");
         }
 
-        return fileStorageService.generateAccessUrl(item.getPublicId());
+        return fileStorageService.generateAccessUrl(item.getPublicId(), item.getContentType());
     }
 }

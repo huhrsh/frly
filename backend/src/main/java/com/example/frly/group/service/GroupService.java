@@ -251,6 +251,7 @@ public class GroupService {
                 );
             });
         activityLogService.log(String.valueOf(currentGroupId), memberToApprove.getUser().getId(), newMemberName,
+                memberToApprove.getUser().getPfpUrl(),
                 ActivityType.MEMBER_JOINED, newMemberName, null, null);
     }
     
@@ -546,6 +547,7 @@ public class GroupService {
             );
             String removedName = String.format("%s %s", member.getUser().getFirstName(), member.getUser().getLastName()).trim();
             activityLogService.log(String.valueOf(groupId), currentUserId, actorName,
+                    currentUser.getPfpUrl(),
                     ActivityType.MEMBER_REMOVED, removedName, null, null);
         }
         // If status was REMOVED, no notification needed

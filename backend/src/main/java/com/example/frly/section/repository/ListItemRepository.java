@@ -8,5 +8,7 @@ import java.util.List;
 public interface ListItemRepository extends JpaRepository<ListItem, Long> {
     List<ListItem> findBySectionIdAndStatusNotOrderByPositionAsc(Long sectionId, RecordStatus status);
 
+    List<ListItem> findBySectionIdAndStatusNotOrderByIdAsc(Long sectionId, RecordStatus status);
+
     List<ListItem> findBySectionIdAndStatusNot(Long sectionId, RecordStatus status);
 }

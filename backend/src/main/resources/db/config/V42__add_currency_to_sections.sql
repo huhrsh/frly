@@ -1,0 +1,1 @@
+ALTER TABLE config.sections ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'INR';

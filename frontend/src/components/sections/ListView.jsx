@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axiosClient from '../../api/axiosClient';
 import ConfirmModal from '../ConfirmModal';
-import { Search, ArrowDownUp, List, Circle, Hash } from 'lucide-react';
+import { Search, ArrowDownUp, List, Circle, Hash, X } from 'lucide-react';
 
 const ListView = ({ sectionId, section }) => {
     const [items, setItems] = useState([]);
@@ -122,8 +122,8 @@ const ListView = ({ sectionId, section }) => {
     const [filterText, setFilterText] = useState('');
 
     const filterFn = (i) => !filterText || i.text?.toLowerCase().includes(filterText.toLowerCase());
-    const activeItems = items.filter(i => !i.completed).filter(filterFn);
-    const completedItems = items.filter(i => i.completed).filter(filterFn);
+    const activeItems = items.filter(i => !i.completed).filter(filterFn).sort((a, b) => b.id - a.id);
+    const completedItems = items.filter(i => i.completed).filter(filterFn).sort((a, b) => b.id - a.id);
     const totalCount = items.length;
 
     // For CHECKBOX-STATIC mode, keep original order
@@ -217,7 +217,7 @@ const ListView = ({ sectionId, section }) => {
                                     <li
                                         key={item.id}
                                         onClick={() => startEdit(item)}
-                                        className="px-3 py-2.5 rounded-lg border border-gray-100 bg-gray-50 hover:bg-white hover:border-blue-100 hover:shadow-sm transition group cursor-text"
+                                        className="px-3 py-2.5 rounded-lg border border-gray-100 bg-white hover:border-blue-100 hover:shadow-sm transition group cursor-text"
                                     >
                                         <div className="flex items-center justify-between gap-3 min-w-0">
                                             <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -284,10 +284,10 @@ const ListView = ({ sectionId, section }) => {
                                                         e.stopPropagation();
                                                         setDeleteItemId(item.id);
                                                     }}
-                                                    className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition text-sm"
+                                                    className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition p-0.5"
                                                     type="button"
                                                 >
-                                                    ×
+                                                    <X size={15} />
                                                 </button>
                                             )}
                                         </div>
@@ -396,7 +396,7 @@ const ListView = ({ sectionId, section }) => {
                                     <li
                                         key={item.id}
                                         onClick={() => startEdit(item)}
-                                        className="px-3 py-2.5 rounded-lg border border-gray-100 bg-white/60 group hover:bg-white cursor-text"
+                                        className="px-3 py-2.5 rounded-lg border border-gray-100 bg-gray-100 group hover:bg-gray-50 cursor-text opacity-70"
                                     >
                                         <div className="flex items-center justify-between gap-3 min-w-0">
                                             <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -463,10 +463,10 @@ const ListView = ({ sectionId, section }) => {
                                                         e.stopPropagation();
                                                         setDeleteItemId(item.id);
                                                     }}
-                                                    className="text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition text-sm"
+                                                    className="text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition p-0.5"
                                                     type="button"
                                                 >
-                                                    ×
+                                                    <X size={15} />
                                                 </button>
                                             )}
                                         </div>

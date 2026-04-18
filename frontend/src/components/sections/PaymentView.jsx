@@ -2,25 +2,89 @@ import React, { useEffect, useMemo, useState } from 'react';
 import axiosClient from '../../api/axiosClient';
 import { toast } from 'react-toastify';
 import ConfirmModal from '../ConfirmModal';
-import { Search } from 'lucide-react';
+import { Search, X, Pencil, Trash2 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
-const PaymentView = ({ sectionId }) => {
+const CURRENCIES = [
+    { code: 'AED', name: 'UAE Dirham' }, { code: 'AFN', name: 'Afghan Afghani' },
+    { code: 'ALL', name: 'Albanian Lek' }, { code: 'AMD', name: 'Armenian Dram' },
+    { code: 'ARS', name: 'Argentine Peso' }, { code: 'AUD', name: 'Australian Dollar' },
+    { code: 'AZN', name: 'Azerbaijani Manat' }, { code: 'BAM', name: 'Bosnian Mark' },
+    { code: 'BDT', name: 'Bangladeshi Taka' }, { code: 'BGN', name: 'Bulgarian Lev' },
+    { code: 'BHD', name: 'Bahraini Dinar' }, { code: 'BRL', name: 'Brazilian Real' },
+    { code: 'CAD', name: 'Canadian Dollar' }, { code: 'CHF', name: 'Swiss Franc' },
+    { code: 'CLP', name: 'Chilean Peso' }, { code: 'CNY', name: 'Chinese Yuan' },
+    { code: 'COP', name: 'Colombian Peso' }, { code: 'CZK', name: 'Czech Koruna' },
+    { code: 'DKK', name: 'Danish Krone' }, { code: 'EGP', name: 'Egyptian Pound' },
+    { code: 'EUR', name: 'Euro' }, { code: 'GBP', name: 'British Pound' },
+    { code: 'GEL', name: 'Georgian Lari' }, { code: 'GHS', name: 'Ghanaian Cedi' },
+    { code: 'HKD', name: 'Hong Kong Dollar' }, { code: 'HRK', name: 'Croatian Kuna' },
+    { code: 'HUF', name: 'Hungarian Forint' }, { code: 'IDR', name: 'Indonesian Rupiah' },
+    { code: 'ILS', name: 'Israeli Shekel' }, { code: 'INR', name: 'Indian Rupee' },
+    { code: 'IQD', name: 'Iraqi Dinar' }, { code: 'IRR', name: 'Iranian Rial' },
+    { code: 'ISK', name: 'Icelandic Króna' }, { code: 'JOD', name: 'Jordanian Dinar' },
+    { code: 'JPY', name: 'Japanese Yen' }, { code: 'KES', name: 'Kenyan Shilling' },
+    { code: 'KGS', name: 'Kyrgyzstani Som' }, { code: 'KRW', name: 'South Korean Won' },
+    { code: 'KWD', name: 'Kuwaiti Dinar' }, { code: 'KZT', name: 'Kazakhstani Tenge' },
+    { code: 'LBP', name: 'Lebanese Pound' }, { code: 'LKR', name: 'Sri Lankan Rupee' },
+    { code: 'MAD', name: 'Moroccan Dirham' }, { code: 'MKD', name: 'Macedonian Denar' },
+    { code: 'MXN', name: 'Mexican Peso' }, { code: 'MYR', name: 'Malaysian Ringgit' },
+    { code: 'NGN', name: 'Nigerian Naira' }, { code: 'NOK', name: 'Norwegian Krone' },
+    { code: 'NPR', name: 'Nepalese Rupee' }, { code: 'NZD', name: 'New Zealand Dollar' },
+    { code: 'OMR', name: 'Omani Rial' }, { code: 'PEN', name: 'Peruvian Sol' },
+    { code: 'PHP', name: 'Philippine Peso' }, { code: 'PKR', name: 'Pakistani Rupee' },
+    { code: 'PLN', name: 'Polish Zloty' }, { code: 'QAR', name: 'Qatari Riyal' },
+    { code: 'RON', name: 'Romanian Leu' }, { code: 'RSD', name: 'Serbian Dinar' },
+    { code: 'RUB', name: 'Russian Ruble' }, { code: 'SAR', name: 'Saudi Riyal' },
+    { code: 'SEK', name: 'Swedish Krona' }, { code: 'SGD', name: 'Singapore Dollar' },
+    { code: 'THB', name: 'Thai Baht' }, { code: 'TJS', name: 'Tajikistani Somoni' },
+    { code: 'TMT', name: 'Turkmenistani Manat' }, { code: 'TND', name: 'Tunisian Dinar' },
+    { code: 'TRY', name: 'Turkish Lira' }, { code: 'TWD', name: 'Taiwan Dollar' },
+    { code: 'UAH', name: 'Ukrainian Hryvnia' }, { code: 'USD', name: 'US Dollar' },
+    { code: 'UZS', name: 'Uzbekistani Som' }, { code: 'VND', name: 'Vietnamese Dong' },
+    { code: 'XAF', name: 'CFA Franc BEAC' }, { code: 'XOF', name: 'CFA Franc BCEAO' },
+    { code: 'ZAR', name: 'South African Rand' }, { code: 'ZMW', name: 'Zambian Kwacha' },
+];
+
+const CURRENCY_SYMBOLS = {
+    AED: 'د.إ', AFN: '؋', ALL: 'L', AMD: '֏', ARS: '$', AUD: 'A$', AZN: '₼',
+    BAM: 'KM', BDT: '৳', BGN: 'лв', BHD: 'BD', BRL: 'R$', CAD: 'C$', CHF: 'CHF',
+    CLP: '$', CNY: '¥', COP: '$', CZK: 'Kč', DKK: 'kr', EGP: 'E£', EUR: '€',
+    GBP: '£', GEL: '₾', GHS: '₵', HKD: 'HK$', HRK: 'kn', HUF: 'Ft', IDR: 'Rp',
+    ILS: '₪', INR: '₹', IQD: 'ع.د', IRR: '﷼', ISK: 'kr', JOD: 'JD', JPY: '¥',
+    KES: 'KSh', KGS: 'с', KRW: '₩', KWD: 'KD', KZT: '₸', LBP: 'L£', LKR: 'Rs',
+    MAD: 'د.م.', MKD: 'ден', MXN: '$', MYR: 'RM', NGN: '₦', NOK: 'kr', NPR: 'रू',
+    NZD: 'NZ$', OMR: 'ر.ع.', PEN: 'S/', PHP: '₱', PKR: 'Rs', PLN: 'zł', QAR: 'ر.ق',
+    RON: 'lei', RSD: 'din', RUB: '₽', SAR: 'ر.س', SEK: 'kr', SGD: 'S$', THB: '฿',
+    TJS: 'SM', TMT: 'T', TND: 'DT', TRY: '₺', TWD: 'NT$', UAH: '₴', USD: '$',
+    UZS: 'лв', VND: '₫', XAF: 'FCFA', XOF: 'CFA', ZAR: 'R', ZMW: 'ZK',
+};
+
+const PaymentView = ({ sectionId, section }) => {
+    const { user } = useAuth();
     const [members, setMembers] = useState([]);
     const [expenses, setExpenses] = useState([]);
     const [balances, setBalances] = useState([]);
     const [description, setDescription] = useState('');
     const [totalAmount, setTotalAmount] = useState('');
-    const [currency] = useState('INR');
+    const [currency, setCurrency] = useState(section?.currency || 'INR');
     const [paidByUserId, setPaidByUserId] = useState('');
     const [shares, setShares] = useState({});
     const [splitMode, setSplitMode] = useState('EVERYONE'); // CUSTOM | EVERYONE | PAYER_ONLY
     const [isCustomAuto, setIsCustomAuto] = useState(true);
     const [editingExpenseId, setEditingExpenseId] = useState(null);
+    const [showExpenseModal, setShowExpenseModal] = useState(false); // only for editing
+    // inline new-expense form is always visible (no toggle state needed)
     const [selectedUserIds, setSelectedUserIds] = useState([]);
     const [showSettleConfirm, setShowSettleConfirm] = useState(false);
     const [expensesPage, setExpensesPage] = useState({ page: 0, totalPages: 0, totalElements: 0 });
     const [isLoadingExpenses, setIsLoadingExpenses] = useState(false);
     const [filterText, setFilterText] = useState('');
+    const [selectedMemberId, setSelectedMemberId] = useState(null);
+    const [memberExpenses, setMemberExpenses] = useState([]);
+    const [memberExpensesPage, setMemberExpensesPage] = useState({ page: 0, totalPages: 0 });
+    const [isMemberExpensesLoading, setIsMemberExpensesLoading] = useState(false);
+    const [serverTotal, setServerTotal] = useState(0);
 
     const isWholeAmount = (num) => {
         if (typeof num !== 'number' || !Number.isFinite(num)) return false;
@@ -93,11 +157,14 @@ const PaymentView = ({ sectionId }) => {
 
     const fetchData = async () => {
         try {
-            const [_, balRes] = await Promise.all([
+            const [_, balRes, totalRes] = await Promise.all([
                 fetchExpensesPage(0, false),
                 axiosClient.get(`/groups/sections/${sectionId}/payments/balances`),
+                axiosClient.get(`/groups/sections/${sectionId}/payments/expenses/total`),
             ]);
             setBalances(Array.isArray(balRes.data) ? balRes.data : []);
+            const raw = totalRes?.data ?? 0;
+            setServerTotal(typeof raw === 'number' ? raw : parseFloat(raw || '0'));
         } catch (err) {
             console.error('Failed to load payments', err);
         }
@@ -138,8 +205,9 @@ const PaymentView = ({ sectionId }) => {
 
     useEffect(() => {
         if (members.length && !paidByUserId) {
-            const currentUser = members[0];
-            setPaidByUserId(String(currentUser.userId));
+            // Default to current logged-in user; fall back to first member
+            const currentMember = members.find(m => m.userId === user?.id) || members[0];
+            setPaidByUserId(String(currentMember.userId));
         }
         if (members.length) {
             const initialShares = {};
@@ -313,6 +381,11 @@ const PaymentView = ({ sectionId }) => {
             setDescription('');
             setTotalAmount('');
             setEditingExpenseId(null);
+            setShowExpenseModal(false);
+            setSplitMode('EVERYONE');
+            setIsCustomAuto(true);
+            const currentMember = members.find(m => m.userId === user?.id) || members[0];
+            if (currentMember) setPaidByUserId(String(currentMember.userId));
             const resetShares = {};
             members.forEach(m => { resetShares[m.userId] = ''; });
             setShares(resetShares);
@@ -326,6 +399,7 @@ const PaymentView = ({ sectionId }) => {
 
     const startEdit = (exp) => {
         setEditingExpenseId(exp.id);
+        setShowExpenseModal(true);
         setDescription(exp.description || '');
         setTotalAmount(exp.totalAmount != null ? String(exp.totalAmount) : '');
         setPaidByUserId(String(exp.paidByUserId));
@@ -364,9 +438,14 @@ const PaymentView = ({ sectionId }) => {
     };
 
     const cancelEdit = () => {
+        setShowExpenseModal(false);
         setEditingExpenseId(null);
         setDescription('');
         setTotalAmount('');
+        setSplitMode('EVERYONE');
+        setIsCustomAuto(true);
+        const currentMember = members.find(m => m.userId === user?.id) || members[0];
+        if (currentMember) setPaidByUserId(String(currentMember.userId));
         const resetShares = {};
         members.forEach(m => { resetShares[m.userId] = ''; });
         setShares(resetShares);
@@ -395,198 +474,304 @@ const PaymentView = ({ sectionId }) => {
 
     const displayCurrency = (code) => {
         if (!code) return '';
-        if (code === 'INR') return '₹';
-        return code;
+        return CURRENCY_SYMBOLS[code] || code;
     };
 
-    const totalExpenses = useMemo(() => {
-        return expenses.reduce((sum, e) => {
-            const isSettlement = (e.expenseType === 'SETTLEMENT') || ((e.description || '').toLowerCase() === 'settlement');
-            if (isSettlement) return sum;
-            const amt = typeof e.totalAmount === 'number' ? e.totalAmount : parseFloat(e.totalAmount || '0');
-            return sum + (isNaN(amt) ? 0 : amt);
-        }, 0);
-    }, [expenses]);
+    const handleCurrencyChange = async (newCode) => {
+        setCurrency(newCode);
+        try {
+            await axiosClient.patch(`/groups/sections/${sectionId}/currency`, { currency: newCode });
+        } catch (err) {
+            console.error('Failed to update currency', err);
+        }
+    };
+
+    // Greedy creditor-debtor matching to produce "X should pay Y ₹Z" lines.
+    const computeSettlements = (bals) => {
+        const creditors = bals.filter(b => b.balance > 0.005).map(b => ({ userId: b.userId, amount: b.balance }));
+        const debtors = bals.filter(b => b.balance < -0.005).map(b => ({ userId: b.userId, amount: -b.balance }));
+        const result = [];
+        let ci = 0, di = 0;
+        while (ci < creditors.length && di < debtors.length) {
+            const pay = Math.min(creditors[ci].amount, debtors[di].amount);
+            if (pay > 0.005) {
+                result.push({ debtorId: debtors[di].userId, creditorId: creditors[ci].userId, amount: pay });
+            }
+            creditors[ci].amount -= pay;
+            debtors[di].amount -= pay;
+            if (creditors[ci].amount < 0.005) ci++;
+            if (debtors[di].amount < 0.005) di++;
+        }
+        return result;
+    };
+
+    const fetchMemberExpenses = async (userId, page = 0, append = false) => {
+        try {
+            setIsMemberExpensesLoading(true);
+            const res = await axiosClient.get(`/groups/sections/${sectionId}/payments/expenses/paged`, {
+                params: { page, size: 20, userId },
+            });
+            const pageData = res.data || {};
+            const content = Array.isArray(pageData.content) ? pageData.content : [];
+            setMemberExpenses(prev => (append ? [...prev, ...content] : content));
+            setMemberExpensesPage({ page: pageData.number ?? page, totalPages: pageData.totalPages ?? 0 });
+        } catch (err) {
+            console.error('Failed to load member expenses', err);
+        } finally {
+            setIsMemberExpensesLoading(false);
+        }
+    };
+
+    const openMemberBreakdown = (userId) => {
+        setSelectedMemberId(userId);
+        setMemberExpenses([]);
+        setMemberExpensesPage({ page: 0, totalPages: 0 });
+        fetchMemberExpenses(userId, 0, false);
+    };
+
+    const closeMemberBreakdown = () => {
+        setSelectedMemberId(null);
+        setMemberExpenses([]);
+    };
 
     const hasNonZeroBalance = useMemo(() => {
         return balances.some(b => Math.abs(b.balance || 0) > 0.01);
     }, [balances]);
 
+    // Shared form body used for both inline-new and edit-modal
+    const expenseFormBody = (
+        <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="flex flex-col gap-2">
+                <input
+                    type="text"
+                    value={description}
+                    onChange={e => setDescription(e.target.value)}
+                    placeholder="What was this for?"
+                    className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none"
+                    autoFocus={false}
+                />
+                <input
+                    type="number"
+                    step="0.01"
+                    value={totalAmount}
+                    onChange={e => setTotalAmount(e.target.value)}
+                    placeholder={`Amount in ${displayCurrency(currency) || '₹'}`}
+                    className="w-36 px-3 py-2 border rounded-lg text-sm focus:outline-none"
+                />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-600">
+                <span className="mr-1 text-gray-500">Split between:</span>
+                <button
+                    type="button"
+                    onClick={() => {
+                        setSplitMode('CUSTOM');
+                        setIsCustomAuto(true);
+                        const allIds = members.map(m => m.userId);
+                        setSelectedUserIds(allIds);
+                        recalcCustomEqualShares(totalAmount, allIds);
+                    }}
+                    className={`px-2 py-1 rounded-full border ${splitMode === 'CUSTOM' ? 'bg-blue-50 border-blue-400 text-blue-700' : 'bg-white border-gray-200 text-gray-600'}`}
+                >
+                    Custom
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setSplitMode('EVERYONE')}
+                    className={`px-2 py-1 rounded-full border ${splitMode === 'EVERYONE' ? 'bg-blue-50 border-blue-400 text-blue-700' : 'bg-white border-gray-200 text-gray-600'}`}
+                >
+                    Everyone
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setSplitMode('PAYER_ONLY')}
+                    className={`px-2 py-1 rounded-full border ${splitMode === 'PAYER_ONLY' ? 'bg-blue-50 border-blue-400 text-blue-700' : 'bg-white border-gray-200 text-gray-600'}`}
+                >
+                    No one
+                </button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600">
+                <span className="text-gray-500">Paid by</span>
+                <select
+                    value={paidByUserId}
+                    onChange={e => setPaidByUserId(e.target.value)}
+                    className="px-2 py-1.5 border rounded-lg text-sm focus:outline-none"
+                >
+                    {members.map(m => (
+                        <option key={m.userId} value={m.userId}>
+                            {getMemberName(m.userId)}
+                        </option>
+                    ))}
+                </select>
+                {splitMode !== 'PAYER_ONLY' && (
+                    <span className="text-[11px] text-gray-400 ml-auto">Shares total: {totalShares.toFixed(2)}</span>
+                )}
+            </div>
+
+            {splitMode === 'CUSTOM' && (
+                <div className="grid grid-cols-1 sm:grid-cols-1 gap-2 border rounded-lg p-2 bg-gray-50">
+                    {members.map(m => {
+                        const id = m.userId;
+                        const checked = selectedUserIds.includes(id);
+                        return (
+                            <div key={id} className="flex items-center justify-between gap-2">
+                                <label className="flex items-center gap-2 flex-1 min-w-0">
+                                    <input
+                                        type="checkbox"
+                                        checked={checked}
+                                        onChange={e => {
+                                            const isChecked = e.target.checked;
+                                            setSelectedUserIds(prev => {
+                                                let next;
+                                                if (isChecked) {
+                                                    next = [...prev, id];
+                                                } else {
+                                                    next = prev.filter(x => x !== id);
+                                                }
+                                                if (splitMode === 'CUSTOM') {
+                                                    recalcCustomEqualShares(totalAmount, next);
+                                                }
+                                                return next;
+                                            });
+                                        }}
+                                        className="w-3 h-3 text-blue-600 border-gray-300 rounded"
+                                    />
+                                    <span className={`text-xs truncate ${checked ? 'text-gray-700' : 'text-gray-400'}`}>{getMemberName(id)}</span>
+                                </label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    value={shares[id] ?? ''}
+                                    onChange={e => handleShareChange(id, e.target.value)}
+                                    disabled={!checked}
+                                    className={`w-24 px-2 py-1 border rounded-lg text-xs text-right focus:outline-none ${!checked ? 'opacity-40 bg-gray-100 cursor-not-allowed' : ''}`}
+                                    placeholder="0.00"
+                                />
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+
+            <div className="flex justify-end gap-2">
+                <button
+                    type="button"
+                    onClick={cancelEdit}
+                    className="px-3 py-2 rounded-lg border border-gray-200 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-60"
+                    disabled={!totalAmount || !paidByUserId}
+                >
+                    {editingExpenseId ? 'Update expense' : 'Add expense'}
+                </button>
+            </div>
+        </form>
+    );
+
     return (
-        <div className="h-full flex flex-col sm:p-4">
+        <div className="sm:p-4 pb-8">
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-1">
                 <div>
                     <h2 className="text-base sm:text-lg font-semibold text-gray-900">Expenses</h2>
                     <p className="text-xs text-gray-500">Track shared expenses in your group and see who owes whom.</p>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-50 border border-gray-200 text-[11px] text-gray-700">
+                <div className="flex flex-wrap items-center gap-2">
+                    <select
+                        value={currency}
+                        onChange={e => handleCurrencyChange(e.target.value)}
+                        className="h-9 text-xs border border-gray-200 rounded-lg px-2 focus:outline-none bg-white text-gray-600"
+                        title="Section currency"
+                    >
+                        {CURRENCIES.map(c => (
+                            <option key={c.code} value={c.code}>{c.code} — {c.name}</option>
+                        ))}
+                    </select>
+                    <div className="inline-flex items-center gap-2 px-3 h-9 rounded-lg bg-gray-50 border border-gray-200 text-[11px] text-gray-700">
                         <span className="uppercase tracking-wide font-semibold">Total</span>
-                        <span className="font-semibold text-gray-900">{displayCurrency(currency)}{totalExpenses.toFixed(2)}</span>
+                        <span className="font-semibold text-xs text-gray-900">{displayCurrency(currency)}{serverTotal.toFixed(2)}</span>
                     </div>
                     <button
                         type="button"
                         onClick={() => setShowSettleConfirm(true)}
                         disabled={!hasNonZeroBalance}
-                        className="px-3 py-1 rounded-full text-[11px] font-medium border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="h-9 px-4 rounded-lg text-xs font-medium border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                         Settle payments
                     </button>
                 </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-3 mb-4">
-                <div className="flex flex-col sm:flex-row gap-2">
-                    <input
-                        type="text"
-                        value={description}
-                        onChange={e => setDescription(e.target.value)}
-                        placeholder="What was this for?"
-                        className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <input
-                        type="number"
-                        step="0.01"
-                        value={totalAmount}
-                        onChange={e => setTotalAmount(e.target.value)}
-                        placeholder={`Amount in ${displayCurrency(currency) || '₹'}`}
-                        className="w-36 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-600">
-                    <span className="mr-1 text-gray-500">Split between:</span>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setSplitMode('CUSTOM');
-                            setIsCustomAuto(true);
-                            const allIds = members.map(m => m.userId);
-                            setSelectedUserIds(allIds);
-                            recalcCustomEqualShares(totalAmount, allIds);
-                        }}
-                        className={`px-2 py-1 rounded-full border ${splitMode === 'CUSTOM' ? 'bg-blue-50 border-blue-400 text-blue-700' : 'bg-white border-gray-200 text-gray-600'}`}
-                    >
-                        Custom
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setSplitMode('EVERYONE')}
-                        className={`px-2 py-1 rounded-full border ${splitMode === 'EVERYONE' ? 'bg-blue-50 border-blue-400 text-blue-700' : 'bg-white border-gray-200 text-gray-600'}`}
-                    >
-                        Everyone
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setSplitMode('PAYER_ONLY')}
-                        className={`px-2 py-1 rounded-full border ${splitMode === 'PAYER_ONLY' ? 'bg-blue-50 border-blue-400 text-blue-700' : 'bg-white border-gray-200 text-gray-600'}`}
-                    >
-                        No one
-                    </button>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600">
-                    <span className="text-gray-500">Paid by</span>
-                    <select
-                        value={paidByUserId}
-                        onChange={e => setPaidByUserId(e.target.value)}
-                        className="px-2 py-1.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        {members.map(m => (
-                            <option key={m.userId} value={m.userId}>
-                                {getMemberName(m.userId)}
-                            </option>
-                        ))}
-                    </select>
-                    {splitMode !== 'PAYER_ONLY' && (
-                        <span className="text-[11px] text-gray-400 ml-auto">Shares total: {totalShares.toFixed(2)}</span>
-                    )}
-                </div>
-
-                {splitMode === 'CUSTOM' && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 border rounded-lg p-2 bg-gray-50">
-                        {members.map(m => {
-                            const id = m.userId;
-                            const checked = selectedUserIds.includes(id);
-                            return (
-                                <div key={id} className="flex items-center justify-between gap-2">
-                                    <label className="flex items-center gap-2 flex-1 min-w-0">
-                                        <input
-                                            type="checkbox"
-                                            checked={checked}
-                                            onChange={e => {
-                                                const isChecked = e.target.checked;
-                                                setSelectedUserIds(prev => {
-                                                    let next;
-                                                    if (isChecked) {
-                                                        next = [...prev, id];
-                                                    } else {
-                                                        next = prev.filter(x => x !== id);
-                                                    }
-                                                    if (splitMode === 'CUSTOM') {
-                                                        recalcCustomEqualShares(totalAmount, next);
-                                                    }
-                                                    return next;
-                                                });
-                                            }}
-                                            className="w-3 h-3 text-blue-600 border-gray-300 rounded"
-                                        />
-                                        <span className="text-xs text-gray-700 truncate">{getMemberName(id)}</span>
-                                    </label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        value={shares[id] ?? ''}
-                                        onChange={e => handleShareChange(id, e.target.value)}
-                                        className="w-24 px-2 py-1 border rounded-lg text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                        placeholder="0.00"
-                                    />
-                                </div>
-                            );
-                        })}
+            {/* Edit-expense modal */}
+            {showExpenseModal && editingExpenseId && (
+                <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-16 sm:pt-10 overflow-y-auto">
+                    <div className="absolute inset-0 bg-black/40" onClick={cancelEdit} />
+                    <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg my-auto">
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                            <h3 className="text-sm font-semibold text-gray-900">Edit expense</h3>
+                            <button type="button" onClick={cancelEdit} className="text-gray-400 hover:text-gray-600">
+                                <X size={16} />
+                            </button>
+                        </div>
+                        <div className="p-5">
+                            {expenseFormBody}
+                        </div>
                     </div>
-                )}
-
-                <div className="flex justify-between items-center">
-                    {editingExpenseId && (
-                        <button
-                            type="button"
-                            onClick={cancelEdit}
-                            className="mt-2 px-3 py-1.5 text-xs text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
-                        >
-                            Cancel edit
-                        </button>
-                    )}
-                    <div className="flex-1" />
-                    <button
-                        type="submit"
-                        className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-60"
-                        disabled={!totalAmount || !paidByUserId}
-                    >
-                        {editingExpenseId ? 'Update expense' : 'Add expense'}
-                    </button>
                 </div>
-            </form>
+            )}
 
-            <div className="flex-1 overflow-y-auto space-y-4 mt-2" onScroll={handleScroll}>
-                <div className="border rounded-lg bg-white p-3">
-                    <h3 className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Balances</h3>
+            <div className="flex-1 mt-2 lg:flex lg:gap-6 lg:items-start">
+                {/* Left column — form + balances (sticky on lg) */}
+                <div className="lg:w-[25dvw] lg:flex-shrink-0 lg:sticky lg:top-[15dvh] min-h-[80dvh] lg:self-start space-y-3">
+                    {!editingExpenseId && (
+                        <div className="border border-gray-200 rounded-xl shadow-sm p-4">
+                            {expenseFormBody}
+                        </div>
+                    )}
+                    <div className="border rounded-lg bg-gray-50 p-3">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Balances</h3>
+                        {balances.length > 0 && <span className="text-[10px] text-gray-400">(click a name for details)</span>}
+                    </div>
                     {balances.length === 0 ? (
                         <p className="text-xs text-gray-400">No balances yet.</p>
                     ) : (
-                        <ul className="space-y-1 text-xs">
-                            {balances.map(b => (
-                                <li key={b.userId} className="flex justify-between">
-                                    <span className="text-gray-700">{getMemberName(b.userId)}</span>
-                                    <span className={b.balance > 0 ? 'text-emerald-600' : b.balance < 0 ? 'text-red-500' : 'text-gray-500'}>
-                                        {b.balance > 0 ? '+' : ''}{displayCurrency(currency)}{b.balance.toFixed(2)}
-                                    </span>
-                                </li>
-                            ))}
+                        <ul className="grid grid-cols-1 lg:grid-cols-1 gap-x-4 gap-y-1 text-xs">
+                            {balances.map(b => {
+                                const bm = members.find(x => x.userId === b.userId);
+                                const bmInitials = `${bm?.firstName?.charAt(0) || ''}${bm?.lastName?.charAt(0) || ''}`.toUpperCase() || '?';
+                                return (
+                                    <li key={b.userId}>
+                                        <button
+                                            type="button"
+                                            onClick={() => openMemberBreakdown(b.userId)}
+                                            className="w-full flex items-center gap-2 px-1 py-1 rounded hover:bg-white transition-colors text-left"
+                                        >
+                                            <div className="w-6 h-6 rounded-full overflow-hidden bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                                                {bm?.pfpUrl
+                                                    ? <img src={bm.pfpUrl} alt={getMemberName(b.userId)} className="w-full h-full object-cover" />
+                                                    : bmInitials
+                                                }
+                                            </div>
+                                            <span className="text-gray-700 underline decoration-dotted underline-offset-2 text-xs flex-1 truncate">{getMemberName(b.userId)}</span>
+                                            <span className={b.balance > 0 ? 'text-emerald-600 font-medium' : b.balance < 0 ? 'text-red-500 font-medium' : 'text-gray-500'}>
+                                                {b.balance > 0 ? '+' : b.balance < 0 ? '-' : ''}{displayCurrency(currency)}{Math.abs(b.balance).toFixed(2)}
+                                            </span>
+                                        </button>
+                                    </li>
+                                );
+                            })}
                         </ul>
                     )}
                 </div>
+                </div>{/* end left column */}
 
+                {/* Right column — expenses (page scrolls, left stays sticky) */}
+                <div className="lg:flex-1 mt-4 lg:mt-0" onScroll={handleScroll}>
                 <div className="border rounded-lg bg-white p-3">
                     <h3 className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Expenses</h3>
                     {expenses.length > 4 && (
@@ -597,7 +782,7 @@ const PaymentView = ({ sectionId }) => {
                                 value={filterText}
                                 onChange={e => setFilterText(e.target.value)}
                                 placeholder="Filter expenses…"
-                                className="w-full pl-8 pr-3 py-2 text-xs border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+                                className="w-full pl-8 pr-3 py-2 text-xs border border-gray-200 rounded-lg bg-white focus:outline-none"
                             />
                         </div>
                     )}
@@ -608,10 +793,10 @@ const PaymentView = ({ sectionId }) => {
                             {expenses.filter(exp => !filterText || (exp.description || '').toLowerCase().includes(filterText.toLowerCase())).map(exp => (
                                 <li key={exp.id} className="border rounded-md p-2">
                                     <div className="flex justify-between mb-1">
-                                        <span className="font-medium text-gray-800">{exp.description || 'Expense'}</span>
-                                        <span className="text-gray-900 font-semibold">{displayCurrency(exp.currency)}{exp.totalAmount?.toFixed(2)}</span>
+                                        <span className="font-medium text-sm text-gray-800">{exp.description || 'Expense'}</span>
+                                        <span className="text-gray-700 font-semibold text-sm">{displayCurrency(exp.currency)}{exp.totalAmount?.toFixed(2)}</span>
                                     </div>
-                                    <p className="text-[11px] text-gray-500 mb-1">
+                                    <p className="text-xs text-gray-500 mb-1">
                                         Paid by {exp.paidByFirstName} {exp.paidByLastName}
                                     </p>
                                     {(() => {
@@ -627,7 +812,7 @@ const PaymentView = ({ sectionId }) => {
                                             const counterparty = sharesArr[0];
                                             const counterName = `${counterparty.firstName || ''} ${counterparty.lastName || ''}`.trim() || 'Member';
                                             return (
-                                                <p className="text-[11px] text-emerald-700">
+                                                <p className="text-xs text-emerald-700">
                                                     Dues settled between {exp.paidByFirstName} {exp.paidByLastName} and {counterName}.
                                                 </p>
                                             );
@@ -635,41 +820,43 @@ const PaymentView = ({ sectionId }) => {
 
                                         if (isPayerOnly) {
                                             return (
-                                                <p className="text-[11px] text-gray-400">
+                                                <p className="text-xs text-gray-400">
                                                     No one else shares this expense.
                                                 </p>
                                             );
                                         }
 
                                         return (
-                                            <ul className="text-[11px] text-gray-600 space-y-0.5">
+                                            <ul className="text-xs text-gray-600 space-y-0.5">
                                                 {sharesArr.map(s => {
                                                     const name = `${s.firstName || ''} ${s.lastName || ''}`.trim() || 'Member';
                                                     const isPayer = s.userId === exp.paidByUserId;
                                                     const amountText = `${displayCurrency(exp.currency)}${(s.shareAmount || 0).toFixed(2)}`;
                                                     return (
                                                         <li key={s.userId}>
-                                                            {isPayer ? `${name} pays ${amountText} as their share.` : `${name} owes ${amountText}.`}
+                                                            {!isPayer && `${name} owes ${amountText}.`}
                                                         </li>
                                                     );
                                                 })}
                                             </ul>
                                         );
                                     })()}
-                                    <div className="mt-2 flex justify-end gap-2 text-[11px]">
+                                    <div className="mt-2 flex justify-end gap-1">
                                         <button
                                             type="button"
                                             onClick={() => startEdit(exp)}
-                                            className="px-2 py-0.5 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50"
+                                            className="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition"
+                                            title="Edit"
                                         >
-                                            Edit
+                                            <Pencil size={13} />
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => deleteExpense(exp.id)}
-                                            className="px-2 py-0.5 border border-red-300 rounded-md text-red-600 hover:bg-red-50"
+                                            className="p-1.5 rounded-md text-red-400 hover:bg-red-50 hover:text-red-600 transition"
+                                            title="Delete"
                                         >
-                                            Remove
+                                            <Trash2 size={13} />
                                         </button>
                                     </div>
                                 </li>
@@ -677,7 +864,156 @@ const PaymentView = ({ sectionId }) => {
                         </ul>
                     )}
                 </div>
-            </div>
+                </div>{/* end right column */}
+            </div>{/* end lg:flex */}
+            {selectedMemberId && (() => {
+                const memberBalance = balances.find(b => b.userId === selectedMemberId);
+                const memberName = getMemberName(selectedMemberId);
+                const balance = memberBalance?.balance ?? 0;
+                const settlements = computeSettlements(balances);
+                const owes = settlements.filter(s => s.debtorId === selectedMemberId);
+                const owedBy = settlements.filter(s => s.creditorId === selectedMemberId);
+
+                return (
+                    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-12 sm:pt-10 overflow-y-auto">
+                        <div className="absolute inset-0 bg-black/40" onClick={closeMemberBreakdown} />
+                        <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg my-auto">
+                            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                                <div>
+                                    <h3 className="text-sm font-semibold text-gray-900">{memberName}'s Breakdown</h3>
+                                    <p className={`text-xs mt-0.5 ${balance > 0 ? 'text-emerald-600' : balance < 0 ? 'text-red-500' : 'text-gray-400'}`}>
+                                        Net balance: {balance > 0 ? '+' : ''}{displayCurrency(currency)}{balance.toFixed(2)}
+                                        {balance > 0 ? ' (is owed money)' : balance < 0 ? ' (owes money)' : ' (settled)'}
+                                    </p>
+                                </div>
+                                <button type="button" onClick={closeMemberBreakdown} className="text-gray-400 hover:text-gray-600">
+                                    <X size={16} />
+                                </button>
+                            </div>
+
+                            <div className="px-5 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
+                                {(owes.length > 0 || owedBy.length > 0) && (
+                                    <div>
+                                        <h4 className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-2">Settlement Summary</h4>
+                                        {owes.length > 0 && (
+                                            <ul className="space-y-1 mb-2">
+                                                {owes.map((s, i) => (
+                                                    <li key={i} className="flex items-center justify-between text-xs bg-red-50 border border-red-100 rounded-md px-3 py-1.5">
+                                                        <span className="text-gray-700">
+                                                            {memberName} → {getMemberName(s.creditorId)}
+                                                        </span>
+                                                        <span className="text-red-600 font-semibold">{displayCurrency(currency)}{s.amount.toFixed(2)}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                        {owedBy.length > 0 && (
+                                            <ul className="space-y-1">
+                                                {owedBy.map((s, i) => (
+                                                    <li key={i} className="flex items-center justify-between text-xs bg-emerald-50 border border-emerald-100 rounded-md px-3 py-1.5">
+                                                        <span className="text-gray-700">
+                                                            {getMemberName(s.debtorId)} → {memberName}
+                                                        </span>
+                                                        <span className="text-emerald-600 font-semibold">{displayCurrency(currency)}{s.amount.toFixed(2)}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </div>
+                                )}
+                                {balance === 0 && owes.length === 0 && owedBy.length === 0 && (
+                                    <p className="text-xs text-gray-400 text-center py-1">All settled up.</p>
+                                )}
+
+                                <div>
+                                    <h4 className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-2">Transactions</h4>
+                                    {isMemberExpensesLoading && memberExpenses.length === 0 ? (
+                                        <p className="text-xs text-gray-400 text-center py-4">Loading…</p>
+                                    ) : memberExpenses.length === 0 ? (
+                                        <p className="text-xs text-gray-400">No transactions found.</p>
+                                    ) : (
+                                        <ul className="space-y-2 text-xs">
+                                            {memberExpenses.map(exp => {
+                                                const isSettlement = (exp.expenseType === 'SETTLEMENT') || ((exp.description || '').toLowerCase() === 'settlement');
+                                                const sharesArr = Array.isArray(exp.shares) ? exp.shares : [];
+                                                const memberShare = sharesArr.find(s => s.userId === selectedMemberId);
+                                                const isPayer = exp.paidByUserId === selectedMemberId;
+                                                return (
+                                                    <li key={exp.id} className="border rounded-md p-2.5">
+                                                        <div className="flex items-start justify-between gap-2 mb-1">
+                                                            <span className="font-medium text-gray-800 leading-tight">{exp.description || 'Expense'}</span>
+                                                            <span className="text-gray-900 font-semibold whitespace-nowrap">{displayCurrency(exp.currency)}{(exp.totalAmount || 0).toFixed(2)}</span>
+                                                        </div>
+                                                        {isSettlement ? (() => {
+                                                            // Show who the settlement was with
+                                                            const isPayer = exp.paidByUserId === selectedMemberId;
+                                                            let counterName;
+                                                            if (isPayer) {
+                                                                const other = sharesArr.find(s => s.userId !== exp.paidByUserId);
+                                                                counterName = other ? `${other.firstName || ''} ${other.lastName || ''}`.trim() || 'Member' : 'Member';
+                                                            } else {
+                                                                counterName = `${exp.paidByFirstName || ''} ${exp.paidByLastName || ''}`.trim() || 'Member';
+                                                            }
+                                                            return (
+                                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-600 border border-blue-100">
+                                                                    Settled with {counterName}
+                                                                </span>
+                                                            );
+                                                        })() : (
+                                                            <div className="flex items-center gap-2 flex-wrap">
+                                                                {(() => {
+                                                                    const isPayerOnly = sharesArr.length === 1 &&
+                                                                        sharesArr[0].userId === exp.paidByUserId &&
+                                                                        Math.abs((sharesArr[0].shareAmount || 0) - (exp.totalAmount || 0)) < 0.01;
+                                                                    if (isPayerOnly) {
+                                                                        return (
+                                                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-600 border border-gray-200">
+                                                                                Personal (no split)
+                                                                            </span>
+                                                                        );
+                                                                    }
+                                                                    return null;
+                                                                })()}
+                                                                {isPayer && !(sharesArr.length === 1 && sharesArr[0].userId === exp.paidByUserId) && (
+                                                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                                                        PAID {displayCurrency(exp.currency)}{(exp.totalAmount || 0).toFixed(2)}
+                                                                    </span>
+                                                                )}
+                                                                {memberShare && memberShare.userId !== exp.paidByUserId && (
+                                                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-50 text-red-600 border border-red-100">
+                                                                        OWES {`${exp.paidByFirstName || ''} ${exp.paidByLastName || ''}`.trim() || 'Member'} {displayCurrency(exp.currency)}{(memberShare.shareAmount || 0).toFixed(2)}
+                                                                    </span>
+                                                                )}
+                                                                {isPayer && memberShare && Math.abs((memberShare.shareAmount || 0) - (exp.totalAmount || 0)) > 0.01 && !(sharesArr.length === 1 && sharesArr[0].userId === exp.paidByUserId) && (
+                                                                    <span className="text-[10px] text-gray-400">their share: {displayCurrency(exp.currency)}{(memberShare.shareAmount || 0).toFixed(2)}</span>
+                                                                )}
+                                                                {!isPayer && !memberShare && (
+                                                                    <span className="text-[10px] text-gray-400">Paid by {exp.paidByFirstName} {exp.paidByLastName}</span>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
+                                    )}
+                                    {memberExpensesPage.page < memberExpensesPage.totalPages - 1 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => fetchMemberExpenses(selectedMemberId, memberExpensesPage.page + 1, true)}
+                                            disabled={isMemberExpensesLoading}
+                                            className="mt-3 w-full text-xs text-blue-600 hover:underline disabled:opacity-50"
+                                        >
+                                            {isMemberExpensesLoading ? 'Loading…' : 'Load more'}
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+
             {showSettleConfirm && (
                 <ConfirmModal
                     title="Settle all balances?"

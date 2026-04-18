@@ -150,12 +150,13 @@ Frontend env vars live in `frontend/.env`.
 - `GroupServiceTest` — createGroup, joinGroup (all edge cases), validateGroupAccess, deleteGroup
 - `ActivityLogServiceTest` — log() saves correct fields, swallows exceptions; getGroupActivity() pagination; getRecentForCurrentUser() filters PENDING/REMOVED memberships
 - `SearchServiceTest` — null/short/whitespace query guard clauses; no-group-context guard; delegates trimmed query + groupId to repository
+- `SectionServiceTest` — createSection (list / note), updateSectionTitle, updateSectionDisplayMode, updateSectionCurrency (PAYMENT only / blank / null guard), deleteSection, addListItem, toggleListItem, deleteListItem, updateListItem, getNote, updateNote (optimistic locking / stale version / null version), addReminder, deleteReminder, updateReminder, addLink, getLinks, updateLink, deleteLink, reorderLinks, addCalendarEvent (with members), deleteCalendarEvent, updateCalendarEvent
 
 `AuthUtil.getCurrentUserId()` is tested by setting `SecurityContextHolder` directly.
 `GroupContext` is a ThreadLocal; tests call `GroupContext.setGroupId()` / `GroupContext.clear()`.
 
 **Frontend** — Vitest + React Testing Library + jsdom:
-- `dateUtils.test.js` — parseUTCDate, formatTimeAgo (fake timers)
+- `dateUtils.test.js` — parseUTCDate (null/undefined/empty/unparseable/bare-string/Date-passthrough/invalid-Date/Z-suffix/offset), formatTimeAgo (fake timers: just-now / minutes / hours / days / locale-date)
 - `groupSlice.test.js` — all reducers + extraReducers for fetchGroupDetails
 - `AuthContext.test.jsx` — login/logout/register/updateUser via RTL render
 - `ActivityFeed.test.jsx` — open/close dropdown, API fetch on open, empty/error states, entry rendering, action text formatting, click navigation (desktop vs mobile), "View all" link
@@ -181,3 +182,7 @@ Frontend env vars live in `frontend/.env`.
 - `SearchService` reads `GroupContext.getGroupId()` (ThreadLocal) — tests must call `GroupContext.setGroupId()` in setup and `GroupContext.clear()` in `@AfterEach`
 - The notifications endpoint returns a paginated object `{ content, last }` — the activity endpoint returns a plain array. Don't confuse them in frontend mocks
 - `usePushNotifications` hook must be mocked in `ActivityPage` tests to avoid browser API calls
+- `parseUTCDate` does NOT append `'Z'` — timestamps are parsed as local time (no UTC shifting). Tests for bare LocalDateTime strings should only assert `instanceof Date` + `not NaN`, not a specific `.toISOString()` value (which is timezone-dependent)
+- Loading skeletons use Tailwind `animate-pulse` (no external library). Spinners (`animate-spin`) remain only for inline/micro contexts (search bar, load-more pagination)
+- PAYMENT sections have a per-section `currency` field (default `'INR'`, stored uppercase). Flyway V42 adds the column. `updateSectionCurrency` validates section type and rejects blank/null values
+- Reminder notifications (`REMINDER_DUE`) are system-triggered — `actorPfpUrl` comes from the reminder's `createdBy` user, not `AuthUtil.getCurrentUserId()` (which is null in scheduler context)

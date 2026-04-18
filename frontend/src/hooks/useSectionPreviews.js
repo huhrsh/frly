@@ -3,7 +3,7 @@ import axiosClient from '../api/axiosClient';
 import { useAuth } from '../context/AuthContext';
 import { parseUTCDate } from '../utils/dateUtils';
 
-export const useSectionPreviews = (sections) => {
+export const useSectionPreviews = (sections, refreshKey = 0) => {
     const [previews, setPreviews] = useState({});
     const { user } = useAuth();
 
@@ -37,9 +37,13 @@ export const useSectionPreviews = (sections) => {
                     } else if (section.type === 'LIST') {
                         const res = await axiosClient.get(`/groups/sections/${section.id}/items`);
                         const items = Array.isArray(res.data) ? res.data : [];
+                        const openItems = items.filter(item => !item.completed).sort((a, b) => b.id - a.id);
+                        const completedCount = items.length - openItems.length;
                         newPreviews[section.id] = {
                             kind: 'LIST',
-                            items: items.slice(0, 3).map(item => ({ text: item.text, completed: item.completed }))
+                            openCount: openItems.length,
+                            completedCount,
+                            items: openItems.slice(0, 2).map(item => ({ text: item.text }))
                         };
                     } else if (section.type === 'LINKS') {
                         const res = await axiosClient.get(`/groups/sections/${section.id}/links`);
@@ -50,17 +54,16 @@ export const useSectionPreviews = (sections) => {
                         };
                     } else if (section.type === 'REMINDER') {
                         const res = await axiosClient.get(`/groups/sections/${section.id}/reminders`);
-                        let items = Array.isArray(res.data) ? res.data : [];
-                        // Sort: Unsent first
-                        items.sort((a, b) => (a.isSent === b.isSent) ? 0 : a.isSent ? 1 : -1);
-
+                        const items = Array.isArray(res.data) ? res.data : [];
+                        const activeReminders = items.filter(r => !r.isSent)
+                            .sort((a, b) => b.id - a.id);
                         newPreviews[section.id] = {
                             kind: 'REMINDER',
-                            reminders: items.slice(0, 3).map(r => ({
-                                title: r.title,
-                                triggerTime: r.triggerTime,
-                                isSent: r.isSent
-                            }))
+                            activeCount: activeReminders.length,
+                            totalCount: items.length,
+                            next: activeReminders[0]
+                                ? { title: activeReminders[0].title, triggerTime: activeReminders[0].triggerTime }
+                                : null
                         };
                     } else if (section.type === 'GALLERY') {
                         const res = await axiosClient.get(`/groups/sections/${section.id}/gallery/count`);
@@ -75,7 +78,7 @@ export const useSectionPreviews = (sections) => {
                             axiosClient.get(`/groups/sections/${section.id}/payments/expenses/total`),
                         ]);
                         const balances = Array.isArray(balancesRes.data) ? balancesRes.data : [];
-                        const myBalance = balances.find(b => b.userId === user?.userId);
+                        const myBalance = balances.find(b => b.userId === user?.id);
                         const totalSpentRaw = totalRes?.data ?? 0;
                         const totalSpent = typeof totalSpentRaw === 'number'
                             ? totalSpentRaw
@@ -139,7 +142,7 @@ export const useSectionPreviews = (sections) => {
         loadPreviews();
 
         return () => { isMounted = false; };
-    }, [sectionIdsKey, user]); // Re-fetch if section IDs change or user changes
+    }, [sectionIdsKey, user, refreshKey]); // Re-fetch if section IDs, user, or refreshKey changes
 
     return previews;
 };

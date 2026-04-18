@@ -10,8 +10,10 @@ import java.time.LocalDateTime;
 public class ActivityLogDto {
     private Long id;
     private String groupId;
+    private String groupName;
     private Long actorId;
     private String actorName;
+    private String actorPfpUrl;
     private String actionType;
     private String entityName;
     private Long sectionId;
@@ -22,8 +24,26 @@ public class ActivityLogDto {
         return new ActivityLogDto(
             log.getId(),
             log.getGroupId(),
+            null,
             log.getActorId(),
             log.getActorName(),
+            log.getActorPfpUrl(),
+            log.getActionType(),
+            log.getEntityName(),
+            log.getSectionId(),
+            log.getSectionName(),
+            log.getCreatedAt()
+        );
+    }
+
+    public static ActivityLogDto from(ActivityLog log, String groupName) {
+        return new ActivityLogDto(
+            log.getId(),
+            log.getGroupId(),
+            groupName,
+            log.getActorId(),
+            log.getActorName(),
+            log.getActorPfpUrl(),
             log.getActionType(),
             log.getEntityName(),
             log.getSectionId(),

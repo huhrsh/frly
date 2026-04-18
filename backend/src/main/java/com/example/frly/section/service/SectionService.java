@@ -119,6 +119,7 @@ public class SectionService {
         }
 
         activityLogService.log(section.getGroupId(), AuthUtil.getCurrentUserId(), actorName,
+                currentUser != null ? currentUser.getPfpUrl() : null,
                 ActivityType.SECTION_CREATED, section.getTitle(), section.getId(), section.getTitle());
 
         return section.getId();
@@ -256,6 +257,7 @@ public class SectionService {
             getSectionTypeString(section)
         );
         activityLogService.log(section.getGroupId(), AuthUtil.getCurrentUserId(), actorName,
+                currentUser != null ? currentUser.getPfpUrl() : null,
                 ActivityType.SECTION_RENAMED, title.trim(), section.getId(), title.trim());
     }
 
@@ -304,6 +306,18 @@ public class SectionService {
     }
 
     @Transactional
+    public void updateSectionCurrency(Long sectionId, String currency) {
+        validateGroupAccess();
+        Section section = requireActiveSection(sectionId);
+        validateSectionType(section, SectionType.PAYMENT, "Currency can only be set for PAYMENT sections");
+        if (currency == null || currency.isBlank()) {
+            throw new BadRequestException("Currency is required");
+        }
+        section.setCurrency(currency.trim().toUpperCase());
+        sectionRepository.save(section);
+    }
+
+    @Transactional
     public void deleteSection(Long sectionId) {
         validateGroupAccess();
         
@@ -329,6 +343,7 @@ public class SectionService {
                 section.getType() != null ? section.getType().name() : null
             );
             activityLogService.log(groupId, AuthUtil.getCurrentUserId(), actorName,
+                    currentUser != null ? currentUser.getPfpUrl() : null,
                     ActivityType.SECTION_DELETED, sectionTitle, null, sectionTitle);
         }
     }
@@ -374,6 +389,7 @@ public class SectionService {
             "LIST"
         );
         activityLogService.log(section.getGroupId(), AuthUtil.getCurrentUserId(), actorName,
+                currentUser != null ? currentUser.getPfpUrl() : null,
                 ActivityType.ITEM_ADDED, item.getText(), section.getId(), section.getTitle());
 
         return item.getId();
@@ -382,7 +398,7 @@ public class SectionService {
     public List<ListItemDto> getListItems(Long sectionId) {
         validateGroupAccess();
         requireActiveSection(sectionId);
-        return listItemRepository.findBySectionIdAndStatusNotOrderByPositionAsc(sectionId, RecordStatus.DELETED).stream()
+        return listItemRepository.findBySectionIdAndStatusNotOrderByIdAsc(sectionId, RecordStatus.DELETED).stream()
                 .map(sectionMapper::toListItemDto)
                 .collect(Collectors.toList());
     }
@@ -414,6 +430,7 @@ public class SectionService {
                 "LIST"
             );
             activityLogService.log(section.getGroupId(), AuthUtil.getCurrentUserId(), actorName,
+                    currentUser != null ? currentUser.getPfpUrl() : null,
                     ActivityType.ITEM_COMPLETED, item.getText(), section.getId(), section.getTitle());
         }
     }
@@ -477,6 +494,7 @@ public class SectionService {
             "LIST"
         );
         activityLogService.log(section.getGroupId(), AuthUtil.getCurrentUserId(), actorName,
+                currentUser != null ? currentUser.getPfpUrl() : null,
                 ActivityType.ITEM_DELETED, itemText, section.getId(), section.getTitle());
     }
 

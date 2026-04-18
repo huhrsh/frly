@@ -108,7 +108,7 @@ describe('ActivityFeed – data fetching', () => {
       fireEvent.click(screen.getByRole('button', { name: /activity/i }))
     })
 
-    expect(axiosClient.get).toHaveBeenCalledWith('/activity/recent')
+    expect(axiosClient.get).toHaveBeenCalledWith('/activity/recent', expect.objectContaining({ params: expect.any(Object) }))
   })
 
   it('shows "No recent activity" when API returns empty list', async () => {

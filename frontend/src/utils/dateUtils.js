@@ -1,22 +1,23 @@
 /**
  * Date utility functions to handle timezone issues with backend timestamps
- * 
- * Backend sends LocalDateTime from Germany server (UTC+1/+2) without timezone info.
- * We append 'Z' to treat timestamps as UTC for correct conversion to user's local time.
+ *
+ * Backend sends LocalDateTime in the server's local time without timezone info.
+ * We parse timestamps as-is (treating them as local time) to avoid timezone offset issues.
  */
 
 /**
- * Parse backend LocalDateTime as UTC to avoid timezone offset issues
+ * Parse backend LocalDateTime timestamp
  * @param {string} timestamp - ISO timestamp string from backend
  * @returns {Date|null} - Date object or null if invalid
  */
 export const parseUTCDate = (timestamp) => {
     if (!timestamp) return null;
+    // Already a Date object — return as-is (guard against non-string inputs)
+    if (timestamp instanceof Date) return isNaN(timestamp.getTime()) ? null : timestamp;
     try {
-        // Append 'Z' to treat as UTC
-        const hasTimezone = timestamp.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(timestamp);
-        const dateString = hasTimezone ? timestamp : timestamp + 'Z';
-        const date = new Date(dateString);
+        // Parse directly — backend sends local server time without timezone suffix
+        // Do NOT append 'Z' as that would shift the time by the server's UTC offset
+        const date = new Date(timestamp);
         // Check if date is valid (Invalid Date has NaN time)
         if (isNaN(date.getTime())) {
             console.warn('Invalid date:', timestamp);

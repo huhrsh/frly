@@ -29,8 +29,11 @@ public class User extends AuditableEntity {
     @Column(name = "contact")
     private String contact;
 
-    @Column(name = "encrypted_password", nullable = false)
+    @Column(name = "encrypted_password")
     private String encryptedPassword;
+
+    @Column(name = "auth_provider", nullable = false)
+    private String authProvider = "LOCAL";
 
     @Column(name = "pfp_url")
     private String pfpUrl;

@@ -164,7 +164,7 @@ const NotificationBell = () => {
             const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
             target = isMobile
                 ? `/groups/${notification.groupId}/sections/${notification.sectionId}`
-                : `/groups/${notification.groupId}?section=${notification.sectionId}&view=WORKSPACE`;
+                : `/groups/${notification.groupId}?section=${notification.sectionId}`;
         } else if (notification.type === 'GROUP_INVITE_RECEIVED') {
             target = '/groups/join';
         } else if (notification.type === 'GROUP_JOIN_REQUEST') {
@@ -223,7 +223,7 @@ const NotificationBell = () => {
             </button>
 
             {open && (
-                <div className="fixed sm:absolute inset-x-2 sm:inset-x-auto top-16 sm:top-auto sm:right-0 sm:mt-2 sm:w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden">
+                <div className="fixed sm:absolute inset-x-2 sm:inset-x-auto top-16 sm:top-auto sm:right-0 sm:mt-2 sm:w-96 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden">
                     <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
                         <span className="text-sm font-semibold text-gray-800">Notifications</span>
                         <div className="flex items-center gap-2">
@@ -275,7 +275,7 @@ const NotificationBell = () => {
                     )}
 
                     <div className="max-h-[60vh] sm:max-h-96 overflow-y-auto" onScroll={handleScroll}>
-                        {loading && (
+                        {loading && notifications.length === 0 && (
                             <div className="flex justify-center py-6">
                                 <div className="w-5 h-5 rounded-full border-2 border-blue-400 border-t-transparent animate-spin" />
                             </div>
@@ -285,7 +285,7 @@ const NotificationBell = () => {
                             <p className="text-center text-xs text-gray-400 py-8">No notifications yet.</p>
                         )}
 
-                        {!loading && (() => {
+                        {notifications.length > 0 && (() => {
                             // Group by date label (same logic as ActivityFeed)
                             const grouped = notifications.reduce((acc, n) => {
                                 const d = new Date(n.createdAt);
@@ -318,8 +318,11 @@ const NotificationBell = () => {
                                             onClick={() => handleNotificationClick(n)}
                                             className={`w-full flex items-start gap-3 px-4 py-2.5 hover:bg-gray-50 text-left transition border-b border-gray-100 last:border-b-0 ${n.read ? '' : 'bg-blue-50/60'}`}
                                         >
-                                            <div className="flex-shrink-0 w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold mt-0.5">
-                                                {initials(n.actorName)}
+                                            <div className="flex-shrink-0 w-7 h-7 rounded-full overflow-hidden bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold mt-0.5">
+                                                {n.actorPfpUrl
+                                                    ? <img src={n.actorPfpUrl} alt={n.actorName} className="w-full h-full object-cover" />
+                                                    : initials(n.actorName)
+                                                }
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 {n.title && (
@@ -338,6 +341,12 @@ const NotificationBell = () => {
                                 </div>
                             ));
                         })()}
+
+                        {loading && notifications.length > 0 && (
+                            <div className="flex justify-center py-3">
+                                <div className="w-4 h-4 rounded-full border-2 border-blue-400 border-t-transparent animate-spin" />
+                            </div>
+                        )}
                     </div>
 
                     <div className="px-4 py-2 border-t border-gray-100">

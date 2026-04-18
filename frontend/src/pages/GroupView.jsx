@@ -35,6 +35,11 @@ const GroupView = () => {
     const [sections, setSections] = useState([]);
     const [selectedSection, setSelectedSection] = useState(null);
     const [sectionsLoading, setSectionsLoading] = useState(true);
+    // Tracks which groupId the currently-loaded sections belong to. Used to prevent
+    // the section-resolution effect from deleting ?section params when sections are
+    // stale from the previous group during a cross-group navigation.
+    const [sectionsForGroupId, setSectionsForGroupId] = useState(null);
+    const [contentRefreshKey, setContentRefreshKey] = useState(0);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [createModalParentId, setCreateModalParentId] = useState(null);
 
@@ -77,7 +82,7 @@ const GroupView = () => {
 
     // We only fetch previews for root sections in the main view
     const rootSections = sections.filter(s => !s.parentId);
-    const sectionPreviews = useSectionPreviews(viewMode === 'BENTO' ? rootSections : []);
+    const sectionPreviews = useSectionPreviews(viewMode === 'BENTO' ? rootSections : [], contentRefreshKey);
 
     const [isMobile, setIsMobile] = useState(false);
 
@@ -197,8 +202,24 @@ const GroupView = () => {
                 return;
             }
 
-            // If the ID in the URL no longer exists *after* sections are
-            // loaded, clear it and reset selection.
+            // If the section isn't in the list yet, check whether we're still
+            // in the middle of a group switch. If the loaded group doesn't match
+            // the URL yet, preserve the ?section param so it resolves once the
+            // new group's sections finish loading.
+            const urlGroupId = parseInt(groupId);
+            if (!currentGroup || currentGroup.id !== urlGroupId) {
+                return;
+            }
+
+            // Sections in state might still belong to the previous group (fetchSections
+            // for the new group hasn't returned yet). Guard against deleting the param
+            // while sections are stale.
+            if (sectionsForGroupId !== urlGroupId) {
+                return;
+            }
+
+            // Group is fully loaded, sections are current, and the section genuinely
+            // doesn't exist — clean up the stale URL param.
             params.delete('section');
             navigate({ search: params.toString() ? `?${params.toString()}` : '' }, { replace: true });
             if (selectedSection) {
@@ -212,7 +233,7 @@ const GroupView = () => {
         if (selectedSection && !sections.find(s => s.id === selectedSection.id)) {
             setSelectedSection(null);
         }
-    }, [sections, sectionsLoading, location.search, selectedSection, navigate]);
+    }, [sections, sectionsLoading, sectionsForGroupId, location.search, selectedSection, navigate, currentGroup, groupId]);
 
     // Open manage modal when navigated from dashboard with ?manage=1
     useEffect(() => {
@@ -227,15 +248,22 @@ const GroupView = () => {
 
     const fetchSections = async () => {
         setSectionsLoading(true);
+        const fetchingForGroupId = parseInt(groupId);
         try {
             const response = await axiosClient.get('/groups/sections');
             setSections(Array.isArray(response.data) ? response.data : []);
+            setSectionsForGroupId(fetchingForGroupId);
         } catch (error) {
             console.error("Failed to fetch sections", error);
             toast.error("Failed to load sections.");
         } finally {
             setSectionsLoading(false);
         }
+    };
+
+    const handleRefresh = () => {
+        fetchSections();
+        setContentRefreshKey(k => k + 1);
     };
 
     const fetchPendingRequests = async () => {
@@ -789,7 +817,7 @@ const GroupView = () => {
             case 'LIST': return <ListView sectionId={selectedSection.id} section={selectedSection} />;
             case 'GALLERY': return <GalleryView sectionId={selectedSection.id} />;
             case 'REMINDER': return <ReminderView sectionId={selectedSection.id} />;
-            case 'PAYMENT': return <PaymentView sectionId={selectedSection.id} />;
+            case 'PAYMENT': return <PaymentView sectionId={selectedSection.id} section={selectedSection} />;
             case 'CALENDAR': return <CalendarView sectionId={selectedSection.id} />;
             case 'FOLDER': return (
                 <FolderView
@@ -834,7 +862,7 @@ const GroupView = () => {
                 <div className="hidden sm:inline-flex items-center gap-2">
                     <button
                         type="button"
-                        onClick={fetchSections}
+                        onClick={handleRefresh}
                         disabled={sectionsLoading}
                         className="inline-flex items-center gap-1 px-3 py-2 rounded-full border border-gray-200 bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-50 text-xs font-medium shadow-sm transition disabled:opacity-50"
                         title="Refresh sections"
@@ -1260,7 +1288,7 @@ const GroupView = () => {
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto px-2 sm:px-6 py-3 sm:py-4">
+                        <div key={contentRefreshKey} className="flex-1 overflow-y-auto px-2 sm:px-6 py-3 sm:py-4">
                             {renderSectionContent()}
                         </div>
                     </main>

@@ -20,4 +20,13 @@ public interface PaymentExpenseRepository extends JpaRepository<PaymentExpense, 
     BigDecimal sumBySectionIdAndStatusNotAndExpenseTypeNot(@Param("sectionId") Long sectionId,
                                                           @Param("status") RecordStatus status,
                                                           @Param("settlementType") String settlementType);
+
+    @Query(value = "SELECT DISTINCT e FROM PaymentExpense e WHERE e.status <> :deleted AND e.section.id = :sectionId " +
+                   "AND (e.paidBy.id = :userId OR EXISTS (SELECT s FROM PaymentShare s WHERE s.expense = e AND s.user.id = :userId AND s.status <> :deleted))",
+           countQuery = "SELECT COUNT(DISTINCT e) FROM PaymentExpense e WHERE e.status <> :deleted AND e.section.id = :sectionId " +
+                        "AND (e.paidBy.id = :userId OR EXISTS (SELECT s FROM PaymentShare s WHERE s.expense = e AND s.user.id = :userId AND s.status <> :deleted))")
+    Page<PaymentExpense> findBySectionIdAndUserId(@Param("sectionId") Long sectionId,
+                                                  @Param("userId") Long userId,
+                                                  @Param("deleted") RecordStatus deleted,
+                                                  Pageable pageable);
 }

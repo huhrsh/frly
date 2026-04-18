@@ -57,6 +57,13 @@ public class SectionController {
         return ResponseEntity.ok().build();
     }
 
+    @PatchMapping("/{sectionId}/currency")
+    public ResponseEntity<Void> updateSectionCurrency(@PathVariable Long sectionId,
+                                                      @RequestBody java.util.Map<String, String> body) {
+        sectionService.updateSectionCurrency(sectionId, body.get("currency"));
+        return ResponseEntity.ok().build();
+    }
+
     @DeleteMapping("/{sectionId}")
     public ResponseEntity<Void> deleteSection(@PathVariable Long sectionId) {
         sectionService.deleteSection(sectionId);

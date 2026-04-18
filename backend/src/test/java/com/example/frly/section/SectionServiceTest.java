@@ -231,7 +231,7 @@ class SectionServiceTest {
         ListItemDto dto = new ListItemDto();
 
         when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
-        when(listItemRepository.findBySectionIdAndStatusNotOrderByPositionAsc(1L, RecordStatus.DELETED))
+        when(listItemRepository.findBySectionIdAndStatusNotOrderByIdAsc(1L, RecordStatus.DELETED))
             .thenReturn(List.of(item));
         when(sectionMapper.toListItemDto(item)).thenReturn(dto);
 
@@ -739,6 +739,46 @@ class SectionServiceTest {
     void deleteCalendarEvent_whenNotFound_throwsBadRequest() {
         when(calendarEventRepository.findById(99L)).thenReturn(Optional.empty());
         assertThrows(BadRequestException.class, () -> sectionService.deleteCalendarEvent(99L));
+    }
+
+    // ─── updateSectionCurrency ───────────────────────────────────────────────
+
+    @Test
+    void updateSectionCurrency_onPaymentSection_setsCurrencyUppercase() {
+        Section section = buildSection(1L, "Expenses", SectionType.PAYMENT);
+        when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
+
+        sectionService.updateSectionCurrency(1L, "usd");
+
+        assertEquals("USD", section.getCurrency());
+        verify(sectionRepository).save(section);
+    }
+
+    @Test
+    void updateSectionCurrency_onNonPaymentSection_throwsBadRequest() {
+        Section section = buildSection(1L, "My List", SectionType.LIST);
+        when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
+
+        assertThrows(BadRequestException.class, () -> sectionService.updateSectionCurrency(1L, "USD"));
+        verify(sectionRepository, never()).save(any());
+    }
+
+    @Test
+    void updateSectionCurrency_withBlankCurrency_throwsBadRequest() {
+        Section section = buildSection(1L, "Expenses", SectionType.PAYMENT);
+        when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
+
+        assertThrows(BadRequestException.class, () -> sectionService.updateSectionCurrency(1L, "  "));
+        verify(sectionRepository, never()).save(any());
+    }
+
+    @Test
+    void updateSectionCurrency_withNullCurrency_throwsBadRequest() {
+        Section section = buildSection(1L, "Expenses", SectionType.PAYMENT);
+        when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
+
+        assertThrows(BadRequestException.class, () -> sectionService.updateSectionCurrency(1L, null));
+        verify(sectionRepository, never()).save(any());
     }
 
     // ─── updateCalendarEvent ─────────────────────────────────────────────────

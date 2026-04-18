@@ -199,18 +199,18 @@ const CalendarView = ({ sectionId }) => {
   const monthLabel = monthCursor.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 
   const now = new Date();
+  const todayStart = startOfDay(now);
   const upcomingEvents = events
     .filter((ev) => {
       if (!ev.startTime) return false;
       const start = parseUTCDate(ev.startTime);
       if (!start) return false;
       const end = ev.endTime ? parseUTCDate(ev.endTime) : null;
-      // If we have an end time, treat events as upcoming/current until they finish.
+      // Treat events as upcoming if they start today or later (by date, not time)
       if (end) {
-        return end >= now;
+        return startOfDay(end) >= todayStart;
       }
-      // Otherwise fall back to start time.
-      return start >= now;
+      return startOfDay(start) >= todayStart;
     })
     .sort((a, b) => parseUTCDate(a.startTime) - parseUTCDate(b.startTime));
 
@@ -220,9 +220,9 @@ const CalendarView = ({ sectionId }) => {
       const start = parseUTCDate(ev.startTime);
       const end = ev.endTime ? parseUTCDate(ev.endTime) : null;
       if (end) {
-        return end < now;
+        return startOfDay(end) < todayStart;
       }
-      return start < now;
+      return startOfDay(start) < todayStart;
     })
     .sort((a, b) => parseUTCDate(b.startTime) - parseUTCDate(a.startTime));
 
@@ -356,7 +356,14 @@ const CalendarView = ({ sectionId }) => {
                                 const initials = m
                                   ? `${(m.firstName || '').charAt(0)}${(m.lastName || '').charAt(0)}`.toUpperCase()
                                   : '?';
-                                return (
+                                return m?.pfpUrl ? (
+                                  <img
+                                    key={id}
+                                    src={m.pfpUrl}
+                                    alt={`${m.firstName || ''} ${m.lastName || ''}`.trim()}
+                                    className="w-5 h-5 rounded-full object-cover border border-white"
+                                  />
+                                ) : (
                                   <span
                                     key={id}
                                     className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-[9px] border border-white"
