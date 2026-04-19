@@ -5,6 +5,8 @@ import com.example.frly.group.enums.GroupMemberStatus;
 import com.example.frly.group.model.Group;
 import com.example.frly.group.model.GroupMember;
 import com.example.frly.group.repository.GroupMemberRepository;
+import com.example.frly.user.User;
+import com.example.frly.user.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +30,7 @@ class ActivityLogServiceTest {
 
     @Mock private ActivityLogRepository activityLogRepository;
     @Mock private GroupMemberRepository groupMemberRepository;
+    @Mock private UserRepository userRepository;
 
     @InjectMocks
     private ActivityLogService activityLogService;
@@ -91,6 +94,7 @@ class ActivityLogServiceTest {
         ActivityLog entry = buildLog("group-1", USER_ID, ActivityType.ITEM_ADDED, "Milk");
         when(activityLogRepository.findByGroupIdOrderByCreatedAtDesc(eq("group-1"), any(PageRequest.class)))
                 .thenReturn(List.of(entry));
+        when(userRepository.findAllById(any())).thenReturn(List.of());
 
         List<ActivityLogDto> result = activityLogService.getGroupActivity("group-1", 0, 20);
 
@@ -163,6 +167,7 @@ class ActivityLogServiceTest {
         when(groupMemberRepository.findByUserId(USER_ID)).thenReturn(List.of(approved));
         when(activityLogRepository.findByGroupIdInOrderByCreatedAtDesc(eq(List.of("1")), any()))
                 .thenReturn(List.of(log));
+        when(userRepository.findAllById(any())).thenReturn(List.of());
 
         List<ActivityLogDto> result = activityLogService.getRecentForCurrentUser(0, 15);
 
