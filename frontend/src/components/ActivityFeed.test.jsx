@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import { Provider } from 'react-redux'
+import { configureStore } from '@reduxjs/toolkit'
+import groupReducer from '../redux/slices/groupSlice'
 import ActivityFeed from './ActivityFeed'
 
 // ─── mocks ───────────────────────────────────────────────────────────────────
@@ -48,11 +51,20 @@ const SAMPLE_ACTIVITIES = [
   },
 ]
 
-function renderFeed() {
+function makeStore(currentGroup = null) {
+  return configureStore({
+    reducer: { group: groupReducer },
+    preloadedState: { group: { currentGroup, loading: false, error: null } },
+  })
+}
+
+function renderFeed(currentGroup = null) {
   return render(
-    <MemoryRouter>
-      <ActivityFeed />
-    </MemoryRouter>
+    <Provider store={makeStore(currentGroup)}>
+      <MemoryRouter>
+        <ActivityFeed />
+      </MemoryRouter>
+    </Provider>
   )
 }
 

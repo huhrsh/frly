@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { History } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import axiosClient from '../api/axiosClient';
 import { formatTimeAgo } from '../utils/dateUtils';
 
@@ -30,6 +31,8 @@ const formatAction = (entry) => {
 
 const ActivityFeed = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const currentGroup = useSelector(state => state.group.currentGroup);
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [activities, setActivities] = useState([]);
@@ -97,10 +100,13 @@ const ActivityFeed = () => {
         setOpen(false);
         if (entry.sectionId && entry.groupId) {
             const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-            if (isMobile) {
+            const isInBento = isMobile
+                || location.pathname.includes('/sections/')
+                || currentGroup?.viewPreference === 'BENTO';
+            if (isInBento) {
                 navigate(`/groups/${entry.groupId}/sections/${entry.sectionId}`);
             } else {
-                navigate(`/groups/${entry.groupId}?section=${entry.sectionId}`);
+                navigate(`/groups/${entry.groupId}?section=${entry.sectionId}&view=WORKSPACE`);
             }
         } else if (entry.groupId) {
             navigate(`/groups/${entry.groupId}`);

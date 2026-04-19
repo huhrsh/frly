@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axiosClient from '../../api/axiosClient';
 import { toast } from 'react-toastify';
 import ConfirmModal from '../ConfirmModal';
@@ -84,6 +84,7 @@ const PaymentView = ({ sectionId, section }) => {
     const [memberExpenses, setMemberExpenses] = useState([]);
     const [memberExpensesPage, setMemberExpensesPage] = useState({ page: 0, totalPages: 0 });
     const [isMemberExpensesLoading, setIsMemberExpensesLoading] = useState(false);
+    const memberScrollRef = useRef(null);
     const [serverTotal, setServerTotal] = useState(0);
 
     const isWholeAmount = (num) => {
@@ -522,6 +523,15 @@ const PaymentView = ({ sectionId, section }) => {
         }
     };
 
+    const handleMemberScroll = useCallback(() => {
+        const el = memberScrollRef.current;
+        if (!el || isMemberExpensesLoading) return;
+        if (memberExpensesPage.page < memberExpensesPage.totalPages - 1 &&
+            el.scrollTop + el.clientHeight >= el.scrollHeight - 100) {
+            fetchMemberExpenses(selectedMemberId, memberExpensesPage.page + 1, true);
+        }
+    }, [isMemberExpensesLoading, memberExpensesPage, selectedMemberId]);
+
     const openMemberBreakdown = (userId) => {
         setSelectedMemberId(userId);
         setMemberExpenses([]);
@@ -891,7 +901,7 @@ const PaymentView = ({ sectionId, section }) => {
                                 </button>
                             </div>
 
-                            <div className="px-5 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
+                            <div ref={memberScrollRef} onScroll={handleMemberScroll} className="px-5 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
                                 {(owes.length > 0 || owedBy.length > 0) && (
                                     <div>
                                         <h4 className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-2">Settlement Summary</h4>
@@ -997,15 +1007,10 @@ const PaymentView = ({ sectionId, section }) => {
                                             })}
                                         </ul>
                                     )}
-                                    {memberExpensesPage.page < memberExpensesPage.totalPages - 1 && (
-                                        <button
-                                            type="button"
-                                            onClick={() => fetchMemberExpenses(selectedMemberId, memberExpensesPage.page + 1, true)}
-                                            disabled={isMemberExpensesLoading}
-                                            className="mt-3 w-full text-xs text-blue-600 hover:underline disabled:opacity-50"
-                                        >
-                                            {isMemberExpensesLoading ? 'Loading…' : 'Load more'}
-                                        </button>
+                                    {isMemberExpensesLoading && memberExpenses.length > 0 && (
+                                        <div className="mt-3 flex justify-center">
+                                            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                        </div>
                                     )}
                                 </div>
                             </div>

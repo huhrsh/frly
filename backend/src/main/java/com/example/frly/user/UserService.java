@@ -3,9 +3,13 @@ package com.example.frly.user;
 import com.example.frly.auth.AuthUtil;
 import com.example.frly.auth.dto.RegisterUserDto;
 import com.example.frly.common.storage.FileStorageService;
+import com.example.frly.common.Role;
+import com.example.frly.common.RoleRepository;
 import com.example.frly.group.enums.GroupMemberStatus;
+import com.example.frly.group.model.Group;
 import com.example.frly.group.model.GroupMember;
 import com.example.frly.group.repository.GroupMemberRepository;
+import com.example.frly.group.repository.GroupRepository;
 import com.example.frly.section.repository.SectionRepository;
 import com.example.frly.user.dto.UserDto;
 import lombok.RequiredArgsConstructor;
@@ -22,11 +26,15 @@ import static com.example.frly.constants.LogConstants.*;
 @Service
 @RequiredArgsConstructor
 public class UserService {
+    private static final long DEMO_GROUP_ID = 10L;
+
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final BCryptPasswordEncoder passwordEncoder;
     private final FileStorageService fileStorageService;
     private final GroupMemberRepository groupMemberRepository;
+    private final GroupRepository groupRepository;
+    private final RoleRepository roleRepository;
     private final SectionRepository sectionRepository;
 
     public UserDto createUser(RegisterUserDto registerUserDto) {
@@ -35,6 +43,7 @@ public class UserService {
         user.setEncryptedPassword(passwordEncoder.encode(registerUserDto.getPassword()));
         User saved = userRepository.save(user);
         log.info(USER_CREATE_SUCCESS + ": " + saved.getId());
+        addToDemoGroup(saved);
         return userMapper.toUserDto(saved);
     }
 
@@ -92,12 +101,34 @@ public class UserService {
         return userMapper.toUserDto(saved);
     }
 
+    public void addToDemoGroup(User user) {
+        try {
+            Group demoGroup = groupRepository.findById(DEMO_GROUP_ID).orElse(null);
+            if (demoGroup == null) return;
+            boolean alreadyMember = groupMemberRepository.findByUserId(user.getId())
+                    .stream().anyMatch(m -> m.getGroup().getId().equals(DEMO_GROUP_ID));
+            if (alreadyMember) return;
+            Role memberRole = roleRepository.findByName("MEMBER").orElse(null);
+            if (memberRole == null) return;
+            GroupMember member = new GroupMember();
+            member.setGroup(demoGroup);
+            member.setUser(user);
+            member.setRole(memberRole);
+            member.setStatus(GroupMemberStatus.APPROVED);
+            groupMemberRepository.save(member);
+            log.info("Auto-added new user {} to demo group {}", user.getId(), DEMO_GROUP_ID);
+        } catch (Exception e) {
+            log.warn("Failed to add user {} to demo group: {}", user.getId(), e.getMessage());
+        }
+    }
+
     public OnboardingStatusDto getOnboardingStatus() {
         Long userId = AuthUtil.getCurrentUserId();
 
         List<GroupMember> approved = groupMemberRepository.findByUserId(userId)
                 .stream()
                 .filter(m -> m.getStatus() == GroupMemberStatus.APPROVED)
+                .filter(m -> !m.getGroup().getId().equals(DEMO_GROUP_ID))
                 .toList();
 
         boolean hasGroup = !approved.isEmpty();

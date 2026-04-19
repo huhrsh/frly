@@ -21,29 +21,21 @@ public class ActivityLogDto {
     private LocalDateTime createdAt;
 
     public static ActivityLogDto from(ActivityLog log) {
-        return new ActivityLogDto(
-            log.getId(),
-            log.getGroupId(),
-            null,
-            log.getActorId(),
-            log.getActorName(),
-            log.getActorPfpUrl(),
-            log.getActionType(),
-            log.getEntityName(),
-            log.getSectionId(),
-            log.getSectionName(),
-            log.getCreatedAt()
-        );
+        return from(log, null, null);
     }
 
     public static ActivityLogDto from(ActivityLog log, String groupName) {
+        return from(log, groupName, null);
+    }
+
+    public static ActivityLogDto from(ActivityLog log, String groupName, String resolvedActorPfpUrl) {
         return new ActivityLogDto(
             log.getId(),
             log.getGroupId(),
             groupName,
             log.getActorId(),
             log.getActorName(),
-            log.getActorPfpUrl(),
+            resolvedActorPfpUrl,
             log.getActionType(),
             log.getEntityName(),
             log.getSectionId(),

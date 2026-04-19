@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Bell, BellRing } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import axiosClient from '../api/axiosClient';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { formatTimeAgo } from '../utils/dateUtils';
@@ -47,6 +48,8 @@ const formatNotificationType = (type) => {
 
 const NotificationBell = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const currentGroup = useSelector(state => state.group.currentGroup);
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [notifications, setNotifications] = useState([]);
@@ -162,9 +165,12 @@ const NotificationBell = () => {
         let target = null;
         if (notification.groupId && notification.sectionId) {
             const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-            target = isMobile
+            const isInBento = isMobile
+                || location.pathname.includes('/sections/')
+                || currentGroup?.viewPreference === 'BENTO';
+            target = isInBento
                 ? `/groups/${notification.groupId}/sections/${notification.sectionId}`
-                : `/groups/${notification.groupId}?section=${notification.sectionId}`;
+                : `/groups/${notification.groupId}?section=${notification.sectionId}&view=WORKSPACE`;
         } else if (notification.type === 'GROUP_INVITE_RECEIVED') {
             target = '/groups/join';
         } else if (notification.type === 'GROUP_JOIN_REQUEST') {

@@ -744,7 +744,7 @@ const GroupView = () => {
                     )}
                 </div>
                 {searchOpen && searchResults.length > 0 && (
-                    <div className={`absolute top-full ${dropdownPos} mt-1 w-72 max-w-[calc(100vw-1rem)] bg-white rounded-md shadow-lg border border-gray-200 z-50 overflow-hidden pb-1`}>
+                    <div className={`absolute top-full ${dropdownPos} mt-1 w-72 max-w-[calc(100vw-1rem)] bg-white rounded-md shadow-lg border border-gray-200 z-50 max-h-96 overflow-y-auto pb-1`}>
                         {sectionResults.length > 0 && (
                             <>
                                 <div className="px-3 pt-1.5 pb-1 text-[10px] font-semibold text-gray-700 bg-gray-50 uppercase tracking-wide">Sections</div>

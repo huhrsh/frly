@@ -172,17 +172,20 @@ const BentoGrid = ({ sections, previews, allSections, groupId, onOpenCreateModal
                             ) : preview?.kind === 'CALENDAR' ? (
                                 <div className="flex flex-col gap-1">
                                     {preview.todayEvents && preview.todayEvents.length > 0 ? (
-                                        <ul className="space-y-0.5 max-h-16 overflow-hidden">
-                                            {preview.todayEvents.map((ev, idx) => (
+                                        <ul className="space-y-0.5">
+                                            {preview.todayEvents.slice(0, 2).map((ev, idx) => (
                                                 <li key={idx} className="flex items-center justify-between text-xs">
                                                     <span className="truncate text-gray-700">{ev.title}</span>
                                                     {ev.startTime && (
                                                         <span className="text-[10px] text-gray-400 whitespace-nowrap ml-1">
-                                                            {parseUTCDate(ev.startTime).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                                                            {new Date(ev.startTime).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                                                         </span>
                                                     )}
                                                 </li>
                                             ))}
+                                            {preview.todayEvents.length > 2 && (
+                                                <li className="text-[10px] text-gray-400">+{preview.todayEvents.length - 2} more today</li>
+                                            )}
                                         </ul>
                                     ) : (
                                         <p className="text-xs text-gray-400">No events today</p>

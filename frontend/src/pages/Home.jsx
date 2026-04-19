@@ -12,7 +12,6 @@ const Home = () => {
                 const res = await axiosClient.get('/review/public');
                 setReviews(Array.isArray(res.data) ? res.data.slice(0, 3) : []);
             } catch (error) {
-                // keep homepage fast even if reviews fail
                 console.error('Failed to load reviews', error);
             }
         };
@@ -25,21 +24,23 @@ const Home = () => {
                 title="fryly – Shared home base for flats, families and close crews"
                 description="Fryly is a calm shared home base for the people you live and plan with every week – flats, families and recurring crews. Keep notes, lists, reminders, links, photos and expenses organised together outside noisy chats."
             />
+
             {/* HERO */}
             <section className="relative overflow-hidden bg-gradient-to-b from-blue-50 via-white to-white">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-16 pb-20 sm:pt-20 sm:pb-24">
                     <div className="text-center max-w-3xl mx-auto">
                         <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-4 py-1.5 text-xs font-medium text-blue-700 mb-6">
                             <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-                            Best for shared homes, families and close crews
+                            For flatmates, families and close crews
                         </div>
                         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-gray-900 leading-tight">
-                            A shared home base for your flat or family.
+                            Your group chat is a mess.<br />
+                            <span className="text-blue-600">Fryly fixes that.</span>
                         </h1>
                         <p className="mt-6 text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
-                            For the people you share life with every week – keep chores, bills, trips and important info together in one calm workspace, instead of buried in chat.
+                            One organised space for the people you live and plan with — checklists, shared expenses, reminders and more. No more scrolling through chats to find "that thing".
                         </p>
-                        
+
                         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
                             <Link
                                 to="/register"
@@ -51,271 +52,149 @@ const Home = () => {
                                 to="/login"
                                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border-2 border-gray-300 bg-white px-8 py-4 text-base font-semibold text-gray-700 hover:border-gray-400 hover:bg-gray-50 transition-all"
                             >
-                                Join existing group
+                                Join with an invite code
                             </Link>
                         </div>
-
-                        <p className="mt-6 text-sm text-gray-500">
-                            No credit card · Best for ongoing groups · Just create and invite
+                        <p className="mt-4 text-sm text-gray-500">
+                            Free · No credit card · Takes 30 seconds
                         </p>
                     </div>
+                </div>
+            </section>
 
-                    {/* Visual Feature Preview - Who uses fryly */}
-                    <div className="mt-40 max-w-5xl mx-auto">
-                        <div className="text-center mb-8">
-                            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Who uses fryly?</h2>
-                            <p className="mt-2 text-sm sm:text-base text-gray-600">Everyday groups you keep coming back to</p>
+            {/* PAIN vs FRYLY — moved up, most compelling section */}
+            <section className="py-16 bg-gray-50">
+                <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+                    <div className="text-center mb-10">
+                        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                            Use WhatsApp for talking · Use fryly for everything else
+                        </h2>
+                    </div>
+                    <div className="grid sm:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                        <div className="rounded-2xl bg-red-50 border-2 border-red-200 p-6">
+                            <h3 className="text-base font-bold text-gray-900 mb-4">In group chats...</h3>
+                            <ul className="space-y-3 text-sm text-gray-700">
+                                <li className="flex items-start gap-2"><span className="text-red-400 font-bold mt-0.5">✕</span><span>Plans get buried under memes and reactions</span></li>
+                                <li className="flex items-start gap-2"><span className="text-red-400 font-bold mt-0.5">✕</span><span>Scroll forever to find "that link someone shared"</span></li>
+                                <li className="flex items-start gap-2"><span className="text-red-400 font-bold mt-0.5">✕</span><span>"Who owes what?" becomes a whole argument</span></li>
+                                <li className="flex items-start gap-2"><span className="text-red-400 font-bold mt-0.5">✕</span><span>Photos and docs vanish in message history</span></li>
+                            </ul>
                         </div>
-
-                        <div className="grid gap-4 sm:grid-cols-3">
-                            <div className="group rounded-2xl bg-gradient-to-br from-purple-50 to-pink-50 p-6 border-2 border-purple-100 hover:border-purple-200 transition-all hover:shadow-lg">
-                                <h3 className="text-sm font-bold text-gray-900 mb-2">Flatmates &amp; PGs</h3>
-                                <p className="text-xs text-gray-600">
-                                    "Who's turn to clean?" "Did someone pay the Wi-Fi bill?" Keep chore rotas, bill splits, and household rules in one place everyone can check.
-                                </p>
-                                <p className="mt-3 text-xs font-medium text-gray-700">Chores · Bills · Groceries · Maintenance</p>
-                            </div>
-                            <div className="group rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-50 p-6 border-2 border-blue-100 hover:border-blue-200 transition-all hover:shadow-lg">
-                                <h3 className="text-sm font-bold text-gray-900 mb-2">Your regular crew &amp; trips</h3>
-                                <p className="text-xs text-gray-600">
-                                    Annual trips, weekend plans, the same group of friends. Keep itineraries, bookings, shared links, photos and who-paid-what in a space you reuse beyond one night out.
-                                </p>
-                                <p className="mt-3 text-xs font-medium text-gray-700">Trips · Outings · Shared expenses</p>
-                            </div>
-                            <div className="group rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 p-6 border-2 border-emerald-100 hover:border-emerald-200 transition-all hover:shadow-lg">
-                                <h3 className="text-sm font-bold text-gray-900 mb-2">Families</h3>
-                                <p className="text-xs text-gray-600">
-                                    "When's the parent-teacher meet?" "Where did we save that insurance doc?" Maintain calendars, important documents, medical info, and shared to-dos the whole family can see.
-                                </p>
-                                <p className="mt-3 text-xs font-medium text-gray-700">Events · Documents · Tasks · Important dates</p>
-                            </div>
+                        <div className="rounded-2xl bg-green-50 border-2 border-green-300 p-6">
+                            <h3 className="text-base font-bold text-gray-900 mb-4">With fryly...</h3>
+                            <ul className="space-y-3 text-sm text-gray-700">
+                                <li className="flex items-start gap-2"><span className="text-green-600 font-bold mt-0.5">✓</span><span>Checklists everyone can tick off in real time</span></li>
+                                <li className="flex items-start gap-2"><span className="text-green-600 font-bold mt-0.5">✓</span><span>Expenses tracked — who paid, who owes, settled</span></li>
+                                <li className="flex items-start gap-2"><span className="text-green-600 font-bold mt-0.5">✓</span><span>Reminders, notes and files always findable</span></li>
+                                <li className="flex items-start gap-2"><span className="text-green-600 font-bold mt-0.5">✓</span><span>One source of truth your whole group can see</span></li>
+                            </ul>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* WHAT YOU CAN DO - Visual Feature Grid */}
+            {/* FEATURES — Lists & Payments first */}
             <section className="py-16 sm:py-20 bg-white">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-12">
                         <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
-                            Build your group workspace with sections
+                            Everything your group actually needs
                         </h2>
                         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                            Mix and match the tools your group actually needs
+                            Mix and match sections — start with 2, add more as you go
                         </p>
                     </div>
 
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto">
-                        {/* Note Section */}
-                        <div className="group relative rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 p-6 border-2 border-amber-100 hover:border-amber-300 transition-all hover:shadow-xl hover:-translate-y-1">
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">Notes</h3>
-                            <p className="text-sm text-gray-700 mb-3">House rules, plans, recipes — anything worth writing down</p>
-                            <div className="text-xs text-amber-700 font-medium">Everyone can edit • Rich text</div>
-                        </div>
-
-                        {/* List Section */}
                         <div className="group relative rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 p-6 border-2 border-green-100 hover:border-green-300 transition-all hover:shadow-xl hover:-translate-y-1">
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">Lists</h3>
-                            <p className="text-sm text-gray-700 mb-3">Grocery lists, packing, to-dos — check things off together</p>
-                            <div className="text-xs text-green-700 font-medium">Shared checkboxes • Real-time sync</div>
+                            <div className="text-2xl mb-2">✅</div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-2">Checklists</h3>
+                            <p className="text-sm text-gray-700 mb-3">Groceries, chores, packing — check things off together in real time</p>
+                            <div className="text-xs text-green-700 font-medium">Shared checkboxes · Everyone can tick</div>
                         </div>
 
-                        {/* Reminders Section */}
-                        <div className="group relative rounded-2xl bg-gradient-to-br from-purple-50 to-violet-50 p-6 border-2 border-purple-100 hover:border-purple-300 transition-all hover:shadow-xl hover:-translate-y-1">
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">Reminders</h3>
-                            <p className="text-sm text-gray-700 mb-3">Bills, chores, events — never miss what matters</p>
-                            <div className="text-xs text-purple-700 font-medium">Email alerts • Due dates</div>
-                        </div>
-
-                        {/* Gallery Section */}
-                        <div className="group relative rounded-2xl bg-gradient-to-br from-pink-50 to-rose-50 p-6 border-2 border-pink-100 hover:border-pink-300 transition-all hover:shadow-xl hover:-translate-y-1">
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">Gallery</h3>
-                            <p className="text-sm text-gray-700 mb-3">Trip photos, receipts, documents — stored together</p>
-                            <div className="text-xs text-pink-700 font-medium">Shared albums • Easy uploads</div>
-                        </div>
-
-                        {/* Payments Section */}
                         <div className="group relative rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-50 p-6 border-2 border-blue-100 hover:border-blue-300 transition-all hover:shadow-xl hover:-translate-y-1">
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">Payments</h3>
-                            <p className="text-sm text-gray-700 mb-3">Track who paid what — split bills fairly</p>
-                            <div className="text-xs text-blue-700 font-medium">Split costs • Keep records</div>
+                            <div className="text-2xl mb-2">💸</div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-2">Expense Splits</h3>
+                            <p className="text-sm text-gray-700 mb-3">Track who paid what, split bills fairly, settle up in one tap</p>
+                            <div className="text-xs text-blue-700 font-medium">Balances · Settlements · History</div>
                         </div>
 
-                        {/* Calendar Section */}
+                        <div className="group relative rounded-2xl bg-gradient-to-br from-pink-50 to-rose-50 p-6 border-2 border-pink-100 hover:border-pink-300 transition-all hover:shadow-xl hover:-translate-y-1">
+                            <div className="text-2xl mb-2">🖼️</div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-2">Shared Gallery</h3>
+                            <p className="text-sm text-gray-700 mb-3">Trip photos, receipts, documents — all in one shared album</p>
+                            <div className="text-xs text-pink-700 font-medium">Upload · Browse · Download</div>
+                        </div>
+
+                        <div className="group relative rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 p-6 border-2 border-amber-100 hover:border-amber-300 transition-all hover:shadow-xl hover:-translate-y-1">
+                            <div className="text-2xl mb-2">📝</div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-2">Notes</h3>
+                            <p className="text-sm text-gray-700 mb-3">House rules, trip itineraries, recipes — anyone can edit</p>
+                            <div className="text-xs text-amber-700 font-medium">Rich text · Collaborative</div>
+                        </div>
+
+                        <div className="group relative rounded-2xl bg-gradient-to-br from-purple-50 to-violet-50 p-6 border-2 border-purple-100 hover:border-purple-300 transition-all hover:shadow-xl hover:-translate-y-1">
+                            <div className="text-2xl mb-2">🔔</div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-2">Reminders</h3>
+                            <p className="text-sm text-gray-700 mb-3">Rent due, bill dates, chores — never miss what matters</p>
+                            <div className="text-xs text-purple-700 font-medium">Email alerts · Due dates</div>
+                        </div>
+
                         <div className="group relative rounded-2xl bg-gradient-to-br from-indigo-50 to-blue-50 p-6 border-2 border-indigo-100 hover:border-indigo-300 transition-all hover:shadow-xl hover:-translate-y-1">
+                            <div className="text-2xl mb-2">📅</div>
                             <h3 className="text-xl font-bold text-gray-900 mb-2">Calendar</h3>
-                            <p className="text-sm text-gray-700 mb-3">Shared events, trips, important dates at a glance</p>
-                            <div className="text-xs text-indigo-700 font-medium">Group timeline • Visual view</div>
+                            <p className="text-sm text-gray-700 mb-3">Shared events, trips and important dates at a glance</p>
+                            <div className="text-xs text-indigo-700 font-medium">Group timeline · Visual view</div>
                         </div>
-                    </div>
-
-                    <div className="mt-12 text-center">
-                        <p className="text-gray-600 text-sm">
-                            <span className="font-semibold text-gray-900">Pro tip:</span> Start with 2-3 sections. Add more as you need them.
-                        </p>
                     </div>
                 </div>
             </section>
 
-            {/* HOW TO GET STARTED - Dual Path */}
-            <section className="py-16 sm:py-20 bg-gradient-to-b from-gray-50 to-white">
+            {/* WHO IT'S FOR */}
+            <section className="py-16 bg-gradient-to-b from-blue-50 via-white to-white">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-12">
-                        <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
-                            Ready in 2 minutes
-                        </h2>
-                        <p className="text-lg text-gray-600">
-                            Choose your path
-                        </p>
+                    <div className="text-center mb-10">
+                        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Who uses fryly?</h2>
                     </div>
-
-                    <div className="grid lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
-                        {/* Create Path */}
-                        <div className="relative rounded-3xl bg-gradient-to-br from-blue-500 to-indigo-600 p-8 text-white shadow-2xl hover:shadow-3xl transition-all hover:shadow-indigo-300">
-                            {/* <div className="absolute -top-4 -right-4 bg-yellow-400 text-gray-900 rounded-full px-4 py-2 text-xs font-bold shadow-lg">
-                                Most Popular
-                            </div> */}
-                            <h3 className="text-2xl font-bold mb-6">Start Your Own Group</h3>
-                            
-                            <div className="space-y-4 mb-8">
-                                <div className="flex items-start gap-3">
-                                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold text-sm">1</div>
-                                    <div>
-                                        <p className="font-semibold">Sign up for free</p>
-                                        <p className="text-sm text-blue-100">Takes 30 seconds. No credit card.</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold text-sm">2</div>
-                                    <div>
-                                        <p className="font-semibold">Create your group</p>
-                                        <p className="text-sm text-blue-100">Name it "Flatmates" or "Trip squad" — you're the admin</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold text-sm">3</div>
-                                    <div>
-                                        <p className="font-semibold">Invite your people</p>
-                                        <p className="text-sm text-blue-100">Share the code or send email invites</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <Link
-                                to="/register"
-                                className="block w-full text-center bg-white text-blue-600 font-bold py-4 rounded-xl hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl"
-                            >
-                                Create my group →
-                            </Link>
+                    <div className="grid gap-4 sm:grid-cols-3 max-w-5xl mx-auto">
+                        <div className="rounded-2xl bg-gradient-to-br from-purple-50 to-pink-50 p-6 border-2 border-purple-100">
+                            <div className="text-2xl mb-2">🏠</div>
+                            <h3 className="text-sm font-bold text-gray-900 mb-2">Flatmates &amp; PGs</h3>
+                            <p className="text-xs text-gray-600">"Whose turn to clean?" "Did someone pay Wi-Fi?" — chore rotas, bill splits and groceries in one place.</p>
                         </div>
-
-                        {/* Join Path */}
-                        <div className="relative rounded-3xl bg-white border-2 border-gray-200 p-8 shadow-lg hover:shadow-xl transition-all hover:border-gray-300">
-                            <h3 className="text-2xl font-bold text-gray-900 mb-6">Join Existing Group</h3>
-                            
-                            <div className="space-y-4 mb-8">
-                                <div className="flex items-start gap-3">
-                                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-sm text-gray-700">1</div>
-                                    <div>
-                                        <p className="font-semibold text-gray-900">Get the invite</p>
-                                        <p className="text-sm text-gray-600">Your friend/flatmate shares a code or link</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-sm text-gray-700">2</div>
-                                    <div>
-                                        <p className="font-semibold text-gray-900">Sign up & join</p>
-                                        <p className="text-sm text-gray-600">Use the code to request access</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-sm text-gray-700">3</div>
-                                    <div>
-                                        <p className="font-semibold text-gray-900">You're in!</p>
-                                        <p className="text-sm text-gray-600">Admin approves and you see everything</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <Link
-                                to="/login"
-                                className="block w-full text-center bg-gray-900 text-white font-bold py-4 rounded-xl hover:bg-gray-800 transition-all"
-                            >
-                                I have an invite code →
-                            </Link>
+                        <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-50 p-6 border-2 border-blue-100">
+                            <div className="text-2xl mb-2">✈️</div>
+                            <h3 className="text-sm font-bold text-gray-900 mb-2">Trip squads</h3>
+                            <p className="text-xs text-gray-600">Itineraries, bookings, shared links, who-paid-what — reuse the same group every trip.</p>
                         </div>
-                    </div>
-
-                    {/* Admin vs Member Info */}
-                    <div className="mt-12 grid sm:grid-cols-2 gap-6 max-w-4xl mx-auto">
-                        <div className="rounded-2xl bg-blue-50 border border-blue-200 p-6">
-                            <div className="flex items-center gap-2 mb-3">
-                                <h4 className="font-bold text-gray-900">Group Admins</h4>
-                            </div>
-                            <ul className="space-y-2 text-sm text-gray-700">
-                                <li className="flex items-start gap-2">
-                                    <span className="text-green-500 font-bold">•</span>
-                                    <span>Create & manage sections</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <span className="text-green-500 font-bold">•</span>
-                                    <span>Invite & remove members</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <span className="text-green-500 font-bold">•</span>
-                                    <span>Full control over the workspace</span>
-                                </li>
-                            </ul>
-                        </div>
-                        <div className="rounded-2xl bg-gray-50 border border-gray-200 p-6">
-                            <div className="flex items-center gap-2 mb-3">
-                                <h4 className="font-bold text-gray-900">Group Members</h4>
-                            </div>
-                            <ul className="space-y-2 text-sm text-gray-700">
-                                <li className="flex items-start gap-2">
-                                    <span className="text-green-500 font-bold">•</span>
-                                    <span>Add notes, tasks, photos, payments</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <span className="text-green-500 font-bold">•</span>
-                                    <span>See everything in real-time</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <span className="text-green-500 font-bold">•</span>
-                                    <span>Stay in sync with the group</span>
-                                </li>
-                            </ul>
+                        <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 p-6 border-2 border-emerald-100">
+                            <div className="text-2xl mb-2">👨‍👩‍👧</div>
+                            <h3 className="text-sm font-bold text-gray-900 mb-2">Families</h3>
+                            <p className="text-xs text-gray-600">"When's the parent-teacher meet?" — calendars, important documents and to-dos the whole family can see.</p>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* REVIEWS / SOCIAL PROOF */}
+            {/* SOCIAL PROOF */}
             {reviews && reviews.length > 0 && (
-                <section className="py-16 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+                <section className="py-16 bg-white">
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                        <div className="text-center mb-12">
-                            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
-                                Early groups love it
-                            </h2>
-                            <p className="text-gray-600">Real words from people using fryly</p>
+                        <div className="text-center mb-10">
+                            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Early groups love it</h2>
+                            <p className="text-gray-500 text-sm">Real words from people using fryly</p>
                         </div>
                         <div className="grid gap-6 sm:grid-cols-3 max-w-5xl mx-auto">
                             {reviews.map((review) => (
-                                <div
-                                    key={review.id}
-                                    className="relative rounded-2xl bg-white p-6 shadow-lg border-2 border-transparent hover:border-purple-200 transition-all"
-                                >
-                                    <div className="flex items-center gap-1 text-lg text-amber-400 mb-3">
-                                        {Array.from({ length: 5 }).map((_, index) => (
-                                            <span key={index}>{index < (review.rating || 0) ? '★' : '☆'}</span>
+                                <div key={review.id} className="rounded-2xl bg-gray-50 p-6 border border-gray-200">
+                                    <div className="flex items-center gap-1 text-amber-400 mb-3">
+                                        {Array.from({ length: 5 }).map((_, i) => (
+                                            <span key={i}>{i < (review.rating || 0) ? '★' : '☆'}</span>
                                         ))}
                                     </div>
-                                    <p className="text-sm text-gray-700 leading-relaxed mb-4">
-                                        "{review.message}"
-                                    </p>
-                                    <p className="text-xs text-gray-500 font-medium">— fryly user</p>
+                                    <p className="text-sm text-gray-700 leading-relaxed mb-4">"{review.message}"</p>
+                                    <p className="text-xs text-gray-400 font-medium">— fryly user</p>
                                 </div>
                             ))}
                         </div>
@@ -323,94 +202,30 @@ const Home = () => {
                 </section>
             )}
 
-            {/* WHY FRYLY - Simple comparison */}
-            <section className="py-16 bg-white">
-                <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-12">
-                        <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
-                            Works alongside your chats
-                        </h2>
-                        <p className="text-lg text-gray-600">
-                            Use WhatsApp for talking · Use fryly for everything else
-                        </p>
-                    </div>
-
-                    <div className="grid sm:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                        <div className="rounded-2xl bg-red-50 border-2 border-red-200 p-6">
-                            <h3 className="text-lg font-bold text-gray-900 mb-4">In group chats...</h3>
-                            <ul className="space-y-3 text-sm text-gray-700">
-                                <li className="flex items-start gap-2">
-                                    <span className="text-red-500 font-bold">•</span>
-                                    <span>Plans get buried under memes</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <span className="text-red-500 font-bold">•</span>
-                                    <span>Scroll forever to find "that link"</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <span className="text-red-500 font-bold">•</span>
-                                    <span>Someone always misses the update</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <span className="text-red-500 font-bold">•</span>
-                                    <span>Photos vanish in message history</span>
-                                </li>
-                            </ul>
-                        </div>
-
-                        <div className="rounded-2xl bg-green-50 border-2 border-green-300 p-6 relative">
-                            {/* <div className="absolute -top-3 -right-3 bg-green-500 text-white rounded-full px-3 py-1 text-xs font-bold shadow-lg">
-                                Better
-                            </div> */}
-                            <h3 className="text-lg font-bold text-gray-900 mb-4">With fryly...</h3>
-                            <ul className="space-y-3 text-sm text-gray-700">
-                                <li className="flex items-start gap-2">
-                                    <span className="text-green-600 font-bold">•</span>
-                                    <span>Everything in its place, always</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <span className="text-green-600 font-bold">•</span>
-                                    <span>Everyone sees the same thing</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <span className="text-green-600 font-bold">•</span>
-                                    <span>Reminders so nothing's forgotten</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <span className="text-green-600 font-bold">•</span>
-                                    <span>One source of truth for your group</span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
             {/* FINAL CTA */}
             <section className="py-20 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 text-white relative overflow-hidden">
-                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yLjIxIDEuNzktNCA0LTRzNCAxLjc5IDQgNC0xLjc5IDQtNCA0LTQtMS43OS00LTR6bTAgMGMwLTIuMjEgMS43OS00IDQtNHM0IDEuNzkgNCA0LTEuNzkgNC00IDQtNC0xLjc5LTQtNHoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-30"></div>
                 <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
-                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-6">
-                        Ready to stop losing plans in chat?
+                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-4">
+                        Stop losing plans in chat.
                     </h2>
-                    <p className="text-lg sm:text-xl text-blue-100 mb-10 max-w-2xl mx-auto">
-                        Join hundreds of flatmates, families and trip crews who switched to fryly
+                    <p className="text-lg sm:text-xl text-blue-100 mb-10 max-w-xl mx-auto">
+                        Set up your group in 2 minutes. Invite your people. See the difference.
                     </p>
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                         <Link
                             to="/register"
                             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-white text-blue-600 px-8 py-4 text-lg font-bold hover:bg-blue-50 transition-all hover:scale-105 shadow-2xl"
                         >
-                            Create your group
+                            Create your group — free
                         </Link>
                         <Link
                             to="/login"
-                            className="text-white underline text-lg font-semibold hover:text-blue-100"
+                            className="text-white underline text-base font-medium hover:text-blue-100"
                         >
                             or join with an invite code
                         </Link>
                     </div>
-                    <p className="mt-8 text-sm text-blue-200">
+                    <p className="mt-6 text-sm text-blue-200">
                         No credit card · No trial limits · Just create and go
                     </p>
                 </div>

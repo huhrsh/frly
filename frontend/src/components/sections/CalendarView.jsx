@@ -121,12 +121,11 @@ const CalendarView = ({ sectionId }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const toUTC = (local) => local ? new Date(local).toISOString().slice(0, 16) : null;
       const payload = {
         title: form.title,
         description: form.description,
-        startTime: toUTC(form.start),
-        endTime: form.end ? toUTC(form.end) : null,
+        startTime: form.start || null,
+        endTime: form.end || null,
         location: form.location,
         category: form.category,
         memberIds: Array.isArray(form.memberIds) ? form.memberIds : [],
