@@ -3,6 +3,7 @@ package com.example.frly.activity;
 import com.example.frly.auth.AuthUtil;
 import com.example.frly.group.enums.GroupMemberStatus;
 import com.example.frly.group.repository.GroupMemberRepository;
+import com.example.frly.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -21,6 +22,7 @@ public class ActivityLogService {
 
     private final ActivityLogRepository activityLogRepository;
     private final GroupMemberRepository groupMemberRepository;
+    private final UserRepository userRepository;
 
     /**
      * Fire-and-forget log call. Never throws — failures are silently logged.
@@ -33,7 +35,6 @@ public class ActivityLogService {
             entry.setGroupId(groupId);
             entry.setActorId(actorId);
             entry.setActorName(actorName);
-            entry.setActorPfpUrl(actorPfpUrl);
             entry.setActionType(actionType);
             entry.setEntityName(entityName);
             entry.setSectionId(sectionId);
@@ -45,10 +46,11 @@ public class ActivityLogService {
     }
 
     public List<ActivityLogDto> getGroupActivity(String groupId, int page, int size) {
-        return activityLogRepository
-                .findByGroupIdOrderByCreatedAtDesc(groupId, PageRequest.of(page, size))
-                .stream()
-                .map(ActivityLogDto::from)
+        List<ActivityLog> logs = activityLogRepository
+                .findByGroupIdOrderByCreatedAtDesc(groupId, PageRequest.of(page, size));
+        Map<Long, String> pfpUrls = resolveActorPfpUrls(logs);
+        return logs.stream()
+                .map(l -> ActivityLogDto.from(l, null, pfpUrls.get(l.getActorId())))
                 .collect(Collectors.toList());
     }
 
@@ -71,10 +73,26 @@ public class ActivityLogService {
 
         List<String> groupIds = new java.util.ArrayList<>(groupNames.keySet());
 
-        return activityLogRepository
-                .findByGroupIdInOrderByCreatedAtDesc(groupIds, PageRequest.of(page, size))
-                .stream()
-                .map(log -> ActivityLogDto.from(log, groupNames.getOrDefault(log.getGroupId(), null)))
+        List<ActivityLog> logs = activityLogRepository
+                .findByGroupIdInOrderByCreatedAtDesc(groupIds, PageRequest.of(page, size));
+        Map<Long, String> pfpUrls = resolveActorPfpUrls(logs);
+        return logs.stream()
+                .map(l -> ActivityLogDto.from(l, groupNames.getOrDefault(l.getGroupId(), null), pfpUrls.get(l.getActorId())))
                 .collect(Collectors.toList());
+    }
+
+    private Map<Long, String> resolveActorPfpUrls(List<ActivityLog> logs) {
+        List<Long> actorIds = logs.stream()
+                .map(ActivityLog::getActorId)
+                .filter(id -> id != null)
+                .distinct()
+                .collect(Collectors.toList());
+        if (actorIds.isEmpty()) return Map.of();
+        return userRepository.findAllById(actorIds).stream()
+                .collect(Collectors.toMap(
+                        com.example.frly.user.User::getId,
+                        u -> u.getPfpUrl() != null ? u.getPfpUrl() : "",
+                        (a, b) -> a
+                ));
     }
 }

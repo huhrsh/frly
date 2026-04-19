@@ -256,7 +256,7 @@ public class ReminderJobService {
             request.setSectionId(sectionId);
             request.setActorName(actorName);
             if (creator != null) {
-                request.setActorPfpUrl(creator.getPfpUrl());
+                request.setActorId(creator.getId());
             }
             request.setSectionType("REMINDER");
             

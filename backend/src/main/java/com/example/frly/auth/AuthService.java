@@ -7,6 +7,7 @@ import com.example.frly.email.EmailService;
 import com.example.frly.user.User;
 import com.example.frly.user.UserMapper;
 import com.example.frly.user.UserRepository;
+import com.example.frly.user.UserService;
 import com.example.frly.user.dto.UserDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +37,7 @@ public class AuthService {
     private final EmailService emailService;
     private final UserMapper userMapper;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final UserService userService;
     private final SecureRandom random = new SecureRandom();
 
 
@@ -122,6 +124,7 @@ public class AuthService {
                 user.setPfpUrl(picture);
             }
             user = userRepository.save(user);
+            userService.addToDemoGroup(user);
             log.info("Created new Google user: {}", email);
         }
 

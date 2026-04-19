@@ -260,7 +260,8 @@ const Dashboard = () => {
     const pendingInvites = invites.length;
 
     const approvedGroups = visibleGroups.filter(g => g.membershipStatus === 'APPROVED');
-    const firstGroupId = approvedGroups.length > 0 ? approvedGroups[0].id : null;
+    const DEMO_GROUP_ID = 10;
+    const firstGroupId = (approvedGroups.find(g => g.id !== DEMO_GROUP_ID) ?? approvedGroups[0])?.id ?? null;
 
     // Show onboarding if: status loaded, not all steps done, and user hasn't dismissed
     const showOnboarding = onboarding !== null

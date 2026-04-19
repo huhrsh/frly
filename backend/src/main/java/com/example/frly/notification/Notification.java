@@ -43,6 +43,9 @@ public class Notification {
     @Column(name = "actor_name", length = 255)
     private String actorName;
 
+    @Column(name = "actor_id")
+    private Long actorId;
+
     @Column(name = "actor_pfp_url")
     private String actorPfpUrl;
 

@@ -87,7 +87,7 @@ public class NotificationService {
                 notification.setTitle(request.getTitle());
                 notification.setMessage(request.getMessage());
                 notification.setActorName(request.getActorName());
-                notification.setActorPfpUrl(request.getActorPfpUrl());
+                notification.setActorId(request.getActorId());
                 if (request.getGroupId() != null) {
                     notification.setGroup(new Group());
                     notification.getGroup().setId(request.getGroupId());
@@ -121,9 +121,6 @@ public class NotificationService {
     @Transactional
     public void notifyGroupMembers(Long groupId, Long sectionId, String type, String title, String message, String actorName, String sectionType) {
         Long currentUserId = AuthUtil.getCurrentUserId();
-        String actorPfpUrl = userRepository.findById(currentUserId)
-                .map(com.example.frly.user.User::getPfpUrl)
-                .orElse(null);
 
         List<Long> memberIds = groupMemberRepository
                 .findByGroupIdAndStatus(groupId, GroupMemberStatus.APPROVED)
@@ -143,7 +140,7 @@ public class NotificationService {
             request.setGroupId(groupId);
             request.setSectionId(sectionId);
             request.setActorName(actorName);
-            request.setActorPfpUrl(actorPfpUrl);
+            request.setActorId(currentUserId);
             request.setSectionType(sectionType);
             
             // Each notifyUser call will check preferences internally
@@ -187,7 +184,13 @@ public class NotificationService {
         dto.setTitle(notification.getTitle());
         dto.setMessage(notification.getMessage());
         dto.setActorName(notification.getActorName());
-        dto.setActorPfpUrl(notification.getActorPfpUrl());
+        dto.setActorId(notification.getActorId());
+        String resolvedPfpUrl = notification.getActorId() != null
+                ? userRepository.findById(notification.getActorId())
+                        .map(com.example.frly.user.User::getPfpUrl)
+                        .orElse(null)
+                : null;
+        dto.setActorPfpUrl(resolvedPfpUrl);
         dto.setGroupId(notification.getGroup() != null ? notification.getGroup().getId() : null);
         dto.setSectionId(notification.getSection() != null ? notification.getSection().getId() : null);
         dto.setRead(notification.isRead());

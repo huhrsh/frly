@@ -15,6 +15,7 @@ public class NotificationRequest {
     private Long groupId;
     private Long sectionId;
     private String actorName;
+    private Long actorId;
     private String actorPfpUrl;
     private String sectionType; // NOTE, LIST, LINKS, GALLERY, REMINDER, PAYMENT, CALENDAR, FOLDER
     

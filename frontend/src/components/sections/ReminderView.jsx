@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import axiosClient from '../../api/axiosClient';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
-import { parseUTCDate } from '../../utils/dateUtils';
 import ConfirmModal from '../ConfirmModal';
 import { ChevronRight, Search, X } from 'lucide-react';
 
@@ -355,7 +354,7 @@ const ReminderView = ({ sectionId }) => {
                                     <div className="min-w-0">
                                         <h3 className="text-sm font-semibold text-gray-900 truncate">{reminder.title}</h3>
                                         <p className="text-[11px] text-gray-600 mt-0.5">
-                                            {reminder.triggerTime && parseUTCDate(reminder.triggerTime)?.toLocaleString()}
+                                            {reminder.triggerTime && new Date(reminder.triggerTime + 'Z').toLocaleString()}
                                         </p>
                                     </div>
                                     {reminder.description && (
@@ -421,7 +420,7 @@ const ReminderView = ({ sectionId }) => {
                                     <div className="min-w-0 flex-1">
                                         <h3 className="text-sm font-medium text-gray-800 truncate">{reminder.title}</h3>
                                         <p className="text-[11px] text-gray-500 mt-0.5">
-                                            {reminder.triggerTime && parseUTCDate(reminder.triggerTime)?.toLocaleString()}
+                                            {reminder.triggerTime && new Date(reminder.triggerTime + 'Z').toLocaleString()}
                                         </p>
                                         {reminder.description && (
                                             <p className="text-xs text-gray-600 mt-1 whitespace-pre-line">{reminder.description}</p>
