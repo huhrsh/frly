@@ -24,6 +24,7 @@ import com.example.frly.user.User;
 import com.example.frly.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -31,6 +32,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Map;
 
@@ -50,10 +56,13 @@ public class GalleryService {
     private final UserRepository userRepository;
     private final ActivityLogService activityLogService;
 
+    @Value("${cloudinary.folder-prefix:prod}")
+    private String cloudinaryFolderPrefix;
+
     @Transactional
     public GalleryItemDto uploadItem(Long sectionId, MultipartFile file) throws IOException {
         // 1. Security Check
-        groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
+        groupService.validateNotViewer(AuthUtil.getCurrentUserId(), Long.parseLong(GroupContext.getGroupId()));
 
         // 2. Validate Section
         Section section = sectionRepository.findById(sectionId)
@@ -78,8 +87,9 @@ public class GalleryService {
         }
 
         // 4. Upload to Cloudinary
-        // Folder structure: fryly/tenant_{groupId}/section_{sectionId}
-        String folderPath = "fryly/tenant_" + groupId + "/section_" + sectionId;
+        // Folder structure: {prefix}/tenant_{groupId}/section_{sectionId}
+        // The prefix separates local dev files from production files in the same account.
+        String folderPath = cloudinaryFolderPrefix + "/tenant_" + groupId + "/section_" + sectionId;
         Map<String, Object> uploadResult = fileStorageService.uploadFile(file, folderPath);
 
         // 5. Create Entity
@@ -155,7 +165,7 @@ public class GalleryService {
 
     @Transactional
     public void deleteItem(Long itemId) throws IOException {
-        groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
+        groupService.validateNotViewer(AuthUtil.getCurrentUserId(), Long.parseLong(GroupContext.getGroupId()));
         
         GalleryItem item = galleryItemRepository.findById(itemId)
                 .orElseThrow(() -> new BadRequestException("Item not found"));
@@ -197,7 +207,7 @@ public class GalleryService {
 
     @Transactional
     public void renameItem(Long itemId, String newTitle) {
-        groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
+        groupService.validateNotViewer(AuthUtil.getCurrentUserId(), Long.parseLong(GroupContext.getGroupId()));
         GalleryItem item = galleryItemRepository.findById(itemId)
                 .orElseThrow(() -> new BadRequestException("Item not found"));
         item.setTitle(newTitle);
@@ -216,5 +226,48 @@ public class GalleryService {
         }
 
         return fileStorageService.generateAccessUrl(item.getPublicId(), item.getContentType());
+    }
+
+    public String getItemDownloadUrl(Long itemId) {
+        groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
+
+        GalleryItem item = galleryItemRepository.findById(itemId)
+                .orElseThrow(() -> new BadRequestException("Item not found"));
+
+        Section section = item.getSection();
+        if (section == null || section.getStatus() == com.example.frly.common.enums.RecordStatus.DELETED) {
+            throw new BadRequestException("Section is deleted");
+        }
+
+        return fileStorageService.generateDownloadUrl(item.getPublicId(), item.getContentType(), item.getOriginalFilename());
+    }
+
+    public record DownloadResult(InputStream stream, String contentType, String filename, long contentLength) {}
+
+    public DownloadResult getItemDownloadStream(Long itemId) throws IOException, InterruptedException {
+        groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
+
+        GalleryItem item = galleryItemRepository.findById(itemId)
+                .orElseThrow(() -> new BadRequestException("Item not found"));
+
+        Section section = item.getSection();
+        if (section == null || section.getStatus() == com.example.frly.common.enums.RecordStatus.DELETED) {
+            throw new BadRequestException("Section is deleted");
+        }
+
+        String signedUrl = fileStorageService.generateAccessUrl(item.getPublicId(), item.getContentType());
+
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(signedUrl)).GET().build();
+        HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+
+        if (response.statusCode() != 200) {
+            throw new BadRequestException("Could not fetch file from storage (status " + response.statusCode() + ")");
+        }
+
+        long contentLength = response.headers().firstValueAsLong("content-length").orElse(-1L);
+        String filename = item.getOriginalFilename() != null ? item.getOriginalFilename() : "download";
+
+        return new DownloadResult(response.body(), item.getContentType(), filename, contentLength);
     }
 }

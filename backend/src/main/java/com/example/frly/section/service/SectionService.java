@@ -77,7 +77,7 @@ public class SectionService {
 
     @Transactional
     public Long createSection(CreateSectionRequestDto request) {
-        validateGroupAccess();
+        validateAdminAccess();
 
         Section section = new Section();
         section.setTitle(request.getTitle());
@@ -232,7 +232,7 @@ public class SectionService {
 
     @Transactional
     public void updateSectionTitle(Long sectionId, UpdateSectionTitleRequestDto request) {
-        validateGroupAccess();
+        validateAdminAccess();
 
         Section section = requireActiveSection(sectionId);
         String oldTitle = section.getTitle();
@@ -263,7 +263,7 @@ public class SectionService {
 
     @Transactional
     public void updateSectionParent(Long sectionId, UpdateSectionParentRequestDto request) {
-        validateGroupAccess();
+        validateAdminAccess();
 
         Section section = requireActiveSection(sectionId);
 
@@ -281,7 +281,7 @@ public class SectionService {
 
     @Transactional
     public void updateSectionDisplayMode(Long sectionId, UpdateSectionDisplayModeRequestDto request) {
-        validateGroupAccess();
+        validateAdminAccess();
 
         Section section = requireActiveSection(sectionId);
         validateSectionType(section, SectionType.LIST, "Display mode can only be set for LIST sections");
@@ -307,7 +307,7 @@ public class SectionService {
 
     @Transactional
     public void updateSectionCurrency(Long sectionId, String currency) {
-        validateGroupAccess();
+        validateAdminAccess();
         Section section = requireActiveSection(sectionId);
         validateSectionType(section, SectionType.PAYMENT, "Currency can only be set for PAYMENT sections");
         if (currency == null || currency.isBlank()) {
@@ -319,7 +319,7 @@ public class SectionService {
 
     @Transactional
     public void deleteSection(Long sectionId) {
-        validateGroupAccess();
+        validateOwnerAccess();
         
         // Get section info before deletion for notification
         Section section = sectionRepository.findById(sectionId).orElse(null);
@@ -364,6 +364,7 @@ public class SectionService {
     @Transactional
     public Long addListItem(Long sectionId, CreateListItemRequestDto request) {
         validateGroupAccess();
+        validateNotViewer();
         Section section = requireActiveSection(sectionId);
         validateSectionType(section, SectionType.LIST, "Cannot add list item to non-LIST section");
 
@@ -406,6 +407,7 @@ public class SectionService {
     @Transactional
     public void toggleListItem(Long itemId) {
         validateGroupAccess();
+        validateNotViewer();
 
         ListItem item = listItemRepository.findById(itemId)
                 .orElseThrow(() -> new BadRequestException("List item not found"));
@@ -438,6 +440,7 @@ public class SectionService {
     @Transactional
     public void updateListItem(Long itemId, UpdateListItemRequestDto request) {
         validateGroupAccess();
+        validateNotViewer();
 
         ListItem item = listItemRepository.findById(itemId)
                 .orElseThrow(() -> new BadRequestException("List item not found"));
@@ -470,6 +473,7 @@ public class SectionService {
     @Transactional
     public void deleteListItem(Long itemId) {
         validateGroupAccess();
+        validateNotViewer();
 
         ListItem item = listItemRepository.findById(itemId)
                 .orElseThrow(() -> new BadRequestException("List item not found"));
@@ -503,6 +507,7 @@ public class SectionService {
     @Transactional
     public Long addLink(Long sectionId, CreateLinkRequestDto request) {
         validateGroupAccess();
+        validateNotViewer();
         Section section = requireActiveSection(sectionId);
         validateSectionType(section, SectionType.LINKS, "Cannot add link to non-LINKS section");
 
@@ -542,6 +547,7 @@ public class SectionService {
     @Transactional
     public void updateLink(Long linkId, UpdateLinkRequestDto request) {
         validateGroupAccess();
+        validateNotViewer();
         LinkItem link = linkItemRepository.findById(linkId)
                 .orElseThrow(() -> new BadRequestException("Link not found"));
         validateSectionNotDeleted(link.getSection());
@@ -576,6 +582,7 @@ public class SectionService {
     @Transactional
     public void deleteLink(Long linkId) {
         validateGroupAccess();
+        validateNotViewer();
         LinkItem link = linkItemRepository.findById(linkId)
                 .orElseThrow(() -> new BadRequestException("Link not found"));
         validateSectionNotDeleted(link.getSection());
@@ -603,6 +610,7 @@ public class SectionService {
     @Transactional
     public void reorderLinks(Long sectionId, List<Long> orderedIds) {
         validateGroupAccess();
+        validateNotViewer();
         Section section = requireActiveSection(sectionId);
         validateSectionType(section, SectionType.LINKS, "Cannot reorder links for non-LINKS section");
 
@@ -645,6 +653,7 @@ public class SectionService {
     @Transactional
     public NoteDto updateNote(Long sectionId, UpdateNoteRequestDto request) {
         validateGroupAccess();
+        validateNotViewer();
         requireActiveSection(sectionId);
 
         Note note = noteRepository.findBySectionId(sectionId)
@@ -692,6 +701,7 @@ public class SectionService {
     @Transactional
     public Long addReminder(Long sectionId, CreateReminderRequestDto request) {
         validateGroupAccess();
+        validateNotViewer();
         Section section = requireActiveSection(sectionId);
         validateSectionType(section, SectionType.REMINDER, "Cannot add reminder to non-REMINDER section");
 
@@ -736,6 +746,7 @@ public class SectionService {
     @Transactional
     public void deleteReminder(Long reminderId) {
         validateGroupAccess();
+        validateNotViewer();
         Reminder reminder = reminderRepository.findById(reminderId)
                 .orElseThrow(() -> new BadRequestException("Reminder not found"));
         validateSectionNotDeleted(reminder.getSection());
@@ -763,6 +774,7 @@ public class SectionService {
     @Transactional
     public void updateReminder(Long reminderId, com.example.frly.section.dto.UpdateReminderRequestDto request) {
         validateGroupAccess();
+        validateNotViewer();
         Reminder reminder = reminderRepository.findById(reminderId)
                 .orElseThrow(() -> new BadRequestException("Reminder not found"));
         validateSectionNotDeleted(reminder.getSection());
@@ -805,6 +817,7 @@ public class SectionService {
     @Transactional
     public Long addCalendarEvent(Long sectionId, com.example.frly.section.dto.CreateCalendarEventRequestDto request) {
         validateGroupAccess();
+        validateNotViewer();
         Section section = requireActiveSection(sectionId);
         validateSectionType(section, SectionType.CALENDAR, "Cannot add calendar event to non-CALENDAR section");
 
@@ -891,6 +904,7 @@ public class SectionService {
     @Transactional
     public void deleteCalendarEvent(Long eventId) {
         validateGroupAccess();
+        validateNotViewer();
         CalendarEvent event = calendarEventRepository.findById(eventId)
                 .orElseThrow(() -> new BadRequestException("Calendar event not found"));
         validateSectionNotDeleted(event.getSection());
@@ -918,6 +932,7 @@ public class SectionService {
     @Transactional
     public void updateCalendarEvent(Long eventId, com.example.frly.section.dto.UpdateCalendarEventRequestDto request) {
         validateGroupAccess();
+        validateNotViewer();
 
         CalendarEvent event = calendarEventRepository.findById(eventId)
             .orElseThrow(() -> new BadRequestException("Calendar event not found"));
@@ -970,6 +985,33 @@ public class SectionService {
      */
     private void validateGroupAccess() {
         groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
+    }
+
+    private void validateAdminAccess() {
+        Long userId = AuthUtil.getCurrentUserId();
+        String groupIdStr = GroupContext.getGroupId();
+        if (groupIdStr == null || groupIdStr.equals("0")) {
+            throw new BadRequestException("Group ID missing in context");
+        }
+        groupService.validateAdminAccess(userId, Long.parseLong(groupIdStr));
+    }
+
+    private void validateOwnerAccess() {
+        Long userId = AuthUtil.getCurrentUserId();
+        String groupIdStr = GroupContext.getGroupId();
+        if (groupIdStr == null || groupIdStr.equals("0")) {
+            throw new BadRequestException("Group ID missing in context");
+        }
+        groupService.validateOwnerAccess(userId, Long.parseLong(groupIdStr));
+    }
+
+    private void validateNotViewer() {
+        Long userId = AuthUtil.getCurrentUserId();
+        String groupIdStr = GroupContext.getGroupId();
+        if (groupIdStr == null || groupIdStr.equals("0")) {
+            throw new BadRequestException("Group ID missing in context");
+        }
+        groupService.validateNotViewer(userId, Long.parseLong(groupIdStr));
     }
 
     /**

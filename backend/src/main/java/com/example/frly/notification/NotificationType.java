@@ -54,6 +54,7 @@ public class NotificationType {
     public static final String GROUP_LEFT = "GROUP_LEFT";
     public static final String GROUP_MEMBER_LEFT = "GROUP_MEMBER_LEFT";
     public static final String GROUP_MEMBER_REMOVED = "GROUP_MEMBER_REMOVED";
+    public static final String ROLE_CHANGED = "ROLE_CHANGED";
     
     private NotificationType() {
         // Utility class

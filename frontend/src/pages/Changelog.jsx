@@ -14,6 +14,20 @@ const Changelog = () => {
       </p>
       <ul className="space-y-4 text-sm text-gray-700">
         <li>
+          <p className="font-semibold">Version 1.5 – Roles, rich text notes &amp; group controls</p>
+          <ul className="mt-1 list-disc list-inside space-y-1">
+            <li>Introduced a three-tier role system: <strong>Owner</strong>, <strong>Admin</strong>, <strong>Member</strong> and <strong>Viewer</strong>. Each role has distinct permissions — Owners can delete the group and reassign roles; Admins can manage sections and members; Members add content; Viewers read only.</li>
+            <li>Group creators are automatically assigned the Owner role. Existing group creators have been migrated to Owner.</li>
+            <li>Owners can now change any member's role and set a default join role (the role new members get when they accept an invite link).</li>
+            <li>Notes now use a full rich-text editor — bold, italic, underline, headings, bullet lists, numbered lists, task (checkbox) lists, code blocks and more.</li>
+            <li>Gallery downloads now use the original filename and trigger a proper browser download instead of opening in a new tab. PDF files can be previewed inline.</li>
+            <li>Role badges appear directly next to member names in the group settings panel.</li>
+            <li>Fixed: OWNER role was incorrectly blocked from sending email invites.</li>
+            <li>Fixed: changing section currency, display mode, or parent section now requires Admin or Owner access (not just Member).</li>
+            <li>Local and production environments now upload to separate Cloudinary folders, preventing path collisions.</li>
+          </ul>
+        </li>
+        <li>
           <p className="font-semibold">Version 1.4 – Activity, search &amp; notification centre</p>
           <ul className="mt-1 list-disc list-inside space-y-1">
             <li>Added a group activity log — see a timestamped trail of everything that's happened in a group. Access it from the Settings modal (new "Activity" tab) or the history icon in the header.</li>

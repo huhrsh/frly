@@ -32,6 +32,11 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+
+import org.springframework.test.util.ReflectionTestUtils;
+
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
@@ -68,6 +73,7 @@ class GalleryServiceTest {
             new UsernamePasswordAuthenticationToken(principal, null, Collections.emptyList())
         );
         GroupContext.setGroupId(GROUP_ID);
+        ReflectionTestUtils.setField(galleryService, "cloudinaryFolderPrefix", "local");
     }
 
     @AfterEach
@@ -108,6 +114,52 @@ class GalleryServiceTest {
         assertEquals(1024L, group.getStorageUsage()); // storage incremented
         verify(galleryItemRepository).save(any(GalleryItem.class));
         verify(groupRepository).save(group);
+    }
+
+    @ParameterizedTest(name = "upload {0} ({1})")
+    @CsvSource({
+        "photo.jpg,   image/jpeg",
+        "report.pdf,  application/pdf",
+        "data.csv,    text/csv"
+    })
+    void uploadItem_supportsCommonFileTypes(String filename, String mimeType) throws IOException {
+        Section section = buildGallerySection(1L);
+        Group group = buildGroup(1L, 0L, 100 * 1024 * 1024L);
+        GalleryItemDto dto = new GalleryItemDto();
+        String trimmedFilename = filename.trim();
+        String trimmedMime = mimeType.trim();
+
+        MultipartFile file = mock(MultipartFile.class);
+        when(file.getSize()).thenReturn(512L);
+        when(file.getOriginalFilename()).thenReturn(trimmedFilename);
+        when(file.getContentType()).thenReturn(trimmedMime);
+
+        when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+        when(fileStorageService.uploadFile(eq(file), any()))
+            .thenReturn(Map.of(
+                "secure_url", "https://res.cloudinary.com/demo/" + trimmedFilename,
+                "public_id",  "local/tenant_1/section_1/" + trimmedFilename
+            ));
+        when(galleryItemRepository.save(any(GalleryItem.class))).thenAnswer(inv -> {
+            GalleryItem item = inv.getArgument(0);
+            item.setId(1L);
+            return item;
+        });
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(buildUser()));
+        when(sectionMapper.toGalleryItemDto(any(GalleryItem.class))).thenReturn(dto);
+        when(fileStorageService.generateAccessUrl(any(), eq(trimmedMime)))
+            .thenReturn("https://res.cloudinary.com/demo/signed/" + trimmedFilename);
+
+        GalleryItemDto result = galleryService.uploadItem(1L, file);
+
+        assertNotNull(result);
+        assertEquals(512L, group.getStorageUsage());
+        verify(fileStorageService).uploadFile(eq(file), contains("tenant_1"));
+        verify(galleryItemRepository).save(argThat(item ->
+            trimmedMime.equals(item.getContentType()) &&
+            trimmedFilename.equals(item.getOriginalFilename())
+        ));
     }
 
     @Test
@@ -213,6 +265,25 @@ class GalleryServiceTest {
 
         assertEquals(0L, count);
         verify(galleryItemRepository, never()).countBySectionIdAndStatusNot(any(), any());
+    }
+
+    // ─── getItemDownloadStream ────────────────────────────────────────────────
+
+    @Test
+    void getItemDownloadStream_whenItemNotFound_throwsBadRequest() {
+        when(galleryItemRepository.findById(99L)).thenReturn(Optional.empty());
+        assertThrows(BadRequestException.class, () -> galleryService.getItemDownloadStream(99L));
+    }
+
+    @Test
+    void getItemDownloadStream_whenSectionDeleted_throwsBadRequest() throws Exception {
+        Section section = buildGallerySection(1L);
+        section.setStatus(RecordStatus.DELETED);
+        GalleryItem item = buildGalleryItem(5L, section, 1024L, "pub/photo");
+
+        when(galleryItemRepository.findById(5L)).thenReturn(Optional.of(item));
+
+        assertThrows(BadRequestException.class, () -> galleryService.getItemDownloadStream(5L));
     }
 
     // ─── helpers ─────────────────────────────────────────────────────────────

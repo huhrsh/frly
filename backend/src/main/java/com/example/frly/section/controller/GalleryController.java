@@ -3,10 +3,12 @@ package com.example.frly.section.controller;
 import com.example.frly.section.dto.GalleryItemDto;
 import com.example.frly.section.service.GalleryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -62,8 +64,18 @@ public class GalleryController {
     }
 
     @GetMapping("/gallery/{itemId}/download")
-    public ResponseEntity<Map<String, String>> getGalleryItemDownloadUrl(@PathVariable Long itemId) {
-        String url = galleryService.getItemAccessUrl(itemId);
-        return ResponseEntity.ok(Map.of("url", url));
+    public ResponseEntity<InputStreamResource> downloadGalleryItem(@PathVariable Long itemId)
+            throws IOException, InterruptedException {
+        GalleryService.DownloadResult result = galleryService.getItemDownloadStream(itemId);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(result.contentType()));
+        headers.set(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"" + result.filename().replace("\"", "_") + "\"");
+        if (result.contentLength() > 0) {
+            headers.setContentLength(result.contentLength());
+        }
+
+        return ResponseEntity.ok().headers(headers).body(new InputStreamResource(result.stream()));
     }
 }

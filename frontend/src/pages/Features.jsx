@@ -18,16 +18,16 @@ const Features = () => {
       <div className="grid gap-5 md:grid-cols-3 text-sm text-gray-700">
         <div className="rounded-xl border border-gray-100 bg-white p-4 flex flex-col gap-2">
           <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Groups &amp; roles</p>
-          <h2 className="font-semibold">Admins and members</h2>
+          <h2 className="font-semibold">Owner, Admin, Member, Viewer</h2>
           <p>
-            Every group has admins who can create or delete sections, approve join requests, invite or remove members, and keep things tidy – while members simply add notes, items, photos and payments.
+            Every group has a four-tier role system. Owners manage the group and assign roles. Admins create sections, approve requests and invite members. Members add notes, items, photos and payments. Viewers can read but not change anything.
           </p>
         </div>
         <div className="rounded-xl border border-gray-100 bg-white p-4 flex flex-col gap-2">
           <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Sections</p>
           <h2 className="font-semibold">Flexible building blocks</h2>
           <p>
-            Create as many sections as you need: notes, lists, reminders, galleries, folders and payments. Mix them to fit your use-case – from "PG groceries" to "Trip itinerary" and "Family docs".
+            Create as many sections as you need: rich-text notes, checklists, reminders, galleries, folders, links and payments. Mix them to fit your use-case – from "PG groceries" to "Trip itinerary" and "Family docs".
           </p>
         </div>
         <div className="rounded-xl border border-gray-100 bg-white p-4 flex flex-col gap-2">
