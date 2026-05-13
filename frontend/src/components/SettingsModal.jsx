@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { X, RotateCcw, Bell, Smartphone, Trash2, PlusCircle, GripVertical, History } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { X, RotateCcw, Bell, Smartphone, Trash2, PlusCircle, GripVertical, History, MoreVertical } from 'lucide-react';
+import ConfirmModal from './ConfirmModal';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
@@ -46,9 +48,29 @@ const SettingsModal = ({
   const [name, setName] = useState(group?.displayName || '');
   const [inviteEmail, setInviteEmail] = useState('');
   const [sendingInvite, setSendingInvite] = useState(false);
+  const [updatingRole, setUpdatingRole] = useState(null);
+  const [updatingDefaultRole, setUpdatingDefaultRole] = useState(false);
+  const [defaultMemberRole, setDefaultMemberRole] = useState(group?.defaultMemberRole || 'MEMBER');
+  const [openKebabId, setOpenKebabId] = useState(null);
+  const [kebabPos, setKebabPos] = useState(null);
+  const [roleChangeConfirm, setRoleChangeConfirm] = useState(null); // { member, newRole }
+  const [defaultRoleConfirm, setDefaultRoleConfirm] = useState(null); // pending new default role string
+  const kebabRef = useRef(null);
   
   const navigate = useNavigate();
-  const isAdmin = group?.currentUserRole === 'ADMIN';
+  const isOwner = group?.currentUserRole === 'OWNER';
+  const isAdmin = isOwner || group?.currentUserRole === 'ADMIN';
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (kebabRef.current && !kebabRef.current.contains(e.target)) {
+        setOpenKebabId(null);
+        setKebabPos(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const handleActivityEntryClick = (entry) => {
     if (!entry.sectionId) return;
@@ -361,6 +383,35 @@ const SettingsModal = ({
     await onUpdateGroupName(name.trim());
   };
 
+  const handleRoleChange = async (member, newRole) => {
+    if (!isOwner) return;
+    setUpdatingRole(member.userId);
+    try {
+      await axiosClient.patch(`/groups/${group.id}/members/${member.userId}/role`, { role: newRole });
+      toast.success(`${member.firstName} is now ${newRole}`);
+      // Brief reload to reflect change
+      window.location.reload();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to update role');
+    } finally {
+      setUpdatingRole(null);
+    }
+  };
+
+  const handleDefaultRoleChange = async (newRole) => {
+    if (!isOwner) return;
+    setUpdatingDefaultRole(true);
+    try {
+      await axiosClient.patch(`/groups/${group.id}/default-role`, { role: newRole });
+      setDefaultMemberRole(newRole);
+      toast.success(`New members will now join as ${newRole}`);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to update default role');
+    } finally {
+      setUpdatingDefaultRole(false);
+    }
+  };
+
   const renderManageTab = () => (
     <div className="px-4 sm:px-5 py-3 sm:py-4 space-y-4 text-sm">
       {/* Group details */}
@@ -439,7 +490,7 @@ const SettingsModal = ({
                     <p className="font-medium truncate">{s.title}</p>
                     <p className="text-[10px] text-gray-500 uppercase">{s.type}</p>
                   </div>
-                  {isAdmin && (
+                  {isOwner && (
                     <button
                       type="button"
                       onClick={() => onDeleteSection && onDeleteSection(s)}
@@ -495,58 +546,60 @@ const SettingsModal = ({
               </div>
             </div>
           )}
-          <div className="border rounded-lg max-h-48 overflow-y-auto divide-y divide-gray-100 bg-white">
+          <div ref={kebabRef} className="border rounded-lg max-h-48 overflow-y-auto divide-y divide-gray-100 bg-white">
             {members && members.length > 0 ? (
               members.map((m) => {
                 const initials = `${m.firstName?.charAt(0) || ''}${m.lastName?.charAt(0) || ''}`.toUpperCase();
-                const isCurrentUserAdmin = m.role === 'ADMIN';
-                
+                const roleBadge = {
+                  OWNER:  <span className="text-[9px] font-medium px-1.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Owner</span>,
+                  ADMIN:  <span className="text-[9px] font-medium px-1.5 rounded-full bg-purple-50 text-purple-700 border border-purple-100">Admin</span>,
+                  MEMBER: <span className="text-[9px] font-medium px-1.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200">Member</span>,
+                  VIEWER: <span className="text-[9px] font-medium px-1.5 rounded-full bg-teal-50 text-teal-700 border border-teal-100">Viewer</span>,
+                }[m.role] || null;
+
+                const canActOn = m.role !== 'OWNER' && (isOwner || isAdmin);
+
                 return (
-                  <div 
-                    key={m.userId} 
+                  <div
+                    key={m.userId}
                     className="flex items-center justify-between px-3 py-2 hover:bg-gray-50 transition cursor-pointer group"
                     onClick={() => onViewMember && onViewMember(m)}
                   >
                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                      {/* Avatar with initials */}
                       <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                        {   m.pfpUrl ? 
-                            <img src={m.pfpUrl} alt={`${m.firstName} ${m.lastName}`} className="w-full h-full rounded-full object-cover" />:
-                            <span className="text-xs font-medium text-blue-700">{initials}</span>
-
-                        }
+                        {m.pfpUrl
+                          ? <img src={m.pfpUrl} alt={`${m.firstName} ${m.lastName}`} className="w-full h-full rounded-full object-cover" />
+                          : <span className="text-xs font-medium text-blue-700">{initials}</span>}
                       </div>
-                      
-                      {/* Name and email */}
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs font-medium truncate group-hover:text-blue-600" style={{ color: '#111827' }}>
-                          {m.firstName} {m.lastName}
-                        </p>
-                        <p className="text-[10px] mt-0.5 truncate" style={{ color: '#6b7280' }}>
-                          {m.email}
-                        </p>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="text-xs font-medium truncate" style={{ color: '#111827' }}>{m.firstName} {m.lastName}</p>
+                          {roleBadge}
+                        </div>
+                        <p className="text-[10px] mt-0.5 truncate" style={{ color: '#6b7280' }}>{m.email}</p>
                       </div>
                     </div>
-                    
-                    {/* Show ADMIN badge for admins, Remove button for non-admins (if viewer is admin) */}
-                    {isCurrentUserAdmin ? (
-                      <span className="text-xs font-medium px-2 py-1 rounded-full bg-purple-100 text-purple-700 flex-shrink-0">
-                        ADMIN
-                      </span>
-                    ) : (
-                      isAdmin && (
+
+                    <div className="flex items-center gap-1.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
+                      {canActOn && (
                         <button
                           type="button"
                           onClick={(e) => {
-                            e.stopPropagation();
-                            onRemoveMember && onRemoveMember(m);
+                            if (openKebabId === m.userId) {
+                              setOpenKebabId(null);
+                              setKebabPos(null);
+                            } else {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setKebabPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+                              setOpenKebabId(m.userId);
+                            }
                           }}
-                          className="text-[10px] text-red-600 hover:text-red-700 font-medium px-2 py-1 rounded-md hover:bg-red-50 flex-shrink-0"
+                          className="p-1 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100"
                         >
-                          Remove
+                          <MoreVertical size={14} />
                         </button>
-                      )
-                    )}
+                      )}
+                    </div>
                   </div>
                 );
               })
@@ -620,26 +673,46 @@ const SettingsModal = ({
         </section>
       )}
 
+      {/* Default member role — Owner only */}
+      {isOwner && (
+        <section className="border border-amber-100 rounded-xl p-3 bg-amber-50/40">
+          <h3 className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-1">Default Member Role</h3>
+          <p className="text-[11px] text-gray-500 mb-2">New members who join via invite code will be assigned this role.</p>
+          <div className="flex items-center gap-2">
+            {['MEMBER', 'ADMIN', 'VIEWER'].map((role) => (
+              <button
+                key={role}
+                type="button"
+                disabled={updatingDefaultRole}
+                onClick={() => defaultMemberRole !== role && setDefaultRoleConfirm(role)}
+                className={`px-3 py-1 rounded-full text-[11px] font-medium border transition
+                  ${defaultMemberRole === role
+                    ? role === 'ADMIN'
+                      ? 'bg-purple-100 text-purple-700 border-purple-300'
+                      : role === 'VIEWER'
+                      ? 'bg-teal-100 text-teal-700 border-teal-300'
+                      : 'bg-gray-200 text-gray-800 border-gray-300'
+                    : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
+                  }`}
+              >
+                {role.charAt(0) + role.slice(1).toLowerCase()}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Danger Zone */}
       <section className="border-t pt-4">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <h3 className="text-xs font-semibold text-red-800 uppercase tracking-wide mb-2">Danger Zone</h3>
           <p className="text-[11px] text-red-600 mb-3">
-            {isAdmin 
-              ? 'Deleting the group will remove it for all members.'
+            {isOwner
+              ? 'Deleting the group will permanently remove it for all members.'
               : 'You will be removed from this group and lose access to its sections.'}
           </p>
           <div className="flex justify-start">
-            {!isAdmin && (
-              <button
-                type="button"
-                onClick={onLeaveGroup}
-                className="px-4 py-1.5 rounded-lg bg-red-600 text-white text-xs font-medium hover:bg-red-700 shadow-sm"
-              >
-                Leave group
-              </button>
-            )}
-            {isAdmin && (
+            {isOwner ? (
               <button
                 type="button"
                 onClick={onDeleteGroup}
@@ -647,7 +720,15 @@ const SettingsModal = ({
               >
                 Delete group
               </button>
-            )}
+            ) : onLeaveGroup ? (
+              <button
+                type="button"
+                onClick={onLeaveGroup}
+                className="px-4 py-1.5 rounded-lg bg-red-600 text-white text-xs font-medium hover:bg-red-700 shadow-sm"
+              >
+                Leave group
+              </button>
+            ) : null}
           </div>
         </div>
       </section>
@@ -908,6 +989,68 @@ const SettingsModal = ({
           {activeTab === 'activity' && renderActivityTab()}
         </div>
       </div>
+
+      {roleChangeConfirm && (
+        <ConfirmModal
+          title="Change member role?"
+          message={`Set ${roleChangeConfirm.member.firstName} ${roleChangeConfirm.member.lastName} as ${roleChangeConfirm.newRole.charAt(0) + roleChangeConfirm.newRole.slice(1).toLowerCase()} in this group?`}
+          confirmLabel="Change role"
+          onCancel={() => setRoleChangeConfirm(null)}
+          onConfirm={async () => {
+            const { member, newRole } = roleChangeConfirm;
+            setRoleChangeConfirm(null);
+            await handleRoleChange(member, newRole);
+          }}
+        />
+      )}
+
+      {defaultRoleConfirm && (
+        <ConfirmModal
+          title="Change default join role?"
+          message={`New members who join via invite code will be assigned the "${defaultRoleConfirm.charAt(0) + defaultRoleConfirm.slice(1).toLowerCase()}" role. Existing members are not affected.`}
+          confirmLabel="Change role"
+          onCancel={() => setDefaultRoleConfirm(null)}
+          onConfirm={() => {
+            handleDefaultRoleChange(defaultRoleConfirm);
+            setDefaultRoleConfirm(null);
+          }}
+        />
+      )}
+
+      {openKebabId && kebabPos && createPortal(
+        <div
+          ref={kebabRef}
+          style={{ position: 'fixed', top: kebabPos.top, right: kebabPos.right, zIndex: 9999 }}
+          className="w-44 bg-white rounded-lg shadow-lg border border-gray-100 py-1"
+        >
+          {(() => {
+            const m = members?.find(mem => mem.userId === openKebabId);
+            if (!m) return null;
+            return (
+              <>
+                {isOwner && ['ADMIN', 'MEMBER', 'VIEWER'].filter(r => r !== m.role).map(r => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => { setOpenKebabId(null); setKebabPos(null); setRoleChangeConfirm({ member: m, newRole: r }); }}
+                    className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                  >
+                    Set as {r.charAt(0) + r.slice(1).toLowerCase()}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => { setOpenKebabId(null); setKebabPos(null); onRemoveMember && onRemoveMember(m); }}
+                  className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50"
+                >
+                  Remove from group
+                </button>
+              </>
+            );
+          })()}
+        </div>,
+        document.body
+      )}
     </div>
   );
 };

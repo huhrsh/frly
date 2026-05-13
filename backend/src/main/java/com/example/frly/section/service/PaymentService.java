@@ -65,7 +65,7 @@ public class PaymentService {
 
     @Transactional
     public Long addExpense(Long sectionId, CreatePaymentExpenseRequestDto request) {
-        groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
+        groupService.validateNotViewer(AuthUtil.getCurrentUserId(), Long.parseLong(GroupContext.getGroupId()));
 
         Section section = validatePaymentSection(sectionId);
         validateExpenseRequest(request);
@@ -101,7 +101,7 @@ public class PaymentService {
 
     @Transactional
     public void updateExpense(Long sectionId, Long expenseId, CreatePaymentExpenseRequestDto request) {
-        groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
+        groupService.validateNotViewer(AuthUtil.getCurrentUserId(), Long.parseLong(GroupContext.getGroupId()));
 
         validateExpenseRequest(request);
 
@@ -140,7 +140,7 @@ public class PaymentService {
 
     @Transactional
     public void deleteExpense(Long sectionId, Long expenseId) {
-        groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
+        groupService.validateNotViewer(AuthUtil.getCurrentUserId(), Long.parseLong(GroupContext.getGroupId()));
 
         PaymentExpense expense = paymentExpenseRepository.findById(expenseId)
                 .orElseThrow(() -> new BadRequestException("Expense not found"));
@@ -389,7 +389,7 @@ public class PaymentService {
 
     @Transactional
     public void settleSection(Long sectionId) {
-        groupService.validateGroupAccess(AuthUtil.getCurrentUserId(), GroupContext.getGroupId());
+        groupService.validateNotViewer(AuthUtil.getCurrentUserId(), Long.parseLong(GroupContext.getGroupId()));
 
         Section section = validatePaymentSection(sectionId);
 

@@ -126,7 +126,7 @@ const ReminderEditModal = ({ open, onClose, onSubmit, editingReminder }) => {
     );
 };
 
-const ReminderView = ({ sectionId }) => {
+const ReminderView = ({ sectionId, canEdit = true }) => {
     const { user } = useAuth();
     const [reminders, setReminders] = useState([]);
     const [showEditModal, setShowEditModal] = useState(false);
@@ -260,8 +260,8 @@ const ReminderView = ({ sectionId }) => {
                 <p className="text-xs text-gray-500">Set one-off or repeating reminders for your group.</p>
             </div>
 
-            {/* Inline add form — always visible */}
-            <div className="mt-3 mb-1 bg-white border border-gray-200 rounded-xl shadow-sm p-4">
+            {/* Inline add form — hidden for viewers */}
+            {canEdit && <div className="mt-3 mb-1 bg-white border border-gray-200 rounded-xl shadow-sm p-4">
                 <form onSubmit={handleInlineSubmit} className="space-y-2">
                     <input
                         type="text"
@@ -316,7 +316,7 @@ const ReminderView = ({ sectionId }) => {
                         </button>
                     </div>
                 </form>
-            </div>
+            </div>}
 
             {reminders.length > 4 && (
                 <div className="relative my-3 max-w-xs">
@@ -369,6 +369,7 @@ const ReminderView = ({ sectionId }) => {
                                         )}
                                     </div>
                                 </div>
+                                {canEdit && (
                                 <div className="flex flex-col items-end gap-1 ml-1">
                                     <button
                                         type="button"
@@ -385,6 +386,7 @@ const ReminderView = ({ sectionId }) => {
                                         Delete
                                     </button>
                                 </div>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -435,6 +437,7 @@ const ReminderView = ({ sectionId }) => {
                                             <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">Sent</span>
                                         </div>
                                     </div>
+                                    {canEdit && (
                                     <div className="flex flex-col items-end gap-1">
                                         <button
                                             type="button"
@@ -444,6 +447,7 @@ const ReminderView = ({ sectionId }) => {
                                             Delete
                                         </button>
                                     </div>
+                                    )}
                                 </div>
                             ))}
                         </div>

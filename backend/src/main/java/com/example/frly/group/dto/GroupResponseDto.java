@@ -29,4 +29,7 @@ public class GroupResponseDto {
 
     // Whether the current user has pinned this group on the dashboard
     private boolean pinned;
+
+    // Default role assigned to new members joining this group
+    private String defaultMemberRole;
 }

@@ -167,6 +167,30 @@ class GroupInviteServiceTest {
         verify(emailService).sendHtml(eq("bob@example.com"), any(), any());
     }
 
+    @Test
+    void sendInvite_asOwner_succeeds() {
+        Group group = buildGroup(GROUP_ID, "My Group");
+        User sender = buildUser(USER_ID, "Alice");
+        User invitee = buildUser(2L, "Bob");
+        GroupMember senderMembership = buildOwnerMember(sender, group);
+
+        when(groupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
+        when(groupMemberRepository.findByUserIdAndGroupId(USER_ID, GROUP_ID))
+            .thenReturn(Optional.of(senderMembership));
+        when(userRepository.findByEmail("bob@example.com")).thenReturn(Optional.of(invitee));
+        when(groupMemberRepository.findByUserIdAndGroupId(2L, GROUP_ID)).thenReturn(Optional.empty());
+        when(inviteRepository.findByGroupIdAndUserIdAndStatus(GROUP_ID, 2L, GroupInviteStatus.PENDING))
+            .thenReturn(Collections.emptyList());
+        when(inviteRepository.save(any(GroupInviteToken.class))).thenReturn(buildInviteToken(1L, invitee, group));
+        when(emailService.loadTemplate("email/group-invite.html")).thenReturn(TEMPLATE);
+
+        CreateGroupInviteRequestDto req = new CreateGroupInviteRequestDto();
+        req.setEmail("bob@example.com");
+
+        assertDoesNotThrow(() -> groupInviteService.sendInvite(GROUP_ID, req));
+        verify(inviteRepository).save(any(GroupInviteToken.class));
+    }
+
     // ─── acceptInvite / declineInvite (token-based) ───────────────────────────
 
     @Test
@@ -326,6 +350,12 @@ class GroupInviteServiceTest {
         Role adminRole = new Role();
         adminRole.setName("ADMIN");
         return buildMember(user, group, adminRole);
+    }
+
+    private GroupMember buildOwnerMember(User user, Group group) {
+        Role ownerRole = new Role();
+        ownerRole.setName("OWNER");
+        return buildMember(user, group, ownerRole);
     }
 
     private GroupInviteToken buildInviteToken(Long id, User user, Group group) {

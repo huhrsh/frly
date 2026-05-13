@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import ConfirmModal from '../ConfirmModal';
 
-const GalleryView = ({ sectionId }) => {
+const GalleryView = ({ sectionId, canEdit = true }) => {
     const [images, setImages] = useState([]);
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
@@ -140,6 +140,7 @@ const GalleryView = ({ sectionId }) => {
         e.stopPropagation();
         dragCounter.current = 0;
         setIsDragging(false);
+        if (!canEdit) return;
         await uploadFiles(e.dataTransfer?.files);
     };
 
@@ -227,36 +228,27 @@ const GalleryView = ({ sectionId }) => {
     };
 
     const handleDownload = async (item) => {
-        if (!item?.url) return;
-
+        if (!item?.id) return;
         try {
-            // For raw files (not viewable in browser), we want to force download with correct name
-            // Fetching as blob ensures we get the binary data correctly
-            const response = await fetch(item.url);
-            if (!response.ok) throw new Error('Network response was not ok');
-
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
+            const res = await axiosClient.get(`/groups/sections/gallery/${item.id}/download`, {
+                responseType: 'blob'
+            });
+            const url = URL.createObjectURL(res.data);
             const a = document.createElement('a');
-            a.style.display = 'none';
             a.href = url;
-            // Use original filename or fallback
-            a.download = item.originalFilename || `download-${item.id}`;
-
+            a.download = item.originalFilename || item.title || `download-${item.id}`;
             document.body.appendChild(a);
             a.click();
-
-            window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
-            toast.success("Download started");
-        } catch (error) {
-            console.error("Download failed", error);
-            // Fallback to opening in new tab if fetch fails (e.g. CORS)
-            window.open(item.url, '_blank', 'noopener,noreferrer');
+            URL.revokeObjectURL(url);
+            toast.success('Download started');
+        } catch {
+            toast.error('Download failed. Please try again.');
         }
     };
 
     const handleItemClick = (item) => {
+        console.log(item);
         const type = (item.contentType || '').toLowerCase();
         const isImage = type.startsWith('image/');
         const isPdf = type.includes('pdf');
@@ -336,6 +328,7 @@ const GalleryView = ({ sectionId }) => {
         >
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-base sm:text-lg font-semibold text-gray-800">Files</h2>
+                {canEdit && (
                 <div className="relative">
                     <input
                         type="file"
@@ -361,6 +354,7 @@ const GalleryView = ({ sectionId }) => {
                         )}
                     </label>
                 </div>
+                )}
             </div>
 
             {isDragging && (
@@ -458,12 +452,14 @@ const GalleryView = ({ sectionId }) => {
                                             className="absolute right-2 bottom-8 z-10 w-36 bg-white rounded-md shadow-lg border ring-1 ring-black ring-opacity-5 py-1"
                                             onClick={(e) => e.stopPropagation()}
                                         >
+                                            {canEdit && (
                                             <button
                                                 onClick={() => startRename(img)}
                                                 className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
                                             >
                                                 <Edit2 size={14} /> Rename
                                             </button>
+                                            )}
                                             <button
                                                 type="button"
                                                 onClick={() => {
@@ -474,12 +470,14 @@ const GalleryView = ({ sectionId }) => {
                                             >
                                                 <Download size={14} /> Download
                                             </button>
+                                            {canEdit && (
                                             <button
                                                 onClick={() => requestDelete(img)}
                                                 className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                                             >
                                                 <Trash2 size={14} /> Delete
                                             </button>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -549,7 +547,7 @@ const GalleryView = ({ sectionId }) => {
                                 <iframe
                                     src={previewItem.url}
                                     title={previewItem.title || previewItem.originalFilename}
-                                    className="w-full h-[80vh] rounded-lg border"
+                                    className="w-full h-[80vh] rounded-lg border-0 bg-white"
                                 />
                             ) : previewItem.contentType?.toLowerCase().startsWith('video/') ? (
                                 <video

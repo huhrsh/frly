@@ -78,6 +78,7 @@ const GroupView = () => {
     const [searchOpen, setSearchOpen] = useState(false);
     const [searchLoading, setSearchLoading] = useState(false);
     const searchRef = useRef(null);
+    const [showPermissionsInfo, setShowPermissionsInfo] = useState(false);
     const searchDebounceRef = useRef(null);
 
     // We only fetch previews for root sections in the main view
@@ -507,8 +508,8 @@ const GroupView = () => {
 
     const handleDeleteGroup = () => {
         if (!currentGroup) return;
-        if (currentGroup.currentUserRole !== 'ADMIN') {
-            toast.error('Only admins can delete the group');
+        if (currentGroup.currentUserRole !== 'OWNER') {
+            toast.error('Only the group Owner can delete the group');
             return;
         }
         setConfirmConfig({
@@ -600,7 +601,7 @@ const GroupView = () => {
         // Refresh latest data every time the manage modal opens
         fetchSections();
         fetchMembers();
-        if (currentGroup.currentUserRole === 'ADMIN') {
+        if (['ADMIN', 'OWNER'].includes(currentGroup.currentUserRole)) {
             fetchPendingRequests();
         }
         setShowSettingsModal(true);
@@ -631,8 +632,8 @@ const GroupView = () => {
     };
 
     const handleRemoveMember = (member) => {
-        if (!currentGroup || currentGroup.currentUserRole !== 'ADMIN') {
-            toast.error('Only admins can remove members');
+        if (!currentGroup || !['ADMIN', 'OWNER'].includes(currentGroup.currentUserRole)) {
+            toast.error('Only Admins and Owners can remove members');
             return;
         }
         if (member.role === 'ADMIN') {
@@ -792,7 +793,7 @@ const GroupView = () => {
     const renderSectionContent = () => {
         if (!selectedSection) {
             const hasSections = sections && sections.length > 0;
-            const isAdmin = currentGroup?.currentUserRole === 'ADMIN';
+            const isAdmin = ['ADMIN', 'OWNER'].includes(currentGroup?.currentUserRole);
 
             return (
                 <div className="h-full flex items-center justify-center px-4 py-8">
@@ -812,22 +813,24 @@ const GroupView = () => {
             );
         }
 
+        const canEdit = currentGroup?.currentUserRole !== 'VIEWER';
+
         switch (selectedSection.type) {
-            case 'NOTE': return <NoteView sectionId={selectedSection.id} />;
-            case 'LIST': return <ListView sectionId={selectedSection.id} section={selectedSection} />;
-            case 'GALLERY': return <GalleryView sectionId={selectedSection.id} />;
-            case 'REMINDER': return <ReminderView sectionId={selectedSection.id} />;
-            case 'PAYMENT': return <PaymentView sectionId={selectedSection.id} section={selectedSection} />;
-            case 'CALENDAR': return <CalendarView sectionId={selectedSection.id} />;
+            case 'NOTE': return <NoteView sectionId={selectedSection.id} canEdit={canEdit} />;
+            case 'LIST': return <ListView sectionId={selectedSection.id} section={selectedSection} canEdit={canEdit} />;
+            case 'GALLERY': return <GalleryView sectionId={selectedSection.id} canEdit={canEdit} />;
+            case 'REMINDER': return <ReminderView sectionId={selectedSection.id} canEdit={canEdit} />;
+            case 'PAYMENT': return <PaymentView sectionId={selectedSection.id} section={selectedSection} canEdit={canEdit} />;
+            case 'CALENDAR': return <CalendarView sectionId={selectedSection.id} canEdit={canEdit} />;
             case 'FOLDER': return (
                 <FolderView
                     sectionId={selectedSection.id}
                     allSections={sections}
                     onSelectSection={handleSelectSection}
-                    onOpenCreateModal={currentGroup?.currentUserRole === 'ADMIN' ? handleOpenCreateModal : undefined}
+                    onOpenCreateModal={['ADMIN','OWNER'].includes(currentGroup?.currentUserRole) ? handleOpenCreateModal : undefined}
                 />
             );
-            case 'LINKS': return <LinksSection sectionId={selectedSection.id} />;
+            case 'LINKS': return <LinksSection sectionId={selectedSection.id} canEdit={canEdit} />;
             default: return <div className="p-4">Unknown Type</div>;
         }
     };
@@ -992,7 +995,7 @@ const GroupView = () => {
                                 </>
                             )}
 
-                            {currentGroup?.currentUserRole === 'ADMIN' && (
+                            {['ADMIN','OWNER'].includes(currentGroup?.currentUserRole) && (
                                 <button
                                     type="button"
                                     onClick={() => handleOpenCreateModal(null)}
@@ -1075,6 +1078,16 @@ const GroupView = () => {
                                     <span className="flex items-center gap-1 font-semibold">
                                         <Users size={12} className="text-gray-500" />
                                         <span>Members</span>
+                                        <button
+                                            type="button"
+                                            title="View permissions"
+                                            onClick={(e) => { e.stopPropagation(); setShowPermissionsInfo(true); }}
+                                            className="ml-0.5 text-gray-400 hover:text-gray-600"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                                            </svg>
+                                        </button>
                                     </span>
                                     <span className="flex items-center gap-1">
                                         <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-[10px]">
@@ -1126,12 +1139,17 @@ const GroupView = () => {
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-1 flex-shrink-0">
-                                                        {currentGroup?.currentUserRole !== 'ADMIN' && member.role == 'ADMIN' && (
-                                                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200">
-                                                                {member.role}
+                                                        {member.role === 'OWNER' && (
+                                                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                                                                Owner
                                                             </span>
                                                         )}
-                                                        {currentGroup?.currentUserRole === 'ADMIN' && member.role !== 'ADMIN' && (
+                                                        {member.role === 'ADMIN' && (
+                                                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                                                                Admin
+                                                            </span>
+                                                        )}
+                                                        {['ADMIN','OWNER'].includes(currentGroup?.currentUserRole) && member.role !== 'OWNER' && (
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handleRemoveMember(member)}
@@ -1148,7 +1166,7 @@ const GroupView = () => {
                                 )}
                             </div>
 
-                            {currentGroup?.currentUserRole === 'ADMIN' && (
+                            {['ADMIN','OWNER'].includes(currentGroup?.currentUserRole) && (
                                 <div className="space-y-2">
                                     <button
                                         type="button"
@@ -1243,7 +1261,7 @@ const GroupView = () => {
                                                 <h2 className="text-sm sm:text-base font-semibold text-gray-900 truncate">
                                                     {selectedSection.title}
                                                 </h2>
-                                                {currentGroup?.currentUserRole === 'ADMIN' && (
+                                                {['ADMIN','OWNER'].includes(currentGroup?.currentUserRole) && (
                                                     <button
                                                         type="button"
                                                         onClick={handleStartRenameSection}
@@ -1264,7 +1282,7 @@ const GroupView = () => {
                                 )}
                             </div>
                             <div className="flex items-center gap-2">
-                                {selectedSection && currentGroup?.currentUserRole === 'ADMIN' && (
+                                {selectedSection && currentGroup?.currentUserRole === 'OWNER' && (
                                     <button
                                         type="button"
                                         onClick={handleDeleteSection}
@@ -1274,7 +1292,7 @@ const GroupView = () => {
                                         <span>Delete section</span>
                                     </button>
                                 )}
-                                {selectedSection && selectedSection.type === 'FOLDER' && currentGroup?.currentUserRole === 'ADMIN' && (
+                                {selectedSection && selectedSection.type === 'FOLDER' && ['ADMIN','OWNER'].includes(currentGroup?.currentUserRole) && (
                                     <button
                                         type="button"
                                         onClick={() => openFolderReorderModal(selectedSection.id)}
@@ -1325,14 +1343,14 @@ const GroupView = () => {
                                 handleDeleteSectionById(section);
                             }}
                             onViewMember={(member) => setSelectedMemberForInfo(member)}
-                            onLeaveGroup={currentGroup.currentUserRole !== 'ADMIN' ? () => {
+                            onLeaveGroup={!['ADMIN','OWNER'].includes(currentGroup.currentUserRole) ? () => {
                                 setShowSettingsModal(false);
                                 handleLeaveGroup();
                             } : undefined}
                             joinRequests={pendingRequests}
                             onApproveJoinRequest={handleApproveRequest}
                             onRejectJoinRequest={handleRejectRequest}
-                            onInviteByEmail={currentGroup.currentUserRole === 'ADMIN' ? async (email) => {
+                            onInviteByEmail={['ADMIN','OWNER'].includes(currentGroup.currentUserRole) ? async (email) => {
                                 try {
                                     await axiosClient.post(`/groups/${groupId}/invites`, { email });
                                     toast.success('Invite sent');
@@ -1440,7 +1458,7 @@ const GroupView = () => {
                         </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                        {currentGroup?.currentUserRole === 'ADMIN' && (
+                        {['ADMIN','OWNER'].includes(currentGroup?.currentUserRole) && (
                             <button
                                 onClick={() => handleOpenCreateModal(null)}
                                 className="px-3 py-2 rounded-full border border-blue-200 text-blue-700 bg-white hover:bg-blue-50 font-medium text-xs"
@@ -1491,7 +1509,7 @@ const GroupView = () => {
                             previews={sectionPreviews}
                             allSections={sections}
                             groupId={groupId}
-                            onOpenCreateModal={currentGroup?.currentUserRole === 'ADMIN' ? handleOpenCreateModal : undefined}
+                            onOpenCreateModal={['ADMIN','OWNER'].includes(currentGroup?.currentUserRole) ? handleOpenCreateModal : undefined}
                         />
                     )}
                 </div>
@@ -1532,10 +1550,14 @@ const GroupView = () => {
                         handleDeleteSectionById(section);
                     }}
                     onViewMember={(member) => setSelectedMemberForInfo(member)}
+                    onLeaveGroup={!['ADMIN','OWNER'].includes(currentGroup.currentUserRole) ? () => {
+                        setShowSettingsModal(false);
+                        handleLeaveGroup();
+                    } : undefined}
                     joinRequests={pendingRequests}
                     onApproveJoinRequest={handleApproveRequest}
                     onRejectJoinRequest={handleRejectRequest}
-                    onInviteByEmail={currentGroup.currentUserRole === 'ADMIN' ? async (email) => {
+                    onInviteByEmail={['ADMIN','OWNER'].includes(currentGroup.currentUserRole) ? async (email) => {
                         try {
                             await axiosClient.post(`/groups/${groupId}/invites`, { email });
                             toast.success('Invite sent');
@@ -1577,6 +1599,51 @@ const GroupView = () => {
                     onClose={() => setShowReorderModal(false)}
                     onSave={handleApplyReorder}
                 />
+            )}
+            {showPermissionsInfo && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setShowPermissionsInfo(false)}>
+                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-sm font-semibold text-gray-900">Role Permissions</h3>
+                            <button type="button" onClick={() => setShowPermissionsInfo(false)} className="text-gray-400 hover:text-gray-600 text-xs">Close</button>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-xs border-collapse">
+                                <thead>
+                                    <tr className="bg-gray-50">
+                                        <th className="text-left px-3 py-2 text-gray-600 font-medium border border-gray-200">Action</th>
+                                        <th className="px-3 py-2 text-amber-700 font-medium border border-gray-200">Owner</th>
+                                        <th className="px-3 py-2 text-purple-700 font-medium border border-gray-200">Admin</th>
+                                        <th className="px-3 py-2 text-gray-600 font-medium border border-gray-200">Member</th>
+                                        <th className="px-3 py-2 text-teal-700 font-medium border border-gray-200">Viewer</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {[
+                                        ['Create section', true, true, false, false],
+                                        ['Rename section', true, true, false, false],
+                                        ['Delete section', true, false, false, false],
+                                        ['Add / edit content', true, true, true, false],
+                                        ['View content', true, true, true, true],
+                                        ['Delete group', true, false, false, false],
+                                        ['Approve join requests', true, true, false, false],
+                                        ['Remove members', true, true, false, false],
+                                        ['Change member role', true, false, false, false],
+                                        ['Change default member role', true, false, false, false],
+                                    ].map(([action, owner, admin, member, viewer]) => (
+                                        <tr key={action} className="border-b border-gray-100">
+                                            <td className="px-3 py-2 text-gray-700 border border-gray-200">{action}</td>
+                                            <td className="px-3 py-2 text-center border border-gray-200">{owner ? '✅' : '—'}</td>
+                                            <td className="px-3 py-2 text-center border border-gray-200">{admin ? '✅' : '—'}</td>
+                                            <td className="px-3 py-2 text-center border border-gray-200">{member ? '✅' : '—'}</td>
+                                            <td className="px-3 py-2 text-center border border-gray-200">{viewer ? '✅' : '—'}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

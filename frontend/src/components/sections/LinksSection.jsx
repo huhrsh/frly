@@ -25,7 +25,7 @@ function isValidUrl(url) {
 
 const emptyLink = { id: null, key: '', url: '', description: '' };
 
-export default function LinksSection({ sectionId }) {
+export default function LinksSection({ sectionId, canEdit = true }) {
   const [links, setLinks] = useState([]);
   const [filterText, setFilterText] = useState('');
   const [editingIndex, setEditingIndex] = useState(null);
@@ -206,25 +206,27 @@ export default function LinksSection({ sectionId }) {
         <p className="text-[11px] text-gray-500 truncate">{link.description || link.url}</p>
       </div>
 
-      {/* Edit / Delete — revealed on hover */}
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition flex-shrink-0">
-        <button
-          type="button"
-          onClick={() => { setEditingIndex(originalIndex); setForm({ ...link }); setError(''); }}
-          className="p-1 rounded-md text-gray-400 hover:text-blue-600 hover:bg-gray-100"
-          title="Edit"
-        >
-          <Edit2 className="w-3 h-3" />
-        </button>
-        <button
-          type="button"
-          onClick={() => setDeleteIndex(originalIndex)}
-          className="p-1 rounded-md text-gray-400 hover:text-red-600 hover:bg-gray-100"
-          title="Delete"
-        >
-          <Trash2 className="w-3 h-3" />
-        </button>
-      </div>
+      {/* Edit / Delete — revealed on hover, hidden for viewers */}
+      {canEdit && (
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => { setEditingIndex(originalIndex); setForm({ ...link }); setError(''); }}
+            className="p-1 rounded-md text-gray-400 hover:text-blue-600 hover:bg-gray-100"
+            title="Edit"
+          >
+            <Edit2 className="w-3 h-3" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setDeleteIndex(originalIndex)}
+            className="p-1 rounded-md text-gray-400 hover:text-red-600 hover:bg-gray-100"
+            title="Delete"
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
+        </div>
+      )}
     </div>
   );
 
@@ -246,7 +248,7 @@ export default function LinksSection({ sectionId }) {
           </p>
         </div>
 
-        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
+        {canEdit && <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
           <form
             onSubmit={(e) => { e.preventDefault(); handleSave(); }}
             className="space-y-2"
@@ -286,7 +288,7 @@ export default function LinksSection({ sectionId }) {
               </button>
             </div>
           </form>
-        </div>
+        </div>}
 
         {error && <p className="text-xs text-red-600 mb-2">{error}</p>}
 

@@ -108,5 +108,20 @@ public class GroupController {
     public ResponseEntity<java.util.Map<Long, Boolean>> getActivityStatus() {
         return ResponseEntity.ok(groupService.getActivityStatus());
     }
+
+    @PatchMapping("/{groupId}/members/{userId}/role")
+    public ResponseEntity<Void> updateMemberRole(@PathVariable Long groupId,
+                                                  @PathVariable Long userId,
+                                                  @RequestBody java.util.Map<String, String> body) {
+        groupService.updateMemberRole(groupId, userId, body.get("role"));
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{groupId}/default-role")
+    public ResponseEntity<Void> updateDefaultMemberRole(@PathVariable Long groupId,
+                                                         @RequestBody java.util.Map<String, String> body) {
+        groupService.updateDefaultMemberRole(groupId, body.get("role"));
+        return ResponseEntity.noContent().build();
+    }
 }
 

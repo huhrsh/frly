@@ -3,7 +3,7 @@ import axiosClient from '../../api/axiosClient';
 import ConfirmModal from '../ConfirmModal';
 import { Search, ArrowDownUp, List, Circle, Hash, X } from 'lucide-react';
 
-const ListView = ({ sectionId, section }) => {
+const ListView = ({ sectionId, section, canEdit = true }) => {
     const [items, setItems] = useState([]);
     const [newItemText, setNewItemText] = useState('');
     const [isAdding, setIsAdding] = useState(false);
@@ -175,23 +175,25 @@ const ListView = ({ sectionId, section }) => {
                     )}
                 </div>
 
-                <form onSubmit={handleAddItem} className="mb-4 flex gap-2">
-                    <input
-                        type="text"
-                        value={newItemText}
-                        onChange={(e) => setNewItemText(e.target.value)}
-                        placeholder="Add a task, e.g. 'Share agenda with group'"
-                        className="flex-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 placeholder:text-gray-400 disabled:bg-gray-50 disabled:text-gray-400"
-                        disabled={isAdding}
-                    />
-                    <button
-                        type="submit"
-                        className="px-4 py-2.5 border border-blue-200 bg-white text-blue-700 rounded-lg hover:bg-blue-50 text-sm font-medium shadow-sm transition disabled:opacity-60"
-                        disabled={!newItemText.trim() || isAdding}
-                    >
-                        {isAdding ? 'Adding...' : 'Add'}
-                    </button>
-                </form>
+                {canEdit && (
+                    <form onSubmit={handleAddItem} className="mb-4 flex gap-2">
+                        <input
+                            type="text"
+                            value={newItemText}
+                            onChange={(e) => setNewItemText(e.target.value)}
+                            placeholder="Add a task, e.g. 'Share agenda with group'"
+                            className="flex-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-400 placeholder:text-gray-400 disabled:bg-gray-50 disabled:text-gray-400"
+                            disabled={isAdding}
+                        />
+                        <button
+                            type="submit"
+                            className="px-4 py-2.5 border border-blue-200 bg-white text-blue-700 rounded-lg hover:bg-blue-50 text-sm font-medium shadow-sm transition disabled:opacity-60"
+                            disabled={!newItemText.trim() || isAdding}
+                        >
+                            {isAdding ? 'Adding...' : 'Add'}
+                        </button>
+                    </form>
+                )}
 
                 {totalCount > 4 && (
                     <div className="relative mb-3 max-w-xs">
@@ -216,8 +218,8 @@ const ListView = ({ sectionId, section }) => {
                                 {activeItems.map(item => (
                                     <li
                                         key={item.id}
-                                        onClick={() => startEdit(item)}
-                                        className="px-3 py-2.5 rounded-lg border border-gray-100 bg-white hover:border-blue-100 hover:shadow-sm transition group cursor-text"
+                                        onClick={() => canEdit && startEdit(item)}
+                                        className={`px-3 py-2.5 rounded-lg border border-gray-100 bg-white ${canEdit ? 'hover:border-blue-100 hover:shadow-sm cursor-text' : 'cursor-default'} transition group`}
                                     >
                                         <div className="flex items-center justify-between gap-3 min-w-0">
                                             <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -225,9 +227,9 @@ const ListView = ({ sectionId, section }) => {
                                                     type="checkbox"
                                                     checked={item.completed}
                                                     onClick={(e) => e.stopPropagation()}
-                                                    onChange={() => toggleItem(item)}
+                                                    onChange={() => canEdit && toggleItem(item)}
                                                     className="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 cursor-pointer"
-                                                    disabled={editingItemId === item.id}
+                                                    disabled={editingItemId === item.id || !canEdit}
                                                 />
                                                 {editingItemId === item.id ? (
                                                     <div className="flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
@@ -278,7 +280,7 @@ const ListView = ({ sectionId, section }) => {
                                                         Cancel
                                                     </button>
                                                 </div>
-                                            ) : (
+                                            ) : canEdit ? (
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
@@ -289,7 +291,7 @@ const ListView = ({ sectionId, section }) => {
                                                 >
                                                     <X size={15} />
                                                 </button>
-                                            )}
+                                            ) : null}
                                         </div>
                                     </li>
                                 ))}
@@ -370,7 +372,7 @@ const ListView = ({ sectionId, section }) => {
                                                     Cancel
                                                 </button>
                                             </div>
-                                        ) : (
+                                        ) : canEdit ? (
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -381,7 +383,7 @@ const ListView = ({ sectionId, section }) => {
                                             >
                                                 ×
                                             </button>
-                                        )}
+                                        ) : null}
                                     </div>
                                 </li>
                             ))}
@@ -404,9 +406,9 @@ const ListView = ({ sectionId, section }) => {
                                                     type="checkbox"
                                                     checked={item.completed}
                                                     onClick={(e) => e.stopPropagation()}
-                                                    onChange={() => toggleItem(item)}
+                                                    onChange={() => canEdit && toggleItem(item)}
                                                     className="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 cursor-pointer"
-                                                    disabled={editingItemId === item.id}
+                                                    disabled={editingItemId === item.id || !canEdit}
                                                 />
                                                 {editingItemId === item.id ? (
                                                     <div className="flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
@@ -457,7 +459,7 @@ const ListView = ({ sectionId, section }) => {
                                                         Cancel
                                                     </button>
                                                 </div>
-                                            ) : (
+                                            ) : canEdit ? (
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
@@ -468,7 +470,7 @@ const ListView = ({ sectionId, section }) => {
                                                 >
                                                     <X size={15} />
                                                 </button>
-                                            )}
+                                            ) : null}
                                         </div>
                                     </li>
                                 ))}

@@ -1,6 +1,7 @@
 package com.example.frly.common.storage;
 
 import com.cloudinary.Cloudinary;
+import com.cloudinary.Transformation;
 import com.cloudinary.utils.ObjectUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,9 +21,7 @@ public class CloudinaryStorageService implements FileStorageService {
     @Override
     public Map<String, Object> uploadFile(MultipartFile file, String folder) throws IOException {
         log.info("Uploading file to Cloudinary path: {}", folder);
-        
-        // Decide whether this is a gallery/document upload (tenant-scoped) or something else (e.g. avatar).
-        // Gallery uploads use the dedicated signed preset configured in Cloudinary.
+
         boolean isGalleryUpload = folder != null && folder.contains("tenant_");
 
         @SuppressWarnings("unchecked")
@@ -30,16 +29,9 @@ public class CloudinaryStorageService implements FileStorageService {
             file.getBytes(),
             ObjectUtils.asMap(
                 "folder", folder,
-                "resource_type", "auto", // Detect image/video/raw
-                // Use the original filename for readability, while keeping
-                // Cloudinary's unique public IDs so uploads with the same
-                // name do not overwrite each other.
+                "resource_type", "auto",
                 "use_filename", true,
                 "unique_filename", true,
-                // For gallery/doc uploads we rely on the `gallery_docs_private`
-                // preset created in Cloudinary (signed + authenticated delivery).
-                // The preset's folder (e.g. "fryly") combines with this "folder"
-                // argument to produce paths like "fryly/tenant_1/section_2/...".
                 "upload_preset", isGalleryUpload ? "gallery_docs_private" : null
             ));
 
@@ -70,10 +62,39 @@ public class CloudinaryStorageService implements FileStorageService {
             .generate(publicId);
     }
 
+    @Override
+    public String generateDownloadUrl(String publicId, String contentType, String filename) {
+        boolean isGalleryAsset = publicId != null && publicId.contains("/tenant_");
+        String resourceType = toCloudinaryResourceType(contentType);
+
+        String attachmentFlag = "attachment";
+        if (filename != null && !filename.isBlank()) {
+            // Sanitize: keep alphanumerics, dots, hyphens; replace everything else with underscore
+            String safe = filename.replaceAll("[^A-Za-z0-9._\\-]", "_");
+            // Cloudinary fl_attachment expects base name WITHOUT extension — it appends the correct
+            // extension automatically based on the resource format. Including the extension here
+            // would result in a doubled extension (e.g. "file.png.png").
+            int dotIdx = safe.lastIndexOf('.');
+            String baseName = dotIdx > 0 ? safe.substring(0, dotIdx) : safe;
+            attachmentFlag = "attachment:" + baseName;
+        }
+
+        return cloudinary.url()
+            .secure(true)
+            .resourceType(resourceType)
+            .type(isGalleryAsset ? "authenticated" : "upload")
+            .signed(isGalleryAsset)
+            .transformation(new Transformation().flags(attachmentFlag))
+            .generate(publicId);
+    }
+
     private String toCloudinaryResourceType(String contentType) {
         if (contentType == null) return "image";
         if (contentType.startsWith("video/")) return "video";
         if (contentType.startsWith("image/")) return "image";
+        // Cloudinary uploads PDFs with resource_type=auto as "image" (it can render
+        // PDF pages). Generating a URL with "raw" would produce a broken /raw/ path.
+        if (contentType.equals("application/pdf")) return "image";
         return "raw";
     }
 }

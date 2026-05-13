@@ -145,6 +145,32 @@ class SectionServiceTest {
         assertThrows(BadRequestException.class, () -> sectionService.updateSectionTitle(1L, req));
     }
 
+    @Test
+    void updateSectionTitle_asMember_throwsAccessDenied() {
+        doThrow(new BadRequestException("Access Denied"))
+            .when(groupService).validateAdminAccess(USER_ID, Long.parseLong(GROUP_ID));
+
+        UpdateSectionTitleRequestDto req = new UpdateSectionTitleRequestDto();
+        req.setTitle("New Title");
+
+        assertThrows(BadRequestException.class, () -> sectionService.updateSectionTitle(1L, req));
+        verify(sectionRepository, never()).save(any());
+    }
+
+    // ─── updateSectionParent ─────────────────────────────────────────────────
+
+    @Test
+    void updateSectionParent_asMember_throwsAccessDenied() {
+        doThrow(new BadRequestException("Access Denied"))
+            .when(groupService).validateAdminAccess(USER_ID, Long.parseLong(GROUP_ID));
+
+        UpdateSectionParentRequestDto req = new UpdateSectionParentRequestDto();
+        req.setParentId(99L);
+
+        assertThrows(BadRequestException.class, () -> sectionService.updateSectionParent(1L, req));
+        verify(sectionRepository, never()).save(any());
+    }
+
     // ─── updateSectionDisplayMode ────────────────────────────────────────────
 
     @Test
@@ -171,6 +197,18 @@ class SectionServiceTest {
 
         assertThrows(BadRequestException.class,
             () -> sectionService.updateSectionDisplayMode(1L, req));
+    }
+
+    @Test
+    void updateSectionDisplayMode_asMember_throwsAccessDenied() {
+        doThrow(new BadRequestException("Access Denied"))
+            .when(groupService).validateAdminAccess(USER_ID, Long.parseLong(GROUP_ID));
+
+        UpdateSectionDisplayModeRequestDto req = new UpdateSectionDisplayModeRequestDto();
+        req.setListDisplayMode("CHECKBOX_STATIC");
+
+        assertThrows(BadRequestException.class, () -> sectionService.updateSectionDisplayMode(1L, req));
+        verify(sectionRepository, never()).save(any());
     }
 
     // ─── deleteSection ───────────────────────────────────────────────────────
@@ -769,6 +807,15 @@ class SectionServiceTest {
         when(sectionRepository.findById(1L)).thenReturn(Optional.of(section));
 
         assertThrows(BadRequestException.class, () -> sectionService.updateSectionCurrency(1L, "  "));
+        verify(sectionRepository, never()).save(any());
+    }
+
+    @Test
+    void updateSectionCurrency_asMember_throwsAccessDenied() {
+        doThrow(new BadRequestException("Access Denied"))
+            .when(groupService).validateAdminAccess(USER_ID, Long.parseLong(GROUP_ID));
+
+        assertThrows(BadRequestException.class, () -> sectionService.updateSectionCurrency(1L, "USD"));
         verify(sectionRepository, never()).save(any());
     }
 

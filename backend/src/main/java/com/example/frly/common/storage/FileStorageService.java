@@ -37,4 +37,19 @@ public interface FileStorageService {
     default String generateAccessUrl(String publicId, String contentType) {
         return generateAccessUrl(publicId);
     }
+
+    /**
+     * Generates a URL that forces a download (Content-Disposition: attachment).
+     * Falls back to {@link #generateAccessUrl(String, String)} if not overridden.
+     */
+    default String generateDownloadUrl(String publicId, String contentType) {
+        return generateDownloadUrl(publicId, contentType, null);
+    }
+
+    /**
+     * Generates a download URL with a specific filename in the Content-Disposition header.
+     */
+    default String generateDownloadUrl(String publicId, String contentType, String filename) {
+        return generateAccessUrl(publicId, contentType);
+    }
 }

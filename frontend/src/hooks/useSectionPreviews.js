@@ -3,6 +3,28 @@ import axiosClient from '../api/axiosClient';
 import { useAuth } from '../context/AuthContext';
 import { parseUTCDate } from '../utils/dateUtils';
 
+const extractTextFromTiptap = (raw) => {
+    if (!raw) return '';
+    try {
+        const doc = JSON.parse(raw);
+        if (doc?.type !== 'doc') return raw;
+        const lines = [];
+        const walk = (node) => {
+            if (!node) return;
+            if (node.type === 'text') { lines.push(node.text || ''); return; }
+            if (node.type === 'hardBreak') { lines.push(' '); return; }
+            if (Array.isArray(node.content)) node.content.forEach(walk);
+            if (['paragraph','heading','listItem','taskItem','blockquote','codeBlock'].includes(node.type)) {
+                lines.push(' ');
+            }
+        };
+        walk(doc);
+        return lines.join('').trim().replace(/\s+/g, ' ');
+    } catch {
+        return raw;
+    }
+};
+
 export const useSectionPreviews = (sections, refreshKey = 0) => {
     const [previews, setPreviews] = useState({});
     const { user } = useAuth();
@@ -30,7 +52,7 @@ export const useSectionPreviews = (sections, refreshKey = 0) => {
                         const content = res.data?.content || '';
                         newPreviews[section.id] = {
                             kind: 'NOTE',
-                            snippet: content.trim().slice(0, 220),
+                            snippet: extractTextFromTiptap(content).slice(0, 220),
                             lastEditedAt: res.data?.lastEditedAt,
                             lastEditedByName: res.data?.lastEditedByName
                         };

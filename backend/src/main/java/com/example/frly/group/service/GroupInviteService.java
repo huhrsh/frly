@@ -73,9 +73,9 @@ public class GroupInviteService {
         // Ensure sender is admin of this group
         GroupMember senderMember = groupMemberRepository.findByUserIdAndGroupId(currentUserId, groupId)
                 .orElseThrow(() -> new BadRequestException("Access Denied: You are not a member of this group"));
-        if (senderMember.getRole() == null || senderMember.getRole().getName() == null ||
-                !"ADMIN".equals(senderMember.getRole().getName())) {
-            throw new BadRequestException("Access Denied: Admins only");
+        String senderRole = senderMember.getRole() == null ? null : senderMember.getRole().getName();
+        if (!"ADMIN".equals(senderRole) && !"OWNER".equals(senderRole)) {
+            throw new BadRequestException("Access Denied: Admins and Owners only");
         }
 
         User invitee = userRepository.findByEmail(email)

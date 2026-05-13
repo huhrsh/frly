@@ -1,6 +1,7 @@
 package com.example.frly.group.model;
 
 import com.example.frly.common.AuditableEntity;
+import com.example.frly.common.Role;
 import com.example.frly.common.enums.RecordStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -36,4 +37,8 @@ public class Group extends AuditableEntity {
 
     @Column(name = "storage_usage", nullable = false)
     private Long storageUsage = 0L;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "default_member_role_id", nullable = false)
+    private Role defaultMemberRole;
 }

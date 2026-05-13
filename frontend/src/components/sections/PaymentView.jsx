@@ -60,7 +60,7 @@ const CURRENCY_SYMBOLS = {
     UZS: 'лв', VND: '₫', XAF: 'FCFA', XOF: 'CFA', ZAR: 'R', ZMW: 'ZK',
 };
 
-const PaymentView = ({ sectionId, section }) => {
+const PaymentView = ({ sectionId, section, canEdit = true }) => {
     const { user } = useAuth();
     const [members, setMembers] = useState([]);
     const [expenses, setExpenses] = useState([]);
@@ -705,6 +705,7 @@ const PaymentView = ({ sectionId, section }) => {
                         <span className="uppercase tracking-wide font-semibold">Total</span>
                         <span className="font-semibold text-xs text-gray-900">{displayCurrency(currency)}{serverTotal.toFixed(2)}</span>
                     </div>
+                    {canEdit && (
                     <button
                         type="button"
                         onClick={() => setShowSettleConfirm(true)}
@@ -713,6 +714,7 @@ const PaymentView = ({ sectionId, section }) => {
                     >
                         Settle payments
                     </button>
+                    )}
                 </div>
             </div>
 
@@ -736,8 +738,8 @@ const PaymentView = ({ sectionId, section }) => {
 
             <div className="flex-1 mt-2 lg:flex lg:gap-6 lg:items-start">
                 {/* Left column — form + balances (sticky on lg) */}
-                <div className="lg:w-[25dvw] lg:flex-shrink-0 lg:sticky lg:top-[15dvh] min-h-[80dvh] lg:self-start space-y-3">
-                    {!editingExpenseId && (
+                <div className="lg:w-[25dvw] lg:flex-shrink-0 lg:sticky lg:top-[15dvh] lg:self-start space-y-3">
+                    {canEdit && !editingExpenseId && (
                         <div className="border border-gray-200 rounded-xl shadow-sm p-4">
                             {expenseFormBody}
                         </div>
@@ -781,7 +783,7 @@ const PaymentView = ({ sectionId, section }) => {
                 </div>{/* end left column */}
 
                 {/* Right column — expenses (page scrolls, left stays sticky) */}
-                <div className="lg:flex-1 mt-4 lg:mt-0" onScroll={handleScroll}>
+                <div className="lg:flex-1 mt-3 lg:mt-0" onScroll={handleScroll}>
                 <div className="border rounded-lg bg-white p-3">
                     <h3 className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Expenses</h3>
                     {expenses.length > 4 && (
@@ -851,6 +853,7 @@ const PaymentView = ({ sectionId, section }) => {
                                             </ul>
                                         );
                                     })()}
+                                    {canEdit && (
                                     <div className="mt-2 flex justify-end gap-1">
                                         <button
                                             type="button"
@@ -869,6 +872,7 @@ const PaymentView = ({ sectionId, section }) => {
                                             <Trash2 size={13} />
                                         </button>
                                     </div>
+                                    )}
                                 </li>
                             ))}
                         </ul>

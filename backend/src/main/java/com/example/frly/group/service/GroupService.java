@@ -70,16 +70,19 @@ public class GroupService {
         String inviteCode = generateInviteCode();
         group.setInviteCode(inviteCode);
 
-        group = groupRepository.save(group);
+        // 2. Assign OWNER role to creator; default member role is MEMBER
+        Role ownerRole = roleRepository.findByName("OWNER")
+                .orElseThrow(() -> new RuntimeException("Error: Role 'OWNER' is not found."));
+        Role memberRole = roleRepository.findByName("MEMBER")
+                .orElseThrow(() -> new RuntimeException("Error: Role 'MEMBER' is not found."));
+        group.setDefaultMemberRole(memberRole);
 
-        // 2. Assign ADMIN Role
-        Role adminRole = roleRepository.findByName("ADMIN")
-                .orElseThrow(() -> new RuntimeException("Error: Role 'ADMIN' is not found."));
+        group = groupRepository.save(group);
 
         GroupMember groupMember = new GroupMember();
         groupMember.setGroup(group);
         groupMember.setUser(user);
-        groupMember.setRole(adminRole);
+        groupMember.setRole(ownerRole);
         groupMember.setStatus(GroupMemberStatus.APPROVED);
 
         groupMemberRepository.save(groupMember);
@@ -126,18 +129,17 @@ public class GroupService {
                 // Notify admins about the new join request
                 String rejoinMsg = String.format("%s %s requested to rejoin group '%s'",
                     user.getFirstName(), user.getLastName(), group.getDisplayName());
-                groupMemberRepository.findByGroupIdAndRole_Name(group.getId(), "ADMIN")
-                    .forEach(adminMember -> notificationService.notifyUser(
-                        new NotificationRequest(
-                            adminMember.getUser().getId(),
-                            NotificationType.GROUP_JOIN_REQUEST,
-                            "Join request",
-                            rejoinMsg,
-                            group.getId(),
-                            null,
-                            user.getFirstName() + " " + user.getLastName()
-                        )
-                    ));
+                NotificationRequest rejoinReq = new NotificationRequest(
+                        null,
+                        NotificationType.GROUP_JOIN_REQUEST,
+                        "Join request",
+                        rejoinMsg,
+                        group.getId(),
+                        null,
+                        user.getFirstName() + " " + user.getLastName()
+                );
+                rejoinReq.setActorId(userId);
+                notifyAdminsAndOwners(group.getId(), rejoinReq);
 
                 return group.getId();
             } else {
@@ -145,33 +147,34 @@ public class GroupService {
             }
         }
 
-        Role memberRole = roleRepository.findByName("MEMBER")
-                .orElseThrow(() -> new RuntimeException("Error: Role 'MEMBER' is not found."));
+        Role defaultRole = group.getDefaultMemberRole() != null
+                ? group.getDefaultMemberRole()
+                : roleRepository.findByName("MEMBER")
+                        .orElseThrow(() -> new RuntimeException("Error: Role 'MEMBER' is not found."));
 
         GroupMember groupMember = new GroupMember();
         groupMember.setGroup(group);
         groupMember.setUser(user);
-        groupMember.setRole(memberRole);
+        groupMember.setRole(defaultRole);
         groupMember.setStatus(GroupMemberStatus.PENDING);
 
         groupMemberRepository.save(groupMember);
         log.info("User {} requested to join Group {}", userId, group.getId());
 
-        // Notify all admins of this group about the join request
+        // Notify all admins and owners of this group about the join request
         String joinMsg = String.format("%s %s requested to join group '%s'",
             user.getFirstName(), user.getLastName(), group.getDisplayName());
-        groupMemberRepository.findByGroupIdAndRole_Name(group.getId(), "ADMIN")
-            .forEach(adminMember -> notificationService.notifyUser(
-                new NotificationRequest(
-                    adminMember.getUser().getId(),
-                    NotificationType.GROUP_JOIN_REQUEST,
-                    "Join request",
-                    joinMsg,
-                    group.getId(),
-                    null,
-                    user.getFirstName() + " " + user.getLastName()
-                )
-            ));
+        NotificationRequest joinReq = new NotificationRequest(
+                null,
+                NotificationType.GROUP_JOIN_REQUEST,
+                "Join request",
+                joinMsg,
+                group.getId(),
+                null,
+                user.getFirstName() + " " + user.getLastName()
+        );
+        joinReq.setActorId(userId);
+        notifyAdminsAndOwners(group.getId(), joinReq);
 
         return group.getId();
     }
@@ -288,6 +291,10 @@ public class GroupService {
            long pendingCount = groupMemberRepository.countByGroupIdAndStatus(groupId, GroupMemberStatus.PENDING);
            dto.setPendingMemberCount(pendingCount);
 
+        if (group.getDefaultMemberRole() != null) {
+            dto.setDefaultMemberRole(group.getDefaultMemberRole().getName());
+        }
+
         return dto;
     }
 
@@ -358,7 +365,7 @@ public class GroupService {
     @Transactional
     public void deleteGroup(Long groupId) {
         Long currentUserId = AuthUtil.getCurrentUserId();
-        validateAdminAccess(currentUserId, groupId);
+        validateOwnerAccess(currentUserId, groupId);
 
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new BadRequestException("Group not found"));
@@ -468,36 +475,31 @@ public class GroupService {
             String actorName = String.format("%s %s", member.getUser().getFirstName(), member.getUser().getLastName()).trim();
 
             // Notify the member that they left
-            notificationService.notifyUser(
-                new NotificationRequest(
+            NotificationRequest leftNotif = new NotificationRequest(
                     currentUserId,
                     NotificationType.GROUP_LEFT,
                     "Left group",
                     String.format("You left group '%s'.", group.getDisplayName()),
                     groupId,
                     null,
-                    null
-                )
+                    actorName
             );
+            leftNotif.setActorId(currentUserId);
+            notificationService.notifyUser(leftNotif);
 
-            // Notify all admins (except the leaving member) that someone left
-            groupMemberRepository.findByGroupIdAndRole_Name(groupId, "ADMIN")
-                .forEach(adminMember -> {
-                Long adminUserId = adminMember.getUser().getId();
-                if (!adminUserId.equals(currentUserId)) {
-                    notificationService.notifyUser(
-                        new NotificationRequest(
-                            adminUserId,
-                            NotificationType.GROUP_MEMBER_LEFT,
-                            "Member left",
-                            String.format("%s left group '%s'", actorName, group.getDisplayName()),
-                            groupId,
-                            null,
-                            actorName
-                        )
-                    );
-                }
-                });
+            // Notify all admins and owners (except the leaving member) that someone left
+            String leftMsg = String.format("%s left group '%s'", actorName, group.getDisplayName());
+            NotificationRequest memberLeftReq = new NotificationRequest(
+                    null,
+                    NotificationType.GROUP_MEMBER_LEFT,
+                    "Member left",
+                    leftMsg,
+                    groupId,
+                    null,
+                    actorName
+            );
+            memberLeftReq.setActorId(currentUserId);
+            notifyAdminsAndOwners(groupId, memberLeftReq, currentUserId);
             return;
         }
 
@@ -601,18 +603,132 @@ public class GroupService {
     }
 
     @Transactional(readOnly = true)
-    private void validateAdminAccess(Long userId, Long groupId) {
-        var memberOpt = groupMemberRepository.findByUserIdAndGroupId(userId, groupId);
-        GroupMember member = memberOpt.orElseThrow(() -> new BadRequestException("Access Denied: You are not a member of this group"));
+    public void validateAdminAccess(Long userId, Long groupId) {
+        GroupMember member = groupMemberRepository.findByUserIdAndGroupId(userId, groupId)
+                .orElseThrow(() -> new BadRequestException("Access Denied: You are not a member of this group"));
 
         if (member.getStatus() != GroupMemberStatus.APPROVED) {
             log.warn("SECURITY ALERT: Non-approved member {} attempted admin operation on group {}", userId, groupId);
             throw new BadRequestException("Access Denied: Your membership is not approved for this group");
         }
 
-        if (member.getRole() == null || member.getRole().getName() == null || !"ADMIN".equals(member.getRole().getName())) {
-            log.warn("SECURITY ALERT: Non-admin user {} attempted admin operation on group {}", userId, groupId);
-            throw new BadRequestException("Access Denied: Admins only");
+        String role = member.getRole() != null ? member.getRole().getName() : null;
+        if (!"ADMIN".equals(role) && !"OWNER".equals(role)) {
+            log.warn("SECURITY ALERT: Member {} without admin/owner role attempted admin operation on group {}", userId, groupId);
+            throw new BadRequestException("Access Denied: Admins and Owners only");
         }
+    }
+
+    @Transactional(readOnly = true)
+    public void validateOwnerAccess(Long userId, Long groupId) {
+        GroupMember member = groupMemberRepository.findByUserIdAndGroupId(userId, groupId)
+                .orElseThrow(() -> new BadRequestException("Access Denied: You are not a member of this group"));
+
+        if (member.getStatus() != GroupMemberStatus.APPROVED) {
+            throw new BadRequestException("Access Denied: Your membership is not approved for this group");
+        }
+
+        if (member.getRole() == null || !"OWNER".equals(member.getRole().getName())) {
+            log.warn("SECURITY ALERT: Non-owner user {} attempted owner-only operation on group {}", userId, groupId);
+            throw new BadRequestException("Access Denied: Owners only");
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public void validateNotViewer(Long userId, Long groupId) {
+        GroupMember member = groupMemberRepository.findByUserIdAndGroupId(userId, groupId)
+                .orElseThrow(() -> new BadRequestException("Access Denied: You are not a member of this group"));
+
+        if (member.getStatus() != GroupMemberStatus.APPROVED) {
+            throw new BadRequestException("Access Denied: Your membership is not approved for this group");
+        }
+
+        String role = member.getRole() != null ? member.getRole().getName() : null;
+        if ("VIEWER".equals(role)) {
+            log.warn("SECURITY ALERT: Viewer user {} attempted write operation on group {}", userId, groupId);
+            throw new BadRequestException("Access Denied: Viewers cannot modify content");
+        }
+    }
+
+    @Transactional
+    public void updateMemberRole(Long groupId, Long targetUserId, String newRoleName) {
+        Long currentUserId = AuthUtil.getCurrentUserId();
+        validateOwnerAccess(currentUserId, groupId);
+
+        if (!"ADMIN".equals(newRoleName) && !"MEMBER".equals(newRoleName) && !"VIEWER".equals(newRoleName)) {
+            throw new BadRequestException("Role must be ADMIN, MEMBER, or VIEWER");
+        }
+
+        GroupMember target = groupMemberRepository.findByUserIdAndGroupId(targetUserId, groupId)
+                .orElseThrow(() -> new BadRequestException("Member not found in this group"));
+
+        if ("OWNER".equals(target.getRole().getName())) {
+            throw new BadRequestException("Cannot change the role of the group Owner");
+        }
+
+        Role role = roleRepository.findByName(newRoleName)
+                .orElseThrow(() -> new RuntimeException("Role not found: " + newRoleName));
+        target.setRole(role);
+        groupMemberRepository.save(target);
+        log.info("User {} role updated to {} in group {} by owner {}", targetUserId, newRoleName, groupId, currentUserId);
+
+        String groupName = target.getGroup().getDisplayName();
+        String actorUser = userRepository.findById(currentUserId)
+                .map(u -> u.getFirstName() + " " + u.getLastName()).orElse("An owner");
+        notificationService.notifyUser(
+                new NotificationRequest(
+                        targetUserId,
+                        NotificationType.ROLE_CHANGED,
+                        "Your role was updated",
+                        String.format("Your role in group '%s' has been changed to %s by %s.", groupName, newRoleName, actorUser),
+                        groupId,
+                        null,
+                        actorUser
+                )
+        );
+    }
+
+    @Transactional
+    public void updateDefaultMemberRole(Long groupId, String roleName) {
+        Long currentUserId = AuthUtil.getCurrentUserId();
+        validateOwnerAccess(currentUserId, groupId);
+
+        if (!"ADMIN".equals(roleName) && !"MEMBER".equals(roleName) && !"VIEWER".equals(roleName)) {
+            throw new BadRequestException("Default member role must be ADMIN, MEMBER, or VIEWER");
+        }
+
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new BadRequestException("Group not found"));
+
+        Role role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
+        group.setDefaultMemberRole(role);
+        groupRepository.save(group);
+        log.info("Default member role for group {} updated to {} by owner {}", groupId, roleName, currentUserId);
+    }
+
+    private void notifyAdminsAndOwners(Long groupId, NotificationRequest template) {
+        notifyAdminsAndOwners(groupId, template, null);
+    }
+
+    private void notifyAdminsAndOwners(Long groupId, NotificationRequest template, Long excludeUserId) {
+        java.util.List<GroupMember> privileged = new java.util.ArrayList<>();
+        privileged.addAll(groupMemberRepository.findByGroupIdAndRole_Name(groupId, "ADMIN"));
+        privileged.addAll(groupMemberRepository.findByGroupIdAndRole_Name(groupId, "OWNER"));
+        privileged.stream()
+                .filter(m -> excludeUserId == null || !m.getUser().getId().equals(excludeUserId))
+                .forEach(m -> {
+                    NotificationRequest req = new NotificationRequest(
+                            m.getUser().getId(),
+                            template.getType(),
+                            template.getTitle(),
+                            template.getMessage(),
+                            template.getGroupId(),
+                            template.getSectionId(),
+                            template.getActorName()
+                    );
+                    req.setActorId(template.getActorId());
+                    notificationService.notifyUser(req);
+                });
     }
 }

@@ -254,8 +254,11 @@ const Dashboard = () => {
         ? visibleGroups.filter(g => g.displayName?.toLowerCase().includes(groupSearch.toLowerCase()))
         : visibleGroups
     ).slice().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
-    const totalGroups = visibleGroups.length;
-    const adminGroups = visibleGroups.filter(g => g.currentUserRole === 'ADMIN').length;
+    const totalGroups  = visibleGroups.length;
+    const ownerGroups  = visibleGroups.filter(g => g.currentUserRole === 'OWNER').length;
+    const adminGroups  = visibleGroups.filter(g => g.currentUserRole === 'ADMIN').length;
+    const memberGroups = visibleGroups.filter(g => g.currentUserRole === 'MEMBER').length;
+    const viewerGroups = visibleGroups.filter(g => g.currentUserRole === 'VIEWER').length;
     const pendingGroups = visibleGroups.filter(g => g.membershipStatus === 'PENDING').length;
     const pendingInvites = invites.length;
 
@@ -302,9 +305,26 @@ const Dashboard = () => {
                                 </div>
                                 <Users className="text-blue-500" size={22} />
                             </div>
+                            {/* Roles breakdown card */}
                             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-                                <p className="text-xs text-gray-500 uppercase tracking-wide">Admin of</p>
-                                <p className="text-2xl font-semibold text-gray-900">{adminGroups}</p>
+                                <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Your roles</p>
+                                {totalGroups === 0 ? (
+                                    <p className="text-2xl font-semibold text-gray-300">—</p>
+                                ) : (
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                                        {[
+                                            { label: 'Owner',  value: ownerGroups,  color: 'text-amber-600' },
+                                            { label: 'Admin',  value: adminGroups,  color: 'text-purple-600' },
+                                            { label: 'Member', value: memberGroups, color: 'text-gray-700' },
+                                            { label: 'Viewer', value: viewerGroups, color: 'text-teal-600' },
+                                        ].map(r => (
+                                            <div key={r.label} className="flex items-baseline gap-1.5">
+                                                <span className={`text-lg font-semibold leading-none ${r.color}`}>{r.value}</span>
+                                                <span className="text-[10px] text-gray-400">{r.label}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
                                 <p className="text-xs text-gray-500 uppercase tracking-wide">Pending joins</p>
@@ -325,32 +345,29 @@ const Dashboard = () => {
                             </button>
                         </div>
 
-                        {/* Mobile compact summary at top */}
+                        {/* Mobile compact summary */}
                         <div className="sm:hidden flex justify-center mt-2">
-                            <div className="flex w-full max-w-md items-center rounded-2xl bg-white border border-gray-100 shadow-sm px-4 py-2 gap-3 overflow-x-auto">
-                                <div className="flex-1 flex flex-col items-center">
-                                    <span className="text-sm text-gray-600">Total</span>
-                                    <span className="font-semibold text-gray-900">{totalGroups}</span>
-                                </div>
-                                <div className="h-8 w-px bg-gray-100" />
-                                <div className="flex-1 flex flex-col items-center">
-                                    <span className="text-sm text-gray-600">Admin</span>
-                                    <span className="font-semibold text-gray-900">{adminGroups}</span>
-                                </div>
-                                <div className="h-8 w-px bg-gray-100" />
-                                <div className="flex-1 flex flex-col items-center">
-                                    <span className="text-sm text-gray-600">Pending</span>
-                                    <span className="font-semibold text-amber-600">{pendingGroups}</span>
-                                </div>
-                                <div className="h-8 w-px bg-gray-100" />
-                                <button
-                                    type="button"
-                                    onClick={() => navigate('/groups/join')}
-                                    className="flex-1 flex flex-col items-center focus:outline-none"
-                                >
-                                    <span className="text-sm text-gray-600">Invites</span>
-                                    <span className="font-semibold text-blue-600">{pendingInvites}</span>
-                                </button>
+                            <div className="flex w-full items-center rounded-2xl bg-white border border-gray-100 shadow-sm px-3 py-2 gap-2 overflow-x-auto">
+                                {[
+                                    { label: 'Total',   value: totalGroups,   color: 'text-gray-900',  labelColor: 'text-gray-500',  onClick: null },
+                                    ownerGroups  > 0 && { label: 'Owner',   value: ownerGroups,   color: 'text-amber-700', labelColor: 'text-amber-600',  onClick: null },
+                                    adminGroups  > 0 && { label: 'Admin',   value: adminGroups,   color: 'text-purple-700', labelColor: 'text-purple-600', onClick: null },
+                                    memberGroups > 0 && { label: 'Member',  value: memberGroups,  color: 'text-gray-700',  labelColor: 'text-gray-500',   onClick: null },
+                                    viewerGroups > 0 && { label: 'Viewer',  value: viewerGroups,  color: 'text-teal-700',  labelColor: 'text-teal-600',   onClick: null },
+                                    pendingGroups > 0 && { label: 'Pending', value: pendingGroups, color: 'text-amber-600', labelColor: 'text-amber-500',  onClick: null },
+                                    { label: 'Invites', value: pendingInvites, color: 'text-blue-600', labelColor: 'text-blue-500', onClick: () => navigate('/groups/join') },
+                                ].filter(Boolean).map((item, idx, arr) => (
+                                    <React.Fragment key={item.label}>
+                                        <div
+                                            className={`flex-shrink-0 flex flex-col items-center px-1 ${item.onClick ? 'cursor-pointer' : ''}`}
+                                            onClick={item.onClick || undefined}
+                                        >
+                                            <span className={`text-[10px] ${item.labelColor}`}>{item.label}</span>
+                                            <span className={`text-sm font-semibold ${item.color}`}>{item.value}</span>
+                                        </div>
+                                        {idx < arr.length - 1 && <div className="h-7 w-px bg-gray-100 flex-shrink-0" />}
+                                    </React.Fragment>
+                                ))}
                             </div>
                         </div>
                     </>
@@ -410,10 +427,21 @@ const Dashboard = () => {
                                             >
                                                 {group.pinned ? <Pin size={13} /> : <PinOff size={13} />}
                                             </button>
-                                            <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 uppercase">
-                                                {group.currentUserRole || 'MEMBER'}
-                                            </span>
-                                            {group.currentUserRole === 'ADMIN' && (
+                                            {(() => {
+                                                const role = group.currentUserRole || 'MEMBER';
+                                                const roleStyle = {
+                                                    OWNER:  'bg-amber-50 text-amber-700 border border-amber-200',
+                                                    ADMIN:  'bg-purple-50 text-purple-700 border border-purple-100',
+                                                    MEMBER: 'bg-gray-100 text-gray-500 border border-gray-200',
+                                                    VIEWER: 'bg-teal-50 text-teal-700 border border-teal-100',
+                                                }[role] || 'bg-gray-100 text-gray-500 border border-gray-200';
+                                                return (
+                                                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${roleStyle}`}>
+                                                        {role.charAt(0) + role.slice(1).toLowerCase()}
+                                                    </span>
+                                                );
+                                            })()}
+                                            {(group.currentUserRole === 'ADMIN' || group.currentUserRole === 'OWNER') && (
                                                 <button
                                                     type="button"
                                                     onClick={(e) => handleManageGroup(group, e)}
@@ -473,7 +501,7 @@ const Dashboard = () => {
                                                 <Copy size={12} />
                                             </button>
                                         </div>
-                                        {group.currentUserRole === 'ADMIN' && group.pendingMemberCount > 0 && (
+                                        {(group.currentUserRole === 'ADMIN' || group.currentUserRole === 'OWNER') && group.pendingMemberCount > 0 && (
                                             <span className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700 font-medium">
                                                 {group.pendingMemberCount} pending
                                             </span>

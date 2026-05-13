@@ -14,7 +14,7 @@ const startOfDay = (date) => {
 
 const sameDay = (a, b) => startOfDay(a).getTime() === startOfDay(b).getTime();
 
-const CalendarView = ({ sectionId }) => {
+const CalendarView = ({ sectionId, canEdit = true }) => {
   const [events, setEvents] = useState([]);
   const [members, setMembers] = useState([]);
   const [selectedDate, setSelectedDate] = useState(startOfDay(new Date()));
@@ -381,6 +381,7 @@ const CalendarView = ({ sectionId }) => {
                         )}
                       </div>
                     </div>
+                    {canEdit && (
                     <div className="flex flex-col items-end gap-1 ml-2">
                       <button
                         type="button"
@@ -397,14 +398,15 @@ const CalendarView = ({ sectionId }) => {
                         <Trash2 size={14} />
                       </button>
                     </div>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
           </div>
         </div>
-        {/* Add event form */}
-        <div className="bg-white rounded-xl border border-gray-100 p-3 flex flex-col">
+        {/* Add event form — hidden for viewers */}
+        {canEdit && <div className="bg-white rounded-xl border border-gray-100 p-3 flex flex-col">
           <div className="flex items-center justify-between mb-3">
             <div>
               <p className="text-[11px] uppercase tracking-wide text-gray-400 font-semibold">Add event</p>
@@ -542,7 +544,7 @@ const CalendarView = ({ sectionId }) => {
                 </button>
               </div>
             </form>
-        </div>
+        </div>}
 
         {/* Right column: upcoming and past events */}
         <div className="bg-white rounded-xl border border-gray-100 p-3 flex flex-col">
