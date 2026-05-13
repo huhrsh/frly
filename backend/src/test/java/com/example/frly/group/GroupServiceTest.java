@@ -70,33 +70,32 @@ class GroupServiceTest {
 
         User user = buildUser(USER_ID);
         Group savedGroup = buildGroup(1L, "Flat Mates", RecordStatus.ACTIVE);
-        Role adminRole = buildRole("ADMIN");
+        Role ownerRole = buildRole("OWNER");
+        Role memberRole = buildRole("MEMBER");
 
         when(userRepository.getReferenceById(USER_ID)).thenReturn(user);
         when(groupRepository.existsByInviteCode(anyString())).thenReturn(false);
         when(groupRepository.save(any(Group.class))).thenReturn(savedGroup);
-        when(roleRepository.findByName("ADMIN")).thenReturn(Optional.of(adminRole));
+        when(roleRepository.findByName("OWNER")).thenReturn(Optional.of(ownerRole));
+        when(roleRepository.findByName("MEMBER")).thenReturn(Optional.of(memberRole));
 
         Long result = groupService.createGroup(request);
 
         assertEquals(1L, result);
         verify(groupMemberRepository).save(argThat(member ->
             member.getStatus() == GroupMemberStatus.APPROVED &&
-            member.getRole().getName().equals("ADMIN")
+            member.getRole().getName().equals("OWNER")
         ));
     }
 
     @Test
-    void createGroup_whenAdminRoleMissing_throwsRuntimeException() {
+    void createGroup_whenOwnerRoleMissing_throwsRuntimeException() {
         CreateGroupRequestDto request = new CreateGroupRequestDto();
         request.setDisplayName("Flat Mates");
 
         when(userRepository.getReferenceById(USER_ID)).thenReturn(buildUser(USER_ID));
         when(groupRepository.existsByInviteCode(anyString())).thenReturn(false);
-
-        Group savedGroup = buildGroup(1L, "Flat Mates", RecordStatus.ACTIVE);
-        when(groupRepository.save(any())).thenReturn(savedGroup);
-        when(roleRepository.findByName("ADMIN")).thenReturn(Optional.empty());
+        when(roleRepository.findByName("OWNER")).thenReturn(Optional.empty());
 
         assertThrows(RuntimeException.class, () -> groupService.createGroup(request));
     }
@@ -246,12 +245,12 @@ class GroupServiceTest {
     // ─── deleteGroup ─────────────────────────────────────────────────────────
 
     @Test
-    void deleteGroup_softDeletesGroupForAdmin() {
+    void deleteGroup_softDeletesGroupForOwner() {
         Group group = buildGroup(1L, "My Group", RecordStatus.ACTIVE);
-        GroupMember adminMember = buildMember(buildUser(USER_ID), group, "ADMIN", GroupMemberStatus.APPROVED);
+        GroupMember ownerMember = buildMember(buildUser(USER_ID), group, "OWNER", GroupMemberStatus.APPROVED);
 
         when(groupMemberRepository.findByUserIdAndGroupId(USER_ID, 1L))
-            .thenReturn(Optional.of(adminMember));
+            .thenReturn(Optional.of(ownerMember));
         when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
 
         groupService.deleteGroup(1L);
@@ -261,12 +260,23 @@ class GroupServiceTest {
     }
 
     @Test
-    void deleteGroup_whenGroupNotFound_throwsBadRequestException() {
+    void deleteGroup_asAdmin_throwsAccessDenied() {
         Group group = buildGroup(1L, "My Group", RecordStatus.ACTIVE);
         GroupMember adminMember = buildMember(buildUser(USER_ID), group, "ADMIN", GroupMemberStatus.APPROVED);
 
         when(groupMemberRepository.findByUserIdAndGroupId(USER_ID, 1L))
             .thenReturn(Optional.of(adminMember));
+
+        assertThrows(BadRequestException.class, () -> groupService.deleteGroup(1L));
+    }
+
+    @Test
+    void deleteGroup_whenGroupNotFound_throwsBadRequestException() {
+        Group group = buildGroup(1L, "My Group", RecordStatus.ACTIVE);
+        GroupMember ownerMember = buildMember(buildUser(USER_ID), group, "OWNER", GroupMemberStatus.APPROVED);
+
+        when(groupMemberRepository.findByUserIdAndGroupId(USER_ID, 1L))
+            .thenReturn(Optional.of(ownerMember));
         when(groupRepository.findById(1L)).thenReturn(Optional.empty());
 
         assertThrows(BadRequestException.class, () -> groupService.deleteGroup(1L));
