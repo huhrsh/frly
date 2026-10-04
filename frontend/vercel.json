@@ -1,5 +1,12 @@
 {
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
+  "routes": [
+    { "src": "/index\\.html", "status": 308, "headers": { "Location": "/" } },
+    { "src": "/(features|pricing|faq|about|contact|group-management-app|split-expenses|group-trip-planner|shared-checklist-app|shared-notes-app|roommate-organizer)\\.html", "status": 308, "headers": { "Location": "/$1" } },
+    { "src": "/(?:app|404)\\.html", "headers": { "X-Robots-Tag": "noindex, follow" }, "continue": true },
+    { "handle": "filesystem" },
+    { "src": "/(features|pricing|faq|about|contact|group-management-app|split-expenses|group-trip-planner|shared-checklist-app|shared-notes-app|roommate-organizer)/?", "dest": "/$1.html" },
+    { "src": "/(?:login|register|reset-password|group-invite|dashboard|profile|activity|integrations|changelog|careers|blog|feedback|review)/?", "dest": "/app.html", "headers": { "X-Robots-Tag": "noindex, follow" } },
+    { "src": "/(?:groups|users)(?:/.*)?", "dest": "/app.html", "headers": { "X-Robots-Tag": "noindex, follow" } },
+    { "src": "/.*", "dest": "/404.html", "status": 404 }
   ]
 }

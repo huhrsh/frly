@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import PageMeta from '../components/PageMeta';
+import { GuideLinks } from './Guide';
 
 const Home = () => {
     const [reviews, setReviews] = useState([]);
@@ -34,11 +35,11 @@ const Home = () => {
                             For flatmates, families and close crews
                         </div>
                         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-gray-900 leading-tight">
-                            Your group chat is a mess.<br />
-                            <span className="text-blue-600">Fryly fixes that.</span>
+                            Your group collaboration app.<br />
+                            <span className="text-blue-600">Plan together. Split expenses.</span>
                         </h1>
                         <p className="mt-6 text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
-                            One organised space for the people you live and plan with — checklists, shared expenses, reminders and more. No more scrolling through chats to find "that thing".
+                            Shared notes, checklists and an expense splitter for friends, roommates, families and group trips. Keep plans together and choose who can manage, contribute or view with flexible group roles.
                         </p>
 
                         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -116,7 +117,7 @@ const Home = () => {
                         <div className="group relative rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-50 p-6 border-2 border-blue-100 hover:border-blue-300 transition-all hover:shadow-xl hover:-translate-y-1">
                             <div className="text-2xl mb-2">💸</div>
                             <h3 className="text-xl font-bold text-gray-900 mb-2">Expense Splits</h3>
-                            <p className="text-sm text-gray-700 mb-3">Track who paid what, split bills fairly, settle up in one tap</p>
+                            <p className="text-sm text-gray-700 mb-3">Track who paid, split bills and record settlements after paying outside Fryly</p>
                             <div className="text-xs text-blue-700 font-medium">Balances · Settlements · History</div>
                         </div>
 
@@ -130,7 +131,7 @@ const Home = () => {
                         <div className="group relative rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 p-6 border-2 border-amber-100 hover:border-amber-300 transition-all hover:shadow-xl hover:-translate-y-1">
                             <div className="text-2xl mb-2">📝</div>
                             <h3 className="text-xl font-bold text-gray-900 mb-2">Notes</h3>
-                            <p className="text-sm text-gray-700 mb-3">House rules, trip itineraries, recipes — anyone can edit</p>
+                            <p className="text-sm text-gray-700 mb-3">House rules, trip itineraries, recipes — members with editing access can contribute</p>
                             <div className="text-xs text-amber-700 font-medium">Rich text · Collaborative</div>
                         </div>
 
@@ -177,6 +178,7 @@ const Home = () => {
                 </div>
             </section>
 
+            <GuideLinks />
             {/* SOCIAL PROOF */}
             {reviews && reviews.length > 0 && (
                 <section className="py-16 bg-white">

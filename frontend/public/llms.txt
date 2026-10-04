@@ -1,0 +1,16 @@
+# Fryly
+
+A group collaboration app for shared notes, checklists and expense records. Settlements do not transfer money.
+
+- [Group Collaboration App & Expense Splitter | Fryly](https://fryly.vercel.app/): Split expenses, share notes and checklists, and plan trips together. Fryly keeps friends, roommates and families organised with flexible group roles.
+- [Shared Notes, Checklists, Expenses & Group Roles | Fryly](https://fryly.vercel.app/features): Explore Fryly features: notes, checklists, expense splitting, reminders, calendars, galleries and Owner, Admin, Member and Viewer roles.
+- [Fryly Pricing — Start Your Group for Free](https://fryly.vercel.app/pricing): Start organising your group for free with Fryly. See current pricing information for shared notes, checklists and expenses.
+- [Fryly FAQ — Groups, Expense Splits & Permissions](https://fryly.vercel.app/faq): Learn how Fryly groups, invitations, shared notes, checklists, expenses and member permissions work.
+- [About Fryly — Organisation for Everyday Groups](https://fryly.vercel.app/about): Learn about Fryly, a workspace for friends, flatmates and families to organise plans, notes, lists and expenses.
+- [Contact Fryly](https://fryly.vercel.app/contact): Find contact information for Fryly, the group collaboration app for shared notes, lists and expenses.
+- [Group Management App for Friends & Families | Fryly](https://fryly.vercel.app/group-management-app): Manage group notes, shared checklists, expenses and member roles. Organise friends, families, roommates and travel groups in one Fryly workspace.
+- [Split Expenses with Friends — Group Bill Splitter | Fryly](https://fryly.vercel.app/split-expenses): Record shared bills, choose equal or custom splits, view balances and record settlements. Keep expenses alongside group notes and checklists in Fryly.
+- [Group Trip Planner with Shared Expenses & Lists | Fryly](https://fryly.vercel.app/group-trip-planner): Organise a group trip with shared itinerary notes, packing checklists, booking links, photos and expense splits. Plan together in Fryly.
+- [Shared Checklist App for Packing, Chores & Groceries | Fryly](https://fryly.vercel.app/shared-checklist-app): Create group checklists for groceries, packing, chores and errands. Keep shared lists alongside notes, reminders and expense splits in Fryly.
+- [Shared Notes App for Groups, Families & Travel | Fryly](https://fryly.vercel.app/shared-notes-app): Keep shared rich-text notes for itineraries, house rules and group decisions. Organise notes with lists, links and expenses in Fryly.
+- [Roommate Organizer for Bills, Groceries & Chores | Fryly](https://fryly.vercel.app/roommate-organizer): Keep flatmate expense splits, grocery checklists, house notes and reminders in one shared group. Organise everyday life with roommates in Fryly.

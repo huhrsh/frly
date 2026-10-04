@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { Routes, Route } from 'react-router-dom';
@@ -9,18 +9,7 @@ import Footer from './components/Footer';
 import OfflineBanner from './components/OfflineBanner';
 import InstallPrompt from './components/InstallPrompt';
 import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import ResetPassword from './pages/ResetPassword';
-import GroupInvite from './pages/GroupInvite';
-import Dashboard from './pages/Dashboard';
-import CreateGroup from './pages/CreateGroup';
-import JoinGroup from './pages/JoinGroup';
-import GroupView from './pages/GroupView';
-import SectionView from './pages/SectionView';
 import ProtectedRoute from './components/ProtectedRoute';
-import Profile from './pages/Profile';
-import MemberProfile from './pages/MemberProfile';
 import Features from './pages/Features';
 import Integrations from './pages/Integrations';
 import Pricing from './pages/Pricing';
@@ -32,18 +21,36 @@ import Contact from './pages/Contact';
 import Feedback from './pages/Feedback';
 import Review from './pages/Review';
 import FAQ from './pages/FAQ';
-import ActivityPage from './pages/ActivityPage';
+import Guide from './pages/Guide';
+import PageMeta from './components/PageMeta';
+import { guides } from './seo';
+
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const GroupInvite = lazy(() => import('./pages/GroupInvite'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const CreateGroup = lazy(() => import('./pages/CreateGroup'));
+const JoinGroup = lazy(() => import('./pages/JoinGroup'));
+const GroupView = lazy(() => import('./pages/GroupView'));
+const SectionView = lazy(() => import('./pages/SectionView'));
+const Profile = lazy(() => import('./pages/Profile'));
+const MemberProfile = lazy(() => import('./pages/MemberProfile'));
+const ActivityPage = lazy(() => import('./pages/ActivityPage'));
 
 function App() {
   return (
 	<div className="min-h-[100dvh] flex flex-col bg-gray-50">
       <ToastContainer position="top-right" autoClose={3000} />
       <Header />
+      <PageMeta />
   <OfflineBanner />
   <InstallPrompt />
       <main className="flex-1 px-4 py-4 sm:px-6 sm:py-6">
         <ScrollToTop />
-        <Routes>
+        <Suspense fallback={<div className="py-12 text-center" role="status">Loading…</div>}><Routes>
+          {guides.map(page => <Route key={page.path} path={page.path} element={<Guide page={page} />} />)}
+          <Route path="*" element={<div className="max-w-3xl mx-auto py-12"><h1 className="text-3xl font-bold">Page not found</h1><a href="/" className="text-blue-700 underline">Return to Fryly</a></div>} />
           <Route
             path="/"
             element={
@@ -149,7 +156,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-        </Routes>
+        </Routes></Suspense>
       </main>
       <Footer />
     </div>

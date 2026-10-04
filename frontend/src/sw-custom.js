@@ -4,7 +4,7 @@
 // The VitePWA plugin will inject the precache manifest here
 self.__WB_MANIFEST;
 
-const CACHE_NAME = 'fryly-v1';
+const CACHE_NAME = 'fryly-v2';
 const urlsToCache = [
   '/',
   '/index.html',
