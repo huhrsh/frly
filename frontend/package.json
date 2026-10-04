@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "dev:cloudflare": "vite --host 0.0.0.0 --mode production",
-    "build": "vite build",
+    "build": "vite build && node scripts/prerender.mjs && node scripts/check-seo.mjs",
+    "check:seo": "node scripts/check-seo.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",

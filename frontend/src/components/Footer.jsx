@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { guides } from '../seo';
 
 const Footer = () => {
     return (
@@ -23,6 +24,7 @@ const Footer = () => {
                                 <li><Link to="/pricing" className="hover:text-blue-600 transition">Pricing</Link></li>
                                 <li><Link to="/changelog" className="hover:text-blue-600 transition">Changelog</Link></li>
                                 <li><Link to="/faq" className="hover:text-blue-600 transition">FAQ</Link></li>
+                                {guides.map(page => <li key={page.path}><Link to={page.path} className="hover:text-blue-600 transition">{page.heading}</Link></li>)}
                             </ul>
                         </div>
 
@@ -61,6 +63,7 @@ const Footer = () => {
                         </div> */}
                 </div>
 
+                <nav aria-label="More projects" className="flex flex-wrap gap-4 py-4 text-sm text-blue-700"><span className="font-semibold">More projects by the creator</span><a href="https://the-daylo.vercel.app/">Daylo</a><a href="https://dosia.vercel.app/">Dosia</a><a href="https://boring-qrs.vercel.app/">boring qrs</a><a href="https://the-portify.vercel.app/">Portify</a></nav>
                 <div className="pt-4 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-3 text-xs text-gray-400">
                     <p>
                         fryly · v1.5
