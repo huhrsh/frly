@@ -21,7 +21,7 @@ axiosClient.interceptors.request.use(
 
     // Attach Group ID if present in localStorage or Session
     const currentGroupId = localStorage.getItem('currentGroupId');
-    if (currentGroupId) {
+    if (currentGroupId && !config.headers['X-Group-ID']) {
       config.headers['X-Group-ID'] = currentGroupId;
     }
 

@@ -126,7 +126,7 @@ const ReminderEditModal = ({ open, onClose, onSubmit, editingReminder }) => {
     );
 };
 
-const ReminderView = ({ sectionId, canEdit = true }) => {
+const ReminderView = ({ sectionId, canEdit = false }) => {
     const { user } = useAuth();
     const [reminders, setReminders] = useState([]);
     const [showEditModal, setShowEditModal] = useState(false);

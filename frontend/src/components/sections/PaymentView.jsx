@@ -60,7 +60,7 @@ const CURRENCY_SYMBOLS = {
     UZS: 'лв', VND: '₫', XAF: 'FCFA', XOF: 'CFA', ZAR: 'R', ZMW: 'ZK',
 };
 
-const PaymentView = ({ sectionId, section, canEdit = true }) => {
+const PaymentView = ({ sectionId, section, canEdit = false, canManage = false }) => {
     const { user } = useAuth();
     const [members, setMembers] = useState([]);
     const [expenses, setExpenses] = useState([]);
@@ -68,6 +68,10 @@ const PaymentView = ({ sectionId, section, canEdit = true }) => {
     const [description, setDescription] = useState('');
     const [totalAmount, setTotalAmount] = useState('');
     const [currency, setCurrency] = useState(section?.currency || 'INR');
+    const [savingCurrency, setSavingCurrency] = useState(false);
+    useEffect(() => {
+        setCurrency(section?.currency || 'INR');
+    }, [sectionId, section?.currency]);
     const [paidByUserId, setPaidByUserId] = useState('');
     const [shares, setShares] = useState({});
     const [splitMode, setSplitMode] = useState('EVERYONE'); // CUSTOM | EVERYONE | PAYER_ONLY
@@ -479,11 +483,18 @@ const PaymentView = ({ sectionId, section, canEdit = true }) => {
     };
 
     const handleCurrencyChange = async (newCode) => {
+        if (!canManage || savingCurrency) return;
+        const previousCurrency = currency;
         setCurrency(newCode);
+        setSavingCurrency(true);
         try {
             await axiosClient.patch(`/groups/sections/${sectionId}/currency`, { currency: newCode });
         } catch (err) {
+            setCurrency(previousCurrency);
+            toast.error('Failed to update section currency');
             console.error('Failed to update currency', err);
+        } finally {
+            setSavingCurrency(false);
         }
     };
 
@@ -693,6 +704,8 @@ const PaymentView = ({ sectionId, section, canEdit = true }) => {
                 <div className="flex flex-wrap items-center gap-2">
                     <select
                         value={currency}
+                        disabled={!canManage || savingCurrency}
+                        aria-label="Section currency"
                         onChange={e => handleCurrencyChange(e.target.value)}
                         className="h-9 text-xs border border-gray-200 rounded-lg px-2 focus:outline-none bg-white text-gray-600"
                         title="Section currency"

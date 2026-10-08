@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchGroupDetails, setGroupId } from '../redux/slices/groupSlice';
@@ -16,12 +16,18 @@ import { Trash2, ArrowLeft, Home, LayoutPanelLeft, LayoutGrid, Users, Pencil, Ch
 import ConfirmModal from '../components/ConfirmModal';
 import LinksSection from '../components/sections/LinksSection';
 import ReorderSectionsModal from '../components/ReorderSectionsModal';
+import { getSectionPermissions } from '../utils/sectionPermissions';
 
 const SectionView = () => {
     const { groupId, sectionId } = useParams();
     const navigate = useNavigate();
     const dispatch = useDispatch();
     const { currentGroup, loading: groupLoading } = useSelector((state) => state.group);
+    const groupReady = String(currentGroup?.id) === groupId && !groupLoading;
+    const { canEditContent, canManageSection, canDeleteSection } = getSectionPermissions(
+        groupReady ? currentGroup?.currentUserRole : undefined
+    );
+    const loadRequest = useRef(0);
 
     const [sections, setSections] = useState([]);
     const [section, setSection] = useState(null);
@@ -50,26 +56,39 @@ const SectionView = () => {
     }, [groupId, sectionId]);
 
     // Fetch sections and resolve the one we care about
-    const loadSection = async () => {
+    const loadSection = useCallback(async () => {
+        if (!groupReady) return;
+        const requestId = ++loadRequest.current;
         setLoading(true);
         try {
-            const res = await axiosClient.get('/groups/sections');
+            const res = await axiosClient.get('/groups/sections', { headers: { 'X-Group-ID': groupId } });
+            if (requestId !== loadRequest.current) return;
             const list = Array.isArray(res.data) ? res.data : [];
             setSections(list);
             const found = list.find((s) => String(s.id) === String(sectionId));
             if (!found) toast.error('Section not found');
             setSection(found || null);
         } catch (err) {
+            if (requestId !== loadRequest.current) return;
+            setSection(null);
             console.error('Failed to load section', err);
             toast.error('Failed to load section');
         } finally {
-            setLoading(false);
+            if (requestId === loadRequest.current) setLoading(false);
         }
-    };
+    }, [groupReady, groupId, sectionId]);
 
     useEffect(() => {
+        setSection(null);
+        setSections([]);
+        setLoading(true);
+        setRenamingSectionId(null);
+        setShowCreateModal(false);
+        setConfirmConfig(null);
+        setShowReorderModal(false);
         loadSection();
-    }, [sectionId]);
+        return () => { loadRequest.current += 1; };
+    }, [loadSection]);
 
     const handleBackPrevious = () => {
         navigate(-1);
@@ -109,8 +128,8 @@ const SectionView = () => {
 
     const handleDeleteSection = () => {
         if (!section) return;
-        if (!currentGroup || currentGroup.currentUserRole !== 'ADMIN') {
-            toast.error('Only admins can delete sections');
+        if (!canDeleteSection) {
+            toast.error('Only owners can delete sections');
             return;
         }
         setConfirmConfig({
@@ -131,7 +150,7 @@ const SectionView = () => {
     };
 
     const handleStartRenameSection = () => {
-        if (!section) return;
+        if (!section || !canManageSection) return;
         setRenamingSectionId(section.id);
         setRenameTitle(section.title || '');
     };
@@ -142,7 +161,7 @@ const SectionView = () => {
     };
 
     const handleSubmitRenameSection = async () => {
-        if (!section) return;
+        if (!section || !canManageSection) return;
         const trimmed = (renameTitle || '').trim();
         if (!trimmed) {
             toast.error('Title cannot be empty');
@@ -164,6 +183,7 @@ const SectionView = () => {
     };
 
     const handleOpenCreateModal = (parentId = null) => {
+        if (!canManageSection) return;
         setCreateModalParentId(parentId);
         setShowCreateModal(true);
     };
@@ -223,26 +243,26 @@ const SectionView = () => {
 
         switch (section.type) {
             case 'NOTE':
-                return <NoteView sectionId={section.id} />;
+                return <NoteView key={section.id} sectionId={section.id} canEdit={canEditContent} />;
             case 'LIST':
-                return <ListView sectionId={section.id} section={section} />;
+                return <ListView key={section.id} sectionId={section.id} section={section} canEdit={canEditContent} canManage={canManageSection} />;
             case 'GALLERY':
-                return <GalleryView sectionId={section.id} />;
+                return <GalleryView key={section.id} sectionId={section.id} canEdit={canEditContent} />;
             case 'REMINDER':
-                return <ReminderView sectionId={section.id} />;
+                return <ReminderView key={section.id} sectionId={section.id} canEdit={canEditContent} />;
             case 'LINKS':
-                return <LinksSection sectionId={section.id} />;
+                return <LinksSection key={section.id} sectionId={section.id} canEdit={canEditContent} />;
             case 'PAYMENT':
-                return <PaymentView sectionId={section.id} />;
+                return <PaymentView key={section.id} sectionId={section.id} section={section} canEdit={canEditContent} canManage={canManageSection} />;
             case 'CALENDAR':
-                return <CalendarView sectionId={section.id} />;
+                return <CalendarView key={section.id} sectionId={section.id} canEdit={canEditContent} />;
             case 'FOLDER':
                 return (
                     <FolderView
                         sectionId={section.id}
                         allSections={sections}
                         onSelectSection={(s) => navigate(`/groups/${groupId}/sections/${s.id}`)}
-                        onOpenCreateModal={currentGroup?.currentUserRole === 'ADMIN' ? handleOpenCreateModal : undefined}
+                        onOpenCreateModal={canManageSection ? handleOpenCreateModal : undefined}
                     />
                 );
             default:
@@ -266,7 +286,7 @@ const SectionView = () => {
                                 ? 'Links'
                                 : 'Folder';
 
-    if (groupLoading || loading) {
+    if (!groupReady || loading) {
         return (
             <div className="flex items-center justify-center h-[60vh]">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
@@ -307,7 +327,7 @@ const SectionView = () => {
                         </div>
                         {section && (
                             <div className="flex items-center gap-2">
-                                {currentGroup?.currentUserRole === 'ADMIN' && (
+                                {canDeleteSection && (
                                     <button
                                         type="button"
                                         onClick={handleDeleteSection}
@@ -374,7 +394,7 @@ const SectionView = () => {
                                                 maxLength={120}
                                                 autoFocus
                                             />
-                                            {currentGroup?.currentUserRole === 'ADMIN' && (
+                                            {canManageSection && (
                                                 <>
                                                     <button
                                                         type="button"
@@ -398,7 +418,7 @@ const SectionView = () => {
                                             <h1 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">
                                                 {section.title}
                                             </h1>
-                                            {currentGroup?.currentUserRole === 'ADMIN' && (
+                                            {canManageSection && (
                                                 <button
                                                     type="button"
                                                     onClick={handleStartRenameSection}
