@@ -78,7 +78,8 @@ export const useSectionPreviews = (sections, refreshKey = 0) => {
                         const res = await axiosClient.get(`/groups/sections/${section.id}/reminders`);
                         const items = Array.isArray(res.data) ? res.data : [];
                         const activeReminders = items.filter(r => !r.isSent)
-                            .sort((a, b) => b.id - a.id);
+                            .sort((a, b) => (parseUTCDate(a.triggerTime)?.getTime() ?? Infinity)
+                                - (parseUTCDate(b.triggerTime)?.getTime() ?? Infinity));
                         newPreviews[section.id] = {
                             kind: 'REMINDER',
                             activeCount: activeReminders.length,
@@ -151,8 +152,7 @@ export const useSectionPreviews = (sections, refreshKey = 0) => {
                         };
                     }
                 } catch (error) {
-                    // Set empty preview so BentoGrid doesn't show "Loading..."
-                    newPreviews[section.id] = { kind: section.type };
+                    newPreviews[section.id] = { kind: section.type, error: true };
                 }
             }));
 

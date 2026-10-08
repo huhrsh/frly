@@ -14,7 +14,7 @@ const startOfDay = (date) => {
 
 const sameDay = (a, b) => startOfDay(a).getTime() === startOfDay(b).getTime();
 
-const CalendarView = ({ sectionId, canEdit = true }) => {
+const CalendarView = ({ sectionId, canEdit = false }) => {
   const [events, setEvents] = useState([]);
   const [members, setMembers] = useState([]);
   const [selectedDate, setSelectedDate] = useState(startOfDay(new Date()));

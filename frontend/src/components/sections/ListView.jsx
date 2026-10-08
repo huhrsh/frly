@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import axiosClient from '../../api/axiosClient';
 import ConfirmModal from '../ConfirmModal';
 import { Search, ArrowDownUp, List, Circle, Hash, X } from 'lucide-react';
+import { toast } from 'react-toastify';
 
-const ListView = ({ sectionId, section, canEdit = true }) => {
+const ListView = ({ sectionId, section, canEdit = false, canManage = false }) => {
     const [items, setItems] = useState([]);
     const [newItemText, setNewItemText] = useState('');
     const [isAdding, setIsAdding] = useState(false);
@@ -104,7 +105,7 @@ const ListView = ({ sectionId, section, canEdit = true }) => {
     };
 
     const handleDisplayModeChange = async (mode) => {
-        if (!mode || mode === displayMode) return;
+        if (!canManage || !mode || mode === displayMode) return;
 
         const prev = displayMode;
         setDisplayMode(mode);
@@ -116,6 +117,7 @@ const ListView = ({ sectionId, section, canEdit = true }) => {
         } catch (error) {
             console.error("Failed to update display mode", error);
             setDisplayMode(prev);
+            toast.error('Failed to update checklist display mode');
         }
     };
 
@@ -147,11 +149,12 @@ const ListView = ({ sectionId, section, canEdit = true }) => {
                                 <button
                                     key={mode}
                                     type="button"
+                                    disabled={!canManage}
                                     onClick={() => handleDisplayModeChange(mode)}
                                     className={`inline-flex items-center gap-1 px-2 py-1 rounded-full border ${displayMode === mode
                                         ? 'bg-blue-50 border-blue-400 text-blue-700'
                                         : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
-                                        }`}
+                                        } disabled:cursor-default disabled:opacity-60`}
                                 >
                                     {icon}
                                     {label}

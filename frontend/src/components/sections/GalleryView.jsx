@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import ConfirmModal from '../ConfirmModal';
 
-const GalleryView = ({ sectionId, canEdit = true }) => {
+const GalleryView = ({ sectionId, canEdit = false }) => {
     const [images, setImages] = useState([]);
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);

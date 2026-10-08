@@ -80,6 +80,12 @@ describe('axiosClient request interceptor', () => {
     expect(result.headers['X-Group-ID']).toBeUndefined()
   })
 
+  it('preserves an explicit group header during a group switch', () => {
+    localStorage.setItem('currentGroupId', '42')
+    const result = reqFulfilled({ headers: { 'X-Group-ID': '7' } })
+    expect(result.headers['X-Group-ID']).toBe('7')
+  })
+
   it('attaches both headers when both values are in localStorage', () => {
     localStorage.setItem('token', 'tok')
     localStorage.setItem('currentGroupId', '7')

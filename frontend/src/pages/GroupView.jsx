@@ -23,6 +23,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import { useAuth } from '../context/AuthContext';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import ReorderSectionsModal from '../components/ReorderSectionsModal';
+import { getSectionPermissions } from '../utils/sectionPermissions';
 
 const GroupView = () => {
     const { groupId } = useParams();
@@ -813,15 +814,17 @@ const GroupView = () => {
             );
         }
 
-        const canEdit = currentGroup?.currentUserRole !== 'VIEWER';
+        const { canEditContent: canEdit, canManageSection } = getSectionPermissions(
+            String(currentGroup?.id) === groupId ? currentGroup?.currentUserRole : undefined
+        );
 
         switch (selectedSection.type) {
-            case 'NOTE': return <NoteView sectionId={selectedSection.id} canEdit={canEdit} />;
-            case 'LIST': return <ListView sectionId={selectedSection.id} section={selectedSection} canEdit={canEdit} />;
-            case 'GALLERY': return <GalleryView sectionId={selectedSection.id} canEdit={canEdit} />;
-            case 'REMINDER': return <ReminderView sectionId={selectedSection.id} canEdit={canEdit} />;
-            case 'PAYMENT': return <PaymentView sectionId={selectedSection.id} section={selectedSection} canEdit={canEdit} />;
-            case 'CALENDAR': return <CalendarView sectionId={selectedSection.id} canEdit={canEdit} />;
+            case 'NOTE': return <NoteView key={selectedSection.id} sectionId={selectedSection.id} canEdit={canEdit} />;
+            case 'LIST': return <ListView key={selectedSection.id} sectionId={selectedSection.id} section={selectedSection} canEdit={canEdit} canManage={canManageSection} />;
+            case 'GALLERY': return <GalleryView key={selectedSection.id} sectionId={selectedSection.id} canEdit={canEdit} />;
+            case 'REMINDER': return <ReminderView key={selectedSection.id} sectionId={selectedSection.id} canEdit={canEdit} />;
+            case 'PAYMENT': return <PaymentView key={selectedSection.id} sectionId={selectedSection.id} section={selectedSection} canEdit={canEdit} canManage={canManageSection} />;
+            case 'CALENDAR': return <CalendarView key={selectedSection.id} sectionId={selectedSection.id} canEdit={canEdit} />;
             case 'FOLDER': return (
                 <FolderView
                     sectionId={selectedSection.id}
@@ -830,7 +833,7 @@ const GroupView = () => {
                     onOpenCreateModal={['ADMIN','OWNER'].includes(currentGroup?.currentUserRole) ? handleOpenCreateModal : undefined}
                 />
             );
-            case 'LINKS': return <LinksSection sectionId={selectedSection.id} canEdit={canEdit} />;
+            case 'LINKS': return <LinksSection key={selectedSection.id} sectionId={selectedSection.id} canEdit={canEdit} />;
             default: return <div className="p-4">Unknown Type</div>;
         }
     };
@@ -1070,6 +1073,7 @@ const GroupView = () => {
 
                         <div className="p-4 border-t space-y-3">
                             <div className="space-y-2">
+                                <div className="flex items-center gap-1">
                                 <button
                                     type="button"
                                     onClick={() => setShowMembers(prev => !prev)}
@@ -1078,16 +1082,6 @@ const GroupView = () => {
                                     <span className="flex items-center gap-1 font-semibold">
                                         <Users size={12} className="text-gray-500" />
                                         <span>Members</span>
-                                        <button
-                                            type="button"
-                                            title="View permissions"
-                                            onClick={(e) => { e.stopPropagation(); setShowPermissionsInfo(true); }}
-                                            className="ml-0.5 text-gray-400 hover:text-gray-600"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
-                                            </svg>
-                                        </button>
                                     </span>
                                     <span className="flex items-center gap-1">
                                         <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-[10px]">
@@ -1099,6 +1093,19 @@ const GroupView = () => {
                                         />
                                     </span>
                                 </button>
+
+                                <button
+                                    type="button"
+                                    title="View permissions"
+                                    aria-label="View permissions"
+                                    onClick={() => setShowPermissionsInfo(true)}
+                                    className="shrink-0 p-2 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-50"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                                    </svg>
+                                </button>
+                                </div>
 
                                 {showMembers && (
                                     <ul className="mt-2 space-y-1 max-h-none md:max-h-72 overflow-y-auto text-[11px] text-gray-700">

@@ -32,7 +32,7 @@ const parseContent = (raw) => {
     };
 };
 
-const NoteView = ({ sectionId, canEdit = true }) => {
+const NoteView = ({ sectionId, canEdit = false }) => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [version, setVersion] = useState(null);
@@ -61,6 +61,10 @@ const NoteView = ({ sectionId, canEdit = true }) => {
     });
 
     useEffect(() => {
+        editor?.setEditable(canEdit);
+    }, [editor, canEdit]);
+
+    useEffect(() => {
         const fetchNote = async () => {
             try {
                 const res = await axiosClient.get(`/groups/sections/${sectionId}/note`);
@@ -84,7 +88,7 @@ const NoteView = ({ sectionId, canEdit = true }) => {
     }, [sectionId]);
 
     const handleSave = useCallback(async () => {
-        if (!editor) return;
+        if (!editor || !canEdit) return;
         setSaving(true);
         try {
             const content = JSON.stringify(editor.getJSON());
@@ -110,7 +114,7 @@ const NoteView = ({ sectionId, canEdit = true }) => {
         } finally {
             setSaving(false);
         }
-    }, [editor, sectionId, version]);
+    }, [editor, sectionId, version, canEdit]);
 
     // Ctrl+S / Cmd+S to save
     useEffect(() => {

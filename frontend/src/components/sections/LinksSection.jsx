@@ -25,7 +25,7 @@ function isValidUrl(url) {
 
 const emptyLink = { id: null, key: '', url: '', description: '' };
 
-export default function LinksSection({ sectionId, canEdit = true }) {
+export default function LinksSection({ sectionId, canEdit = false }) {
   const [links, setLinks] = useState([]);
   const [filterText, setFilterText] = useState('');
   const [editingIndex, setEditingIndex] = useState(null);
@@ -33,6 +33,7 @@ export default function LinksSection({ sectionId, canEdit = true }) {
   const [deleteIndex, setDeleteIndex] = useState(null);
   const [error, setError] = useState('');
   const [lastCopiedId, setLastCopiedId] = useState(null);
+  const [reordering, setReordering] = useState(false);
 
   useEffect(() => {
     const fetchLinks = async () => {
@@ -58,6 +59,7 @@ export default function LinksSection({ sectionId, canEdit = true }) {
   };
 
   const handleSave = async () => {
+    if (!canEdit) return;
     if (!form.key.trim() || !form.url.trim()) {
       setError('Key and URL are required.');
       return;
@@ -102,7 +104,7 @@ export default function LinksSection({ sectionId, canEdit = true }) {
   };
 
   const confirmDelete = async () => {
-    if (deleteIndex === null || !links[deleteIndex]) return;
+    if (!canEdit || deleteIndex === null || !links[deleteIndex]) return;
     const target = links[deleteIndex];
     try {
       await axiosClient.delete(`/groups/sections/links/${target.id}`);
@@ -115,15 +117,21 @@ export default function LinksSection({ sectionId, canEdit = true }) {
   };
 
   const moveLink = async (from, to) => {
-    if (to < 0 || to >= links.length) return;
+    if (!canEdit || reordering || to < 0 || to >= links.length) return;
+    const previousLinks = links;
     const updated = [...links];
     const [moved] = updated.splice(from, 1);
     updated.splice(to, 0, moved);
     setLinks(updated);
+    setReordering(true);
     try {
       await axiosClient.patch(`/groups/sections/${sectionId}/links/reorder`, updated.map(l => l.id));
     } catch (e) {
+      setLinks(previousLinks);
+      toast.error('Failed to reorder links');
       console.error('Failed to reorder links', e);
+    } finally {
+      setReordering(false);
     }
   };
 
@@ -140,7 +148,7 @@ export default function LinksSection({ sectionId, canEdit = true }) {
       isDragging ? 'border-blue-300 shadow-md' : 'border-gray-100 hover:border-blue-100 hover:shadow-sm'
     }`}>
       {/* Drag handle — left side, only in DnD mode */}
-      {dragHandleProps ? (
+      {canEdit && dragHandleProps ? (
         <button
           type="button"
           {...dragHandleProps}
@@ -327,7 +335,7 @@ export default function LinksSection({ sectionId, canEdit = true }) {
                 {(provided) => (
                   <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2">
                     {links.map((link, i) => (
-                      <Draggable key={link.id ?? i} draggableId={String(link.id ?? i)} index={i}>
+                      <Draggable key={link.id ?? i} draggableId={String(link.id ?? i)} index={i} isDragDisabled={!canEdit || reordering}>
                         {(dragProvided, snapshot) => (
                           <div
                             ref={dragProvided.innerRef}

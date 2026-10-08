@@ -1,6 +1,7 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSectionPreviews } from '../../hooks/useSectionPreviews';
+import { getSectionPresentation, formatSectionMoney } from '../../utils/sectionPresentation';
 
 const FolderView = ({ sectionId, allSections, onOpenCreateModal, onSelectSection }) => {
     const { groupId } = useParams();
@@ -44,19 +45,7 @@ const FolderView = ({ sectionId, allSections, onOpenCreateModal, onSelectSection
                 {childSections.map((child) => {
                     const preview = previews[child.id];
 
-                    const typeLabel = child.type === 'NOTE' ? 'Note'
-                        : child.type === 'LIST' ? 'Checklist'
-                            : child.type === 'GALLERY' ? 'Files'
-                                : child.type === 'REMINDER' ? 'Reminder'
-                                    : child.type === 'PAYMENT' ? 'Expenses'
-                                        : 'Folder';
-
-                    const typeBadgeClass = child.type === 'NOTE' ? 'bg-blue-50 text-blue-700'
-                        : child.type === 'LIST' ? 'bg-emerald-50 text-emerald-700'
-                            : child.type === 'GALLERY' ? 'bg-rose-50 text-rose-700'
-                                : child.type === 'REMINDER' ? 'bg-amber-50 text-amber-700'
-                                    : child.type === 'PAYMENT' ? 'bg-purple-50 text-purple-700'
-                                        : 'bg-gray-100 text-gray-700';
+                    const { label: typeLabel, badge: typeBadgeClass, color } = getSectionPresentation(child.type);
 
                     const childrenCount = allSections.filter(s => s.parentId === child.id).length;
 
@@ -72,18 +61,24 @@ const FolderView = ({ sectionId, allSections, onOpenCreateModal, onSelectSection
                         <div
                             key={child.id}
                             onClick={handleClick}
-                            className="text-left bg-white rounded-xl shadow-sm border border-gray-100 hover:border-blue-200 hover:shadow-md p-4 flex flex-col justify-between min-h-[120px] group cursor-pointer transition-all duration-200"
+                            role="link"
+                            tabIndex={0}
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleClick(); }}
+                            style={{ borderLeftColor: color }}
+                            className="text-left bg-white rounded-xl shadow-sm border border-l-4 border-gray-100 hover:border-blue-200 hover:shadow-md p-4 flex flex-col justify-between min-h-[120px] group cursor-pointer transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
                         >
                             <div className="flex items-start justify-between mb-2 w-full">
                                 <h3 className="text-sm font-semibold text-gray-900 truncate mr-2 w-full">
                                     {child.title}
                                 </h3>
-                                <span className={`text-[9px] uppercase font-bold px-2 py-0.5 rounded-full ${typeBadgeClass}`}>
+                                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${typeBadgeClass}`}>
                                     {typeLabel}
                                 </span>
                             </div>
                             <div className="mt-1 text-[11px] text-gray-500 flex-1 min-h-[40px] w-full">
-                                {!preview && child.type !== 'FOLDER' ? (
+                                {preview?.error ? (
+                                    <span className="text-gray-500">Preview unavailable. Open section to retry.</span>
+                                ) : !preview && child.type !== 'FOLDER' ? (
                                     <span className="text-gray-400">Loading...</span>
                                 ) : preview?.kind === 'NOTE' ? (
                                     <p className="text-[10px] text-gray-600 leading-snug max-h-12 overflow-hidden line-clamp-2 break-words">
@@ -102,11 +97,11 @@ const FolderView = ({ sectionId, allSections, onOpenCreateModal, onSelectSection
                                     </ul>
                                 ) : preview?.kind === 'REMINDER' ? (
                                     <ul className="space-y-1 max-h-12 overflow-hidden">
-                                        {preview.reminders?.length ? preview.reminders.map((r, idx) => (
-                                            <li key={idx} className={`flex items-center justify-between text-[9px] ${r.isSent ? 'opacity-50' : ''}`}>
-                                                <span className={`truncate font-medium ${r.isSent ? 'text-gray-500 line-through' : 'text-gray-700'}`}>{r.title}</span>
+                                        {preview.next ? (
+                                            <li className="text-xs text-gray-700">
+                                                <span className="truncate font-medium">{preview.next.title}</span>
                                             </li>
-                                        )) : (
+                                        ) : (
                                             <li className="text-gray-400">No active reminders</li>
                                         )}
                                     </ul>
@@ -120,8 +115,12 @@ const FolderView = ({ sectionId, allSections, onOpenCreateModal, onSelectSection
                                     </div>
                                 ) : preview?.kind === 'PAYMENT' ? (
                                     <p className={`text-sm font-semibold ${preview.balance > 0 ? 'text-emerald-600' : preview.balance < 0 ? 'text-red-600' : 'text-gray-600'}`}>
-                                        {preview.balance > 0 ? '+' : ''}{preview.balance.toFixed(2)}
+                                        {preview.balance > 0 ? '+' : ''}{formatSectionMoney(preview.balance, child.currency)}
                                     </p>
+                                ) : preview?.kind === 'LINKS' ? (
+                                    <p>{preview.count ?? 0} link{preview.count === 1 ? '' : 's'}</p>
+                                ) : preview?.kind === 'CALENDAR' ? (
+                                    <p>{preview.todayCount ?? 0} events today · {preview.upcomingCount ?? 0} upcoming</p>
                                 ) : (
                                     <div className="text-gray-500 flex items-center gap-2 text-[10px]">
                                         <span className="bg-gray-100 px-2 py-0.5 rounded-full">{childrenCount}</span>
