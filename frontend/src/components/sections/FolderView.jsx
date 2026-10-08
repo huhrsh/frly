@@ -64,8 +64,8 @@ const FolderView = ({ sectionId, allSections, onOpenCreateModal, onSelectSection
                             role="link"
                             tabIndex={0}
                             onKeyDown={(e) => { if (e.key === 'Enter') handleClick(); }}
-                            style={{ backgroundImage: `linear-gradient(to right, ${color} 8px, white 8px)` }}
-                            className="text-left bg-white rounded-xl shadow-sm border border-gray-100 hover:border-blue-200 hover:shadow-md p-4 flex flex-col justify-between min-h-[120px] group cursor-pointer transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
+                            style={{ borderLeftColor: color }}
+                            className="text-left bg-white rounded-xl shadow-sm border border-l-4 border-gray-100 hover:border-blue-200 hover:shadow-md p-4 flex flex-col justify-between min-h-[120px] group cursor-pointer transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
                         >
                             <div className="flex items-start justify-between mb-2 w-full">
                                 <h3 className="text-sm font-semibold text-gray-900 truncate mr-2 w-full">
