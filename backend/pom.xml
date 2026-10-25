@@ -23,12 +23,6 @@
     </properties>
     
     <dependencies>
-        <!-- SendGrid Java SDK for API email sending -->
-        <dependency>
-            <groupId>com.sendgrid</groupId>
-            <artifactId>sendgrid-java</artifactId>
-            <version>4.10.1</version>
-        </dependency>
         <!-- Spring Boot Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -140,11 +134,6 @@
             <artifactId>spring-boot-starter-jdbc</artifactId>
         </dependency>
 
-        <!-- Spring Mail for email notifications/password reset -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-mail</artifactId>
-        </dependency>
         
         <!-- Web Push library for push notifications -->
         <dependency>
